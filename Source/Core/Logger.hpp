@@ -25,7 +25,7 @@ namespace Luden::Core
 		Debug
 	};
 
-	class Logger
+	class CORE_API Logger
 	{
 	public:
 		Logger() = default;
