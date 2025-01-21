@@ -1,26 +1,54 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113 d17.12
+VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LudenEngine", "LudenEngine\LudenEngine.vcxproj", "{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LudenEngine", "Source\LudenEngine\LudenEngine.vcxproj", "{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81952538-E377-4A17-A084-CE7CCF57F327} = {81952538-E377-4A17-A084-CE7CCF57F327}
+		{8AFCE10C-8B17-4B3D-8030-734B0A5EA557} = {8AFCE10C-8B17-4B3D-8030-734B0A5EA557}
+		{90FF0B5A-B678-4333-919A-76E4B6C60028} = {90FF0B5A-B678-4333-919A-76E4B6C60028}
+		{F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B} = {F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Source\Core\Core.vcxproj", "{81952538-E377-4A17-A084-CE7CCF57F327}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Platform", "Source\Platform\Platform.vcxproj", "{F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Source\Engine\Engine.vcxproj", "{90FF0B5A-B678-4333-919A-76E4B6C60028}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81952538-E377-4A17-A084-CE7CCF57F327} = {81952538-E377-4A17-A084-CE7CCF57F327}
+		{F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B} = {F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ECS", "Source\ECS\ECS.vcxproj", "{8AFCE10C-8B17-4B3D-8030-734B0A5EA557}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
-		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}.Debug|x64.ActiveCfg = Debug|x64
 		{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}.Debug|x64.Build.0 = Debug|x64
-		{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}.Debug|x86.ActiveCfg = Debug|Win32
-		{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}.Debug|x86.Build.0 = Debug|Win32
 		{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}.Release|x64.ActiveCfg = Release|x64
 		{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}.Release|x64.Build.0 = Release|x64
-		{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}.Release|x86.ActiveCfg = Release|Win32
-		{2DD41D7F-AD21-4861-A5CA-5F5FECC0C753}.Release|x86.Build.0 = Release|Win32
+		{81952538-E377-4A17-A084-CE7CCF57F327}.Debug|x64.ActiveCfg = Debug|x64
+		{81952538-E377-4A17-A084-CE7CCF57F327}.Debug|x64.Build.0 = Debug|x64
+		{81952538-E377-4A17-A084-CE7CCF57F327}.Release|x64.ActiveCfg = Release|x64
+		{81952538-E377-4A17-A084-CE7CCF57F327}.Release|x64.Build.0 = Release|x64
+		{F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B}.Debug|x64.ActiveCfg = Debug|x64
+		{F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B}.Debug|x64.Build.0 = Debug|x64
+		{F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B}.Release|x64.ActiveCfg = Release|x64
+		{F728EFA9-67A7-4A9F-8F5B-B8D97AB1AF2B}.Release|x64.Build.0 = Release|x64
+		{90FF0B5A-B678-4333-919A-76E4B6C60028}.Debug|x64.ActiveCfg = Debug|x64
+		{90FF0B5A-B678-4333-919A-76E4B6C60028}.Debug|x64.Build.0 = Debug|x64
+		{90FF0B5A-B678-4333-919A-76E4B6C60028}.Release|x64.ActiveCfg = Release|x64
+		{90FF0B5A-B678-4333-919A-76E4B6C60028}.Release|x64.Build.0 = Release|x64
+		{8AFCE10C-8B17-4B3D-8030-734B0A5EA557}.Debug|x64.ActiveCfg = Debug|x64
+		{8AFCE10C-8B17-4B3D-8030-734B0A5EA557}.Debug|x64.Build.0 = Debug|x64
+		{8AFCE10C-8B17-4B3D-8030-734B0A5EA557}.Release|x64.ActiveCfg = Release|x64
+		{8AFCE10C-8B17-4B3D-8030-734B0A5EA557}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

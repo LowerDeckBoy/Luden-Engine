@@ -19,3 +19,4 @@
 
 #define DEPRECATED	[[deprecated]]
 #define NODISCARD	[[nodiscard]]
+#define FALLTHROUGH [[fallthrough]]

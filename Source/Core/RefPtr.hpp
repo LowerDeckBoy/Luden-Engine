@@ -80,7 +80,7 @@ namespace Luden
 		}
 
 		template<typename K>
-		void As(Ref<K> pOther)
+		void As(Ref<K>& pOther)
 		{
 			static_assert(std::is_base_of_v<IUnknown, K> && std::is_base_of_v<IUnknown, T>, "Invalid base type!");
 

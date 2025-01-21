@@ -13,19 +13,21 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{81952538-e377-4a17-a084-ce7ccf57f327}</ProjectGuid>
-    <RootNamespace>Core</RootNamespace>
+    <ProjectGuid>{90ff0b5a-b678-4333-919a-76e4b6c60028}</ProjectGuid>
+    <RootNamespace>Engine</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <EnableUnitySupport>false</EnableUnitySupport>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -47,65 +49,79 @@
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Build\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)Build\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;CORE_EXPORTS;CORE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;ENGINE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <CallingConvention>StdCall</CallingConvention>
-      <CompileAs>CompileAsCpp</CompileAs>
-    </ClCompile>
-    <Link>
-      <SubSystem>NotSet</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile>
-      <WarningLevel>TurnOffAllWarnings</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;CORE_EXPORTS;CORE_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <Optimization>MinSpace</Optimization>
-      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(ProjectDir);$(SolutionDir)Dependencies</AdditionalIncludeDirectories>
       <CallingConvention>StdCall</CallingConvention>
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>IF EXIST "$(SolutionDir)Binaries\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DllMain.cpp" />
-    <ClCompile Include="Logger.cpp" />
+    <ClInclude Include="Config.hpp" />
+    <ClInclude Include="D3D12\D3D12RHI.hpp" />
+    <ClInclude Include="D3D12\D3D12SwapChain.hpp" />
+    <ClInclude Include="D3D12\D3D12Resource.hpp" />
+    <ClInclude Include="D3D12\D3D12Buffer.hpp" />
+    <ClInclude Include="D3D12\D3D12RootSignature.hpp" />
+    <ClInclude Include="D3D12\D3D12PipelineState.hpp" />
+    <ClInclude Include="D3D12\D3D12CommandQueue.hpp" />
+    <ClInclude Include="D3D12\D3D12Adapter.hpp" />
+    <ClInclude Include="D3D12\D3D12DescriptorHeap.hpp" />
+    <ClInclude Include="D3D12\D3D12Device.hpp" />
+    <ClInclude Include="D3D12\D3D12Utility.hpp" />
+    <ClInclude Include="RHI\Common.hpp" />
+    <ClInclude Include="RHI\Defines.hpp" />
+    <ClInclude Include="RHI\State.hpp" />
+    <ClInclude Include="RHI\Types.hpp" />
+    <ClInclude Include="Scene\Scene.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core.hpp" />
-    <ClInclude Include="Defines.hpp" />
-    <ClInclude Include="Export.hpp" />
-    <ClInclude Include="Logger.hpp" />
-    <ClInclude Include="File.hpp" />
-    <ClInclude Include="Math\Math.hpp" />
-    <ClInclude Include="Math\Ray.hpp" />
-    <ClInclude Include="Timer.hpp" />
-    <ClInclude Include="RefPtr.hpp" />
-    <ClInclude Include="String.hpp" />
-    <ClInclude Include="Math\Vector.hpp" />
-    <ClInclude Include="Types.hpp" />
+    <ClCompile Include="D3D12\D3D12RHI.cpp" />
+    <ClCompile Include="D3D12\D3D12SwapChain.cpp" />
+    <ClCompile Include="D3D12\D3D12Resource.cpp" />
+    <ClCompile Include="D3D12\D3D12Buffer.cpp" />
+    <ClCompile Include="D3D12\D3D12RootSignature.cpp" />
+    <ClCompile Include="D3D12\D3D12PipelineState.cpp" />
+    <ClCompile Include="D3D12\D3D12CommandQueue.cpp" />
+    <ClCompile Include="D3D12\D3D12Adapter.cpp" />
+    <ClCompile Include="D3D12\D3D12DescriptorHeap.cpp" />
+    <ClCompile Include="D3D12\D3D12Device.cpp" />
+    <ClCompile Include="D3D12\D3D12Utility.cpp" />
+    <ClCompile Include="Scene\Scene.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
