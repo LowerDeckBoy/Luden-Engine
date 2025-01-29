@@ -4,6 +4,10 @@
 	#error C++ is required to build this library!
 #endif
 
+#if defined (_DEBUG) || (DEBUG)
+	#define CORE_DEBUG
+#endif
+
 #define CORE_STRINGIFY(Arg) #Arg
 #define CORE_STRING(Arg)	CORE_STRINGIFY(Arg)
 
