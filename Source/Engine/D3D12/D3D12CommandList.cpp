@@ -1,4 +1,6 @@
 #include "D3D12Device.hpp"
+#include "D3D12PipelineState.hpp"
+#include "D3D12RootSignature.hpp"
 #include "D3D12DescriptorHeap.hpp"
 #include "D3D12Resource.hpp"
 #include "D3D12SwapChain.hpp"
@@ -10,8 +12,10 @@ namespace Luden
 {
 	D3D12CommandList::D3D12CommandList(D3D12Device* pDevice, D3D12_COMMAND_LIST_TYPE CommandListType)
 	{
-		VERIFY_D3D12_RESULT(pDevice->Device->CreateCommandList1(pDevice->NodeMask, CommandListType, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&m_GraphicsCommandList)));
-		VERIFY_D3D12_RESULT(pDevice->Device->CreateCommandAllocator(CommandListType, IID_PPV_ARGS(&m_CommandAllocator)));
+		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandList1(pDevice->NodeMask, CommandListType, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&m_GraphicsCommandList)));
+		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandAllocator(CommandListType, IID_PPV_ARGS(&m_CommandAllocator)));
+		//VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandList(pDevice->NodeMask, CommandListType, m_CommandAllocator, nullptr, IID_PPV_ARGS(&m_GraphicsCommandList)));
+		//m_GraphicsCommandList->Close();
 
 		m_CommandListType = CommandListType;
 
@@ -41,9 +45,16 @@ namespace Luden
 
 	HRESULT D3D12CommandList::Open()
 	{
+		if (bIsOpen)
+		{
+			LOG_DEBUG("Command List is already open.");
+			return S_OK;
+		}
+
 		HRESULT result = m_CommandAllocator->Reset();
 		if (FAILED(result))
 		{
+			LOG_DEBUG("Failed to reset CommandAllocator!");
 			return result;
 		}
 
@@ -104,6 +115,23 @@ namespace Luden
 	void D3D12CommandList::CopyResource(D3D12Resource* pSource, D3D12Resource* pDestination)
 	{
 		m_GraphicsCommandList->CopyResource(pDestination->GetHandleRaw(), pSource->GetHandleRaw());
+	}
+
+	void D3D12CommandList::SetRootSignature(D3D12RootSignature* pRootSignature)
+	{
+		if (pRootSignature->GetPipelineType() == PipelineType::Graphics)
+		{
+			m_GraphicsCommandList->SetGraphicsRootSignature(pRootSignature->GetHandleRaw());
+		}
+		else
+		{
+			m_GraphicsCommandList->SetComputeRootSignature(pRootSignature->GetHandleRaw());
+		}
+	}
+
+	void D3D12CommandList::SetPipelineState(D3D12PipelineState* pPipelineState)
+	{
+		m_GraphicsCommandList->SetPipelineState(pPipelineState->GetHandleRaw());
 	}
 
 } // namespace Luden

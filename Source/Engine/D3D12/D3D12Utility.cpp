@@ -1,12 +1,22 @@
 #include "Core/Logger.hpp"
 #include <D3D12AgilitySDK/d3d12.h>
+#include <Core/RefPtr.hpp>
 #include <Windows.h>
 #include "D3D12Utility.hpp"
 #include <exception>
 
-namespace Luden::Util
+namespace Luden
 {
-	void VerifyD3D12Result(HRESULT hResult, const char* ResultString, std::source_location Source, std::string Message)
+	void D3D::Delete(IUnknown* pInterface)
+	{
+		if (pInterface)
+		{
+			pInterface->Release();
+			pInterface = nullptr;
+		}
+	}
+
+	void Util::VerifyD3D12Result(HRESULT hResult, const char* ResultString, std::source_location Source, std::string Message)
 	{
 		if (SUCCEEDED(hResult))
 		{
@@ -38,7 +48,7 @@ namespace Luden::Util
 		throw std::exception();
 	}
 
-	void NameD3D12Object(ID3D12Object* pD3D12Object, std::string_view DebugName)
+	void Util::NameD3D12Object(ID3D12Object* pD3D12Object, std::string_view DebugName)
 	{
 		if (!pD3D12Object)
 		{

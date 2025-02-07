@@ -20,8 +20,10 @@ namespace Luden
 		Ref<IDXGIAdapter4> Adapter;
 
 		DXGI_ADAPTER_DESC3 Desc{};
-
+		
 		DXGI_QUERY_VIDEO_MEMORY_INFO MemoryInfo{};
+		DXGI_QUERY_VIDEO_MEMORY_INFO LocalMemoryInfo{};
+		DXGI_QUERY_VIDEO_MEMORY_INFO NonLocalMemoryInfo{};
 		uint64 AvailableMemory = 0;
 
 		// Minimal level of shader model that is required by D3D12 Render Hardware Interface
@@ -33,8 +35,11 @@ namespace Luden
 
 		D3D_FEATURE_LEVEL MinRequiredFeatureLevel = D3D_FEATURE_LEVEL_12_2;
 
+		uint64 QueryAdapterMemory() const;
+
 	private:
 		Ref<ID3D12Debug6> m_DebugDevice;
+
 	};
 
 } // namespace Luden

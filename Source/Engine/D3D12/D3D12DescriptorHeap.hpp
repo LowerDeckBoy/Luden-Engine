@@ -58,7 +58,6 @@ namespace Luden
 	public:
 		D3D12DescriptorHeap() = default;
 		D3D12DescriptorHeap(D3D12Device* pDevice, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorType, uint32 MaxCapacity);
-		D3D12DescriptorHeap(D3D12Device* pDevice, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorType, uint32 MaxCapacity, bool bShaderVisible);
 		~D3D12DescriptorHeap();
 
 		Ref<ID3D12DescriptorHeap>&	GetHandle()		{ return m_DescriptorHeap;		 }
@@ -124,25 +123,25 @@ namespace Luden
 	// Single class to manage all Descriptor Heaps:
 	// - CPU visible only (non-staging) for Descriptor allocations.
 	// - GPU only (staging)
-	class D3D12DescriptorHeapManager
-	{
-	public:
-		D3D12DescriptorHeapManager(D3D12Device* pDevice);
-		~D3D12DescriptorHeapManager();
-
-		// CPU visible only Heaps
-		D3D12DescriptorHeap ShaderResourceHeap;
-		D3D12DescriptorHeap RenderTargetHeap;
-		D3D12DescriptorHeap DepthStencilHeap;
-
-		// Staging Heaps
-		// One per BackBuffer
-		std::vector<D3D12DescriptorHeap> StagingShaderResourcesHeaps;
-		std::vector<D3D12DescriptorHeap> StagingRenderTargetHeap;
-		std::vector<D3D12DescriptorHeap> StagingDepthStencilHeap;
-
-	private:
-
-	};
+	//class D3D12DescriptorHeapManager
+	//{
+	//public:
+	//	D3D12DescriptorHeapManager(D3D12Device* pDevice);
+	//	~D3D12DescriptorHeapManager();
+	//
+	//	// CPU visible only Heaps
+	//	D3D12DescriptorHeap ShaderResourceHeap;
+	//	D3D12DescriptorHeap RenderTargetHeap;
+	//	D3D12DescriptorHeap DepthStencilHeap;
+	//
+	//	// Staging Heaps
+	//	// One per BackBuffer
+	//	std::vector<D3D12DescriptorHeap> StagingShaderResourcesHeaps;
+	//	std::vector<D3D12DescriptorHeap> StagingRenderTargetHeap;
+	//	std::vector<D3D12DescriptorHeap> StagingDepthStencilHeap;
+	//
+	//private:
+	//
+	//};
 
 } // namespace Luden

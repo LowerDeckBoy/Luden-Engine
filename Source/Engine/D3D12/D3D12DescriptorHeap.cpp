@@ -14,11 +14,11 @@ namespace Luden
 		
 		desc.Flags = (DescriptorType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || DescriptorType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-		VERIFY_D3D12_RESULT(pDevice->Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
+		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
 
 		m_MaxCapacity = MaxCapacity;
 		
-		m_DescriptorIncrementSize = pDevice->Device->GetDescriptorHandleIncrementSize(DescriptorType);
+		m_DescriptorIncrementSize = pDevice->LogicalDevice->GetDescriptorHandleIncrementSize(DescriptorType);
 
 		switch (DescriptorType)
 		{
@@ -62,11 +62,11 @@ namespace Luden
 		desc.Flags =
 			(DescriptorType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || DescriptorType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-		VERIFY_D3D12_RESULT(pDevice->Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
+		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_DescriptorHeap)));
 
 		m_MaxCapacity = MaxCapacity;
 
-		m_DescriptorIncrementSize = pDevice->Device->GetDescriptorHandleIncrementSize(DescriptorType);
+		m_DescriptorIncrementSize = pDevice->LogicalDevice->GetDescriptorHandleIncrementSize(DescriptorType);
 
 		switch (DescriptorType)
 		{

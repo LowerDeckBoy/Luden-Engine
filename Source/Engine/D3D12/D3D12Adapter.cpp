@@ -10,6 +10,7 @@ namespace Luden
 
 		VERIFY_D3D12_RESULT(D3D12GetDebugInterface(IID_PPV_ARGS(&m_DebugDevice)));
 		m_DebugDevice->EnableDebugLayer();
+		m_DebugDevice->SetEnableGPUBasedValidation(FALSE);
 
 		VERIFY_D3D12_RESULT(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&Factory)));
 
@@ -34,5 +35,13 @@ namespace Luden
 	{
 		SAFE_RELEASE(Adapter);
 		SAFE_RELEASE(Factory);
+	}
+
+	uint64 D3D12Adapter::QueryAdapterMemory() const
+	{
+		DXGI_QUERY_VIDEO_MEMORY_INFO memoryInfo{};
+		Adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &memoryInfo);
+		
+		return (memoryInfo.CurrentUsage / 1024 / 1024);
 	}
 } // namespace Luden

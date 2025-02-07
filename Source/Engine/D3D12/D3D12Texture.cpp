@@ -5,7 +5,7 @@
 
 namespace Luden
 {
-	D3D12Texture::D3D12Texture(D3D12Device* pDevice, TextureDesc Desc)
+	D3D12Texture::D3D12Texture(D3D12Device* /* pDevice */, TextureDesc Desc)
 		: m_TextureDesc(Desc)
 	{
 		
@@ -18,10 +18,12 @@ namespace Luden
 
 	D3D12RenderTexture::D3D12RenderTexture(D3D12RHI* pD3D12RHI, TextureDesc Desc)
 	{
+		Create(pD3D12RHI, Desc);
 	}
 
 	D3D12RenderTexture::~D3D12RenderTexture()
 	{
+		Release();
 	}
 
 	void D3D12RenderTexture::Create(D3D12RHI* pD3D12RHI, TextureDesc Desc, std::string_view DebugName)
@@ -33,7 +35,6 @@ namespace Luden
 
 		m_D3D12RHI = pD3D12RHI;
 		m_TextureDesc = Desc;
-
 
 		D3D12_RESOURCE_DESC1 desc{};
 		desc.Dimension			= D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -61,7 +62,7 @@ namespace Luden
 		}
 		
 		const auto& heapProperties = D3D::HeapPropertiesDefault();
-		VERIFY_D3D12_RESULT(m_D3D12RHI->Device->Device->CreateCommittedResource2(
+		VERIFY_D3D12_RESULT(m_D3D12RHI->Device->LogicalDevice->CreateCommittedResource2(
 			&heapProperties,
 			D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
 			&desc,

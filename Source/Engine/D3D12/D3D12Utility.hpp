@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Core/String.hpp"
+#include <Core/String.hpp>
 #include <source_location>
+
+struct IUnknown;
 
 namespace Luden
 {
@@ -27,4 +29,10 @@ namespace Luden
 		extern void NameD3D12Object(ID3D12Object* pD3D12Object, std::string_view DebugName);
 
 	} // namespace Util
+
+	namespace D3D
+	{
+		extern void Delete(IUnknown* pInterface);
+
+	} // namespace D3D
 } // namespace Luden

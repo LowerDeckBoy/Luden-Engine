@@ -9,6 +9,8 @@ namespace Luden
 	class D3D12DescriptorHeap;
 	class D3D12Viewport;
 	class D3D12Resource;
+	class D3D12RootSignature;
+	class D3D12PipelineState;
 
 	class D3D12CommandList
 	{
@@ -49,6 +51,10 @@ namespace Luden
 		void ResourceTransition(D3D12Resource* pResource, D3D12_RESOURCE_STATES After);
 
 		void CopyResource(D3D12Resource* pSource, D3D12Resource* pDestination);
+
+		void SetRootSignature(D3D12RootSignature* pRootSignature);
+
+		void SetPipelineState(D3D12PipelineState* pPipelineState);
 
 	private:
 		Ref<ID3D12GraphicsCommandList10>	m_GraphicsCommandList;

@@ -10,7 +10,7 @@ namespace Luden
 	class D3D12Device;
 
 	// Wrapper for ID3D12Resource2
-	enum class ResourceUsage
+	enum class ResourceUsageFlag
 	{
 		Uninitialized,
 
@@ -28,10 +28,7 @@ namespace Luden
 	{
 	public:
 		D3D12Resource() = default;
-		D3D12Resource(D3D12Device* pDevice, const D3D12_RESOURCE_DESC1& Desc, D3D12_RESOURCE_STATES InitialState, D3D12_HEAP_PROPERTIES HeapProperties, ResourceUsage UsageFlag);
-		~D3D12Resource() = default;
-
-		void Create(D3D12Device* pDevice, const D3D12_RESOURCE_DESC1& Desc, D3D12_RESOURCE_STATES InitialState, D3D12_HEAP_PROPERTIES HeapProperties, ResourceUsage UsageFlag);
+		~D3D12Resource();
 
 		Ref<ID3D12Resource2>& GetHandle()
 		{
@@ -57,10 +54,10 @@ namespace Luden
 
 		bool IsValid() const
 		{
-			return m_Resource;
+			return m_Resource.Get() != nullptr;
 		}
 
-		ResourceUsage GetResourceUsageFlag() const
+		ResourceUsageFlag GetResourceUsageFlag() const
 		{
 			return m_UsageFlag;
 		}
@@ -73,7 +70,7 @@ namespace Luden
 		D3D12_RESOURCE_STATES		m_CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
 		D3D12_RESOURCE_DESC1		m_Desc{};
 
-		ResourceUsage m_UsageFlag = ResourceUsage::Uninitialized;
+		ResourceUsageFlag m_UsageFlag = ResourceUsageFlag::Uninitialized;
 
 		D3D12Device* m_ParentDevice = nullptr;
 

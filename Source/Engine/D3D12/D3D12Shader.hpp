@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/Types.hpp>
+#include <D3D12AgilitySDK/d3d12.h>
 #include <D3D12AgilitySDK/d3d12shader.h>
 
 namespace Luden
@@ -20,6 +21,17 @@ namespace Luden
 	class D3D12Shader
 	{
 	public:
+		D3D12Shader() = default;
+		~D3D12Shader()
+		{
+			if (Data)
+			{
+				delete Data;
+				Data = nullptr;
+
+				Size = 0;
+			}
+		}
 
 		D3D12_SHADER_BYTECODE Bytecode()
 		{
@@ -35,6 +47,10 @@ namespace Luden
 		{
 			return Data != nullptr && Size != 0;
 		}
+
+		// Flag to true, if this Shader has specified RootSignature.
+		// Thus, RootSignature object can be created from Shader Bytecode.
+		bool bHasRootSignature = false;
 
 	private:
 
