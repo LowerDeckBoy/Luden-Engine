@@ -1,14 +1,21 @@
 #pragma once
 
+/*=================================================================================
+	Platform/Utilities.hpp
+
+	Bunch of platform based utility functions.
+=================================================================================*/
+
 #include <Psapi.h>
 
 namespace Luden::Platform
 {
 	// Return how many RAM is being used by application.
 	// Reads PrivateWorkingSetSize to match memory usage in Windows' Task Manager.
-	static float GetMemoryUsage()
+	inline float GetMemoryUsage()
 	{
 		::PROCESS_MEMORY_COUNTERS_EX2 pcmex{};
+
 		if (!::GetProcessMemoryInfo(::GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pcmex, sizeof(::PROCESS_MEMORY_COUNTERS_EX2)))
 		{
 			return -1.0f;

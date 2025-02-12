@@ -9,11 +9,12 @@ namespace Luden::Platform
 {
 	struct PLATFORM_API WindowDesc
 	{
-		const char* Title;
-		uint32_t	Width;
-		uint32_t	Height;
-		::WNDPROC	WindowProc; // Temporarly
-		bool		bMaximize  = false;
+		const char*			Title;
+		uint32_t			Width;
+		uint32_t			Height;
+		::WNDPROC const&	WindowProc;
+
+		bool				bMaximize  = false;
 	};
 
 	class PLATFORM_API Window
@@ -47,14 +48,11 @@ namespace Luden::Platform
 		::HINSTANCE Instance = nullptr;
 		::HWND Handle = nullptr;
 
-		// Default
 		static LRESULT CALLBACK DefaultWindowProc(::HWND Handle, UINT32 Message, WPARAM wParam, LPARAM lParam);
 
 		::WNDPROC WindowProcedures = DefWindowProcA;
 
-	
 		bool bShouldClose = false;
-
 
 	};
 } // namespace Luden::Platform

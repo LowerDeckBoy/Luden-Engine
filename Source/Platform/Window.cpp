@@ -1,11 +1,11 @@
 #include "Window.hpp"
-
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi")
 
+
 namespace Luden::Platform
 {
-	constexpr COLORREF DarkThemeBackground = COLORREF(RGB(23, 23, 23));
+	constexpr COLORREF DarkThemeBackground = COLORREF(RGB(32, 32, 32));
 	constexpr LPCSTR WindowClassName = "WindowClass";
 
 	bool Window::bCursorVisible = true;
@@ -27,20 +27,18 @@ namespace Luden::Platform
 			Instance = ::GetModuleHandleA(nullptr);
 		}
 
-		if (!::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
-		{
-			// Log warning
-		}
+		::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 		::WNDCLASSEXA wcex{};
 		wcex.cbSize = sizeof(wcex);
 		wcex.hInstance = Instance;
-		wcex.style = CS_HREDRAW | CS_VREDRAW;
+		//wcex.style = CS_HREDRAW | CS_VREDRAW;
+		wcex.style = CS_OWNDC;
 		wcex.lpszClassName = WindowClassName;
 		wcex.hbrBackground = ::CreateSolidBrush(DarkThemeBackground);
 		wcex.lpfnWndProc = Desc.WindowProc;
 
-		if (!RegisterClassExA(&wcex))
+		if (!::RegisterClassExA(&wcex))
 		{
 			// Log error
 			return;
@@ -68,7 +66,7 @@ namespace Luden::Platform
 		const int32_t xPos = (::GetSystemMetrics(SM_CXSCREEN) - windowRect.right) / 2;
 		const int32_t yPos = (::GetSystemMetrics(SM_CYSCREEN) - windowRect.bottom) / 2;
 
-		SetWindowPos(Handle, nullptr, xPos, yPos, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+		::SetWindowPos(Handle, nullptr, xPos, yPos, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 
 		BOOL bDarkMode = TRUE;
 		::DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &bDarkMode, sizeof(bDarkMode));
@@ -93,31 +91,41 @@ namespace Luden::Platform
 		}
 	}
 
+	void Window::Resize()
+	{
+		::RECT windowRect{};
+		::GetClientRect(Handle, &windowRect);
+
+		::RECT out(0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top);
+		Width	= static_cast<uint32_t>(windowRect.right - windowRect.left);
+		Height	= static_cast<uint32_t>(windowRect.bottom - windowRect.top);
+	}
+
 	void Window::ProcessMessages()
 	{
 		MSG msg{};
 
-		while (::PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE))
+		if (::PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
 			::TranslateMessage(&msg);
-			::DispatchMessageA(&msg);
-
-			if (msg.message == WM_QUIT)
-			{
-				bShouldClose = true;
-				return;
-			}
+			::DispatchMessageA(&msg);	
 		}
+		
+		if (msg.message == WM_QUIT)
+		{
+			bShouldClose = true;
+		}
+		
 	}
 
 	bool Window::IsMinimized() const
 	{
-		return ::IsZoomed(Handle);
+		return ::IsIconic(Handle);
 	}
 
 	bool Window::IsMaximized() const
 	{
-		return false;
+		return ::IsZoomed(Handle);
 	}
 
 	void Window::OnCursorShow()
