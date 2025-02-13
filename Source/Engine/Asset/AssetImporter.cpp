@@ -7,7 +7,7 @@
 
 namespace Luden
 {
-	void AssetImporter::ImportStaticMesh(Filepath Path, StaticMesh& OutMesh, bool /* bGenerateMeshlets */)
+	void AssetImporter::ImportStaticMesh(Filepath Path, Model& OutModel, bool bGenerateMeshlets)
 	{
 		if (!File::Exists(Path))
 		{
@@ -30,17 +30,28 @@ namespace Luden
 		if (!scene || !scene->mRootNode || !scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
 		{
 			LOG_WARNING("Failed to load model mesh");
+			importer.FreeScene();
 
 			return;
 		}
 
-		OutMesh.Submeshes.reserve(scene->mNumMeshes);
+		OutModel.Meshes.reserve(scene->mNumMeshes);
 
-		LoadStaticMesh(scene, OutMesh);
+		LoadStaticMesh(scene, OutModel);
+
+		if (bGenerateMeshlets)
+		{
+			for (auto& mesh : OutModel.Meshes)
+			{
+				BuildMeshlets(mesh);
+			}
+		}
+
+		importer.FreeScene();
 
 	}
 
-	void AssetImporter::LoadStaticMesh(const aiScene* pScene, StaticMesh& OutMesh)
+	void AssetImporter::LoadStaticMesh(const aiScene* pScene, Model& OutModel)
 	{
 		if (!pScene->HasMeshes())
 		{
@@ -53,52 +64,44 @@ namespace Luden
 		{
 			const auto& mesh = pScene->mMeshes[i];
 
-			Subset submesh{};
-			submesh.BaseVertex = static_cast<uint32_t>(OutMesh.Positions.size());
-			submesh.BaseIndex = static_cast<uint32_t>(OutMesh.Indices.size());
-
-			submesh.NumVertices = mesh->mNumVertices;
-
-			submesh.NumIndices = 3 * mesh->mNumFaces;
+			StaticMesh meshData{};
 
 			for (uint32_t vertexId = 0; vertexId < mesh->mNumVertices; ++vertexId)
 			{
 				if (mesh->HasPositions())
 				{
-					OutMesh.Positions.emplace_back(*(DirectX::XMFLOAT3*)(&mesh->mVertices[vertexId]));
+					meshData.Positions.emplace_back(*(DirectX::XMFLOAT3*)(&mesh->mVertices[vertexId]));
 				}
 				else
 				{
-					OutMesh.Positions.emplace_back(DirectX::XMFLOAT3());
+					meshData.Positions.emplace_back(DirectX::XMFLOAT3());
 				}
 
 				if (mesh->HasTextureCoords(0))
 				{
-					OutMesh.TexCoords.emplace_back(*(DirectX::XMFLOAT2*)(&mesh->mTextureCoords[0][vertexId]));
+					meshData.TexCoords.emplace_back(*(DirectX::XMFLOAT2*)(&mesh->mTextureCoords[0][vertexId]));
 				}
 				else
 				{
-					OutMesh.TexCoords.emplace_back(DirectX::XMFLOAT2());
+					meshData.TexCoords.emplace_back(DirectX::XMFLOAT2());
 				}
 
 				if (mesh->HasNormals())
 				{
-					OutMesh.Normals.emplace_back(*(DirectX::XMFLOAT3*)(&mesh->mNormals[vertexId]));
+					meshData.Normals.emplace_back(*(DirectX::XMFLOAT3*)(&mesh->mNormals[vertexId]));
 				}
 				else
 				{
-					OutMesh.Normals.emplace_back(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
+					meshData.Normals.emplace_back(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
 				}
 
 				if (mesh->HasTangentsAndBitangents())
 				{
-					OutMesh.Tangents.emplace_back(*(DirectX::XMFLOAT3*)(&mesh->mTangents[vertexId]));
-					//OutMesh.Bitangents.emplace_back(*(DirectX::XMFLOAT3*)(&mesh->mBitangents[vertexId]));
+					meshData.Tangents.emplace_back(*(DirectX::XMFLOAT4*)(&mesh->mTangents[vertexId]));
 				}
 				else
 				{
-					OutMesh.Tangents.emplace_back(DirectX::XMFLOAT3());
-					//OutMesh.Bitangents.emplace_back(DirectX::XMFLOAT3());
+					meshData.Tangents.emplace_back(DirectX::XMFLOAT4());
 				}
 			}
 
@@ -111,12 +114,24 @@ namespace Luden
 
 					for (uint32_t idx = 0; idx < face.mNumIndices; ++idx)
 					{
-						OutMesh.Indices.push_back(face.mIndices[idx]);
+						meshData.Indices.push_back(face.mIndices[idx]);
 					}
 				}
 			}
 
-			OutMesh.Submeshes.push_back(submesh);
+			OutModel.Meshes.push_back(meshData);
 		}
+	}
+
+	void AssetImporter::BuildMeshlets(StaticMesh& Mesh)
+	{
+		DirectX::ComputeMeshlets(
+			Mesh.Indices.data(), Mesh.Indices.size() / 3,
+			Mesh.Positions.data(), Mesh.Positions.size(),
+			nullptr,
+			Mesh.Meshlets, Mesh.MeshletVertices,
+			Mesh.MeshletTriangles,
+			MeshletMaxTriangles, MeshletMaxVertices
+		);
 	}
 } // namespace Luden

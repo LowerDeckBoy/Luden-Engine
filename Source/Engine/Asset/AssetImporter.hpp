@@ -4,7 +4,7 @@
 
 #include <assimp/Importer.hpp>
 
-#include "Graphics/Mesh.hpp"
+#include "Graphics/Model.hpp"
 
 namespace Luden
 {
@@ -12,14 +12,14 @@ namespace Luden
 	{
 	public:
 
-		bool Import(Filepath Path, Mesh& OutMesh);
+		void ImportStaticMesh(Filepath Path, Model& OutModel, bool bGenerateMeshlets = false);
 
-		void ImportStaticMesh(Filepath Path, StaticMesh& OutMesh, bool bGenerateMeshlets = false);
-
-		void LoadTexture();
+		//void LoadTexture();
 
 	private:
-		void LoadStaticMesh(const aiScene* pScene, StaticMesh& OutMesh);
+		void LoadStaticMesh(const aiScene* pScene, Model& OutModel);
 
+		void BuildMeshlets(StaticMesh& Mesh);
+		
 	};
 } // namespace Luden
