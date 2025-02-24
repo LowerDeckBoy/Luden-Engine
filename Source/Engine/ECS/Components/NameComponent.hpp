@@ -4,10 +4,10 @@
 
 namespace Luden::ecs
 {
-	struct TagComponent
+	struct NameComponent
 	{
-		TagComponent() = default;
-		TagComponent(std::string_view Tag) : Name(Tag) {}
+		NameComponent() = default;
+		NameComponent(std::string_view Name) : Name(Name) {}
 
 		std::string Name = "";
 	};
