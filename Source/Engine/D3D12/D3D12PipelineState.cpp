@@ -13,16 +13,16 @@ namespace Luden
 	{
 		m_Device = pDevice;
 
-		m_RasterizerDesc	= CD3DX12_RASTERIZER_DESC2(D3D12_DEFAULT);
-		m_DepthDesc			= CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
+		m_RasterizerDesc	= CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		m_DepthDesc			= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		m_BlendDesc			= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 
-		m_CullMode = D3D12_CULL_MODE_NONE;
-		m_FillMode = D3D12_FILL_MODE_SOLID;
+		m_CullMode			= D3D12_CULL_MODE_NONE;
+		m_FillMode			= D3D12_FILL_MODE_SOLID;
 
-		m_Topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		m_Topology			= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-		m_Desc.SampleDesc = { 1, 0 };
+		m_Desc.SampleDesc	= { 1, 0 };
 	}
 
 	HRESULT D3D12PipelineStateBuilder::Build(D3D12PipelineState& Pipeline)
@@ -36,14 +36,10 @@ namespace Luden
 		m_Desc.DepthStencilState = m_DepthDesc;
 		m_Desc.BlendState = m_BlendDesc;
 		m_Desc.SampleMask = UINT_MAX;
+		m_Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-		m_Desc.NumRenderTargets = static_cast<uint32>(m_RenderTargetFormats.size());
-
-		for (usize i = 0; i < m_RenderTargetFormats.size(); ++i)
-		{
-			m_Desc.RTVFormats[i] = m_RenderTargetFormats.at(i);
-		}
-
+		m_Desc.DSVFormat = m_DepthFormat;
+		
 		return m_Device->LogicalDevice->CreateGraphicsPipelineState(&m_Desc, IID_PPV_ARGS(&Pipeline.GetHandle()));
 	}
 
@@ -78,7 +74,7 @@ namespace Luden
 		m_FillMode = FillMode;
 	}
 
-	void D3D12PipelineStateBuilder::SetPrimitiveTypeTopology(D3D12_PRIMITIVE_TOPOLOGY Topology)
+	void D3D12PipelineStateBuilder::SetPrimitiveTypeTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology)
 	{
 		m_Topology = Topology;
 	}
@@ -88,18 +84,113 @@ namespace Luden
 		m_Desc.DSVFormat = Format;
 	}
 
+	void D3D12PipelineStateBuilder::SetRenderTargetFormats(const std::vector<DXGI_FORMAT>& Formats)
+	{
+		m_Desc.NumRenderTargets = static_cast<uint32>(Formats.size());
+		
+		for (usize i = 0; i < Formats.size(); ++i)
+		{
+			m_Desc.RTVFormats[i] = Formats.at(i);
+		}
+	}
+
 	void D3D12PipelineStateBuilder::SetSampleCount(uint32 Sample, uint32 Quality)
 	{
 		m_Desc.SampleDesc = { Sample, Quality };
 	}
 
 
-	HRESULT D3D12MeshPipelineState::Build(D3D12PipelineState& /* Pipeline */)
+	D3D12MeshPipelineStateBuilder::D3D12MeshPipelineStateBuilder(D3D12Device* pDevice)
+		: m_Device(pDevice)
 	{
-		
+		m_RasterizerDesc	= CD3DX12_RASTERIZER_DESC2(D3D12_DEFAULT);
+		m_DepthDesc			= CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
+		m_BlendDesc			= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 
-		return E_NOTIMPL;
 	}
 
+	HRESULT D3D12MeshPipelineStateBuilder::Build(D3D12PipelineState& Pipeline)
+	{
+		m_Desc.AS.pShaderBytecode = nullptr;
+		m_Desc.AS.BytecodeLength = 0;
 
+		m_Desc.NodeMask = m_Device->NodeMask;
+		m_Desc.RasterizerState = m_RasterizerDesc;
+
+		m_Desc.DepthStencilState = m_DepthDesc;
+		
+		m_Desc.BlendState = m_BlendDesc;
+
+		m_Desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+
+		m_Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+		m_Desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+		m_Desc.SampleMask = UINT32_MAX;
+		m_Desc.SampleDesc = { 1, 0 };
+
+		auto psoStream = CD3DX12_PIPELINE_MESH_STATE_STREAM(m_Desc);
+
+		D3D12_PIPELINE_STATE_STREAM_DESC streamDesc{};
+		streamDesc.SizeInBytes = sizeof(psoStream);
+		streamDesc.pPipelineStateSubobjectStream = &psoStream;
+
+		return m_Device->LogicalDevice->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&Pipeline.GetHandle()));
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetAmplificationShader(D3D12Shader* pShader)
+	{
+		m_Desc.AS = pShader->Bytecode();
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetMeshShader(D3D12Shader* pShader)
+	{
+		m_Desc.MS = pShader->Bytecode();
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetPixelShader(D3D12Shader* pShader)
+	{
+		m_Desc.PS = pShader->Bytecode();
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetRootSignature(D3D12RootSignature* pRootSignature)
+	{
+		m_Desc.pRootSignature = pRootSignature->GetHandleRaw();
+	}
+
+	void D3D12MeshPipelineStateBuilder::EnableDepth(bool bEnable)
+	{
+		m_DepthDesc.DepthEnable = bEnable;
+		m_RasterizerDesc.DepthClipEnable = bEnable;
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetCullMode(D3D12_CULL_MODE CullMode)
+	{
+		m_RasterizerDesc.CullMode = CullMode;
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetFillMode(D3D12_FILL_MODE FillMode)
+	{
+		m_RasterizerDesc.FillMode = FillMode;
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetPrimitiveTypeTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology)
+	{
+		m_Desc.PrimitiveTopologyType = Topology;
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetDepthFormat(DXGI_FORMAT Format)
+	{
+		m_Desc.DSVFormat = Format;
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetRenderTargetFormats(const std::vector<DXGI_FORMAT>& Formats)
+	{
+		m_Desc.NumRenderTargets = static_cast<uint32>(Formats.size());
+
+		for (usize i = 0; i < Formats.size(); ++i)
+		{
+			m_Desc.RTVFormats[i] = Formats.at(i);
+		}
+	}
 } // namespace Luden
