@@ -54,3 +54,5 @@ bld/
 
 Build/
 vcpkg_installed/
+
+/Assets/Models/
