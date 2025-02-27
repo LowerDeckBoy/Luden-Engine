@@ -1,0 +1,19 @@
+{
+	"scene": {
+		"models": [
+			{
+				"name": "sponza",
+				"path": "../../Assets/Models/san_miguel_gltf/scene.gltf",
+				"transform": {
+					"translation": [ 0.0, 0.0, 0.0 ],
+					"rotation": [ 0.0, 0.0, 0.0 ],
+					"scale": [ 1.0, 1.0, 1.0 ]
+				}
+			}
+		],
+		"lights": [
+
+		]
+
+	}
+}

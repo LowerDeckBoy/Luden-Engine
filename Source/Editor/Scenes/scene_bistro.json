@@ -1,0 +1,28 @@
+{
+	"scene": {
+		"models": [
+			{
+				"name": "Bistro Exterior",
+				"path": "../../Assets/Models/bistro_exterior/scene.gltf",
+				"transform": {
+					"translation": [ 0.0, 0.0, 0.0 ],
+					"rotation": [ 0.0, 0, 0.0 ],
+					"scale": [ 1.0, 1.0, 1.0 ]
+				}
+			},
+			{
+				"name": "Bistro Interior",
+				"path": "../../Assets/Models/bistro_interior/scene.gltf",
+				"transform": {
+					"translation": [ 0.0, 0.0, 0.0 ],
+					"rotation": [ 0.0, 0, 0.0 ],
+					"scale": [ 1.0, 1.0, 1.0 ]
+				}
+			}
+		],
+		"lights": [
+
+		]
+
+	}
+}
