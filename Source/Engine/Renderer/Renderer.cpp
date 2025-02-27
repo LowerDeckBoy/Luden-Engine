@@ -41,6 +41,7 @@ namespace Luden
 	Renderer::~Renderer()
 	{
 		SceneTextures.Scene.Release();
+		D3D12UploadContext::Release();
 	}
 
 	void Renderer::BeginFrame()

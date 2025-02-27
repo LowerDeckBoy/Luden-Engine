@@ -10,8 +10,8 @@ namespace Luden
 	// Verify whether given HRESULT has succeded.
 	// If not, output debug message what and where operation failed.
 	#define VERIFY_D3D12_RESULT(Result, ...) \
-		{ HRESULT result = Result;\
-			Luden::Util::VerifyD3D12Result(result, #Result, std::source_location::current(), __VA_ARGS__); }
+		{ HRESULT hr = Result;\
+			Luden::Util::VerifyD3D12Result(hr, #Result, std::source_location::current(), __VA_ARGS__); }
 
 	// Release custom core::Ref<T> pointers of ID3D12 or IDXGI obejcts.
 	#define SAFE_RELEASE(Ptr) if (Ptr) { Ptr.Reset(); Ptr = nullptr; }

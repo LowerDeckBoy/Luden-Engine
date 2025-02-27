@@ -93,12 +93,17 @@ namespace Luden
 			return m_SwapChainDescriptorHeap;
 		}
 
+		// TODO:
+		void EnterFullScreen();
+		// TODO:
+		void ExitFullScreen();
+
 	private:
 		void CreateSwapChain(D3D12Device* pDevice, D3D12CommandQueue* pCommandQueue, Platform::Window* pWindow);
 
 		void CreateBackBuffers();
 
-		void SetViewport(uint32 Width, uint32 Height);
+		//void SetViewport(uint32 Width, uint32 Height);
 
 		void QueryDisplayInfo();
 

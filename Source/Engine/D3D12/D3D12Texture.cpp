@@ -16,9 +16,9 @@ namespace Luden
 	{
 	}
 
-	D3D12RenderTexture::D3D12RenderTexture(D3D12RHI* pD3D12RHI, TextureDesc Desc)
+	D3D12RenderTexture::D3D12RenderTexture(D3D12Device* pDevice, TextureDesc Desc)
 	{
-		Create(pD3D12RHI, Desc);
+		Create(pDevice, Desc);
 	}
 
 	D3D12RenderTexture::~D3D12RenderTexture()
@@ -26,15 +26,22 @@ namespace Luden
 		Release();
 	}
 
-	void D3D12RenderTexture::Create(D3D12RHI* pD3D12RHI, TextureDesc Desc, std::string_view DebugName)
+	void D3D12RenderTexture::Create(D3D12Device* pDevice, TextureDesc Desc, std::string_view DebugName)
 	{
 		if (IsValid())
 		{
 			Release();
 		}
 
-		m_D3D12RHI = pD3D12RHI;
+		m_Device = pDevice;
 		m_TextureDesc = Desc;
+
+		D3D12_CLEAR_VALUE clearValue{};
+		clearValue.Color[0] = 0.5f;
+		clearValue.Color[1] = 0.2f;
+		clearValue.Color[2] = 0.7f;
+		clearValue.Color[3] = 1.0f;
+		clearValue.Format = Desc.Format;
 
 		D3D12_RESOURCE_DESC1 desc{};
 		desc.Dimension			= D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -62,12 +69,12 @@ namespace Luden
 		}
 		
 		const auto& heapProperties = D3D::HeapPropertiesDefault();
-		VERIFY_D3D12_RESULT(m_D3D12RHI->Device->LogicalDevice->CreateCommittedResource2(
+		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommittedResource2(
 			&heapProperties,
 			D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
 			&desc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
+			&clearValue,
 			nullptr,
 			IID_PPV_ARGS(&m_Resource)));
 
@@ -78,8 +85,8 @@ namespace Luden
 
 		m_UsageFlag = ResourceUsageFlag::Texture2D;
 
-		m_D3D12RHI->CreateShaderResourceView(this, ShaderResourceHandle);
-		m_D3D12RHI->CreateRenderTargetView(this, RenderTargetHandle);
+		m_Device->CreateShaderResourceView(this, ShaderResourceHandle);
+		m_Device->CreateRenderTargetView(this, RenderTargetHandle);
 
 	}
 
@@ -88,7 +95,7 @@ namespace Luden
 		m_TextureDesc.Width = Width;
 		m_TextureDesc.Height = Height;
 
-		Create(m_D3D12RHI, m_TextureDesc);
+		Create(m_Device, m_TextureDesc);
 	}
 
 } // namespace Luden

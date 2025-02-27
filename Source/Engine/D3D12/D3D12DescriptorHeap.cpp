@@ -88,11 +88,14 @@ namespace Luden
 
 		m_DescriptorType = DescriptorType;
 
-		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandlePtr()); //  + m_DescriptorIncrementSize
+		//m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandlePtr()); //  + m_DescriptorIncrementSize
+		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr) ; //  
+		//m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr); //  
 
 		if (bIsShaderVisible)
 		{
-			m_AvailableGpuPtr = static_cast<uint64>(GetGpuStartHandlePtr());
+			//m_AvailableGpuPtr = static_cast<uint64>(GetGpuStartHandle().ptr) + m_DescriptorIncrementSize;
+			m_AvailableGpuPtr = static_cast<uint64>(GetGpuStartHandle().ptr);
 		}
 	}
 
@@ -100,7 +103,7 @@ namespace Luden
 	{
 		if (!CanAllocate())
 		{
-			LOG_WARNING("Current Descriptor is full and can't allocated no more!");
+			LOG_WARNING("Current Descriptor is full and can't allocate anymore!");
 
 			return;
 		}
@@ -114,14 +117,17 @@ namespace Luden
 
 		Descriptor.DescriptorType = m_DescriptorType;
 
-		Descriptor.CpuHandle = (D3D12_CPU_DESCRIPTOR_HANDLE)(m_AvailableCpuPtr + (static_cast<uint64>(Count * m_DescriptorIncrementSize)));
+		m_AvailableCpuPtr += (static_cast<uint64>(Count * m_DescriptorIncrementSize));
+		Descriptor.CpuHandle = (D3D12_CPU_DESCRIPTOR_HANDLE)(m_AvailableCpuPtr);
 		Descriptor.Index = GetIndex(Descriptor);
 
 		if (bIsShaderVisible)
 		{
 			Descriptor.bIsShaderVisible = true;
 
-			Descriptor.GpuHandle = (D3D12_GPU_DESCRIPTOR_HANDLE)(m_AvailableGpuPtr + (static_cast<uint64>(Count * m_DescriptorIncrementSize)));
+			m_AvailableGpuPtr += (static_cast<uint64>(Count * m_DescriptorIncrementSize));
+			Descriptor.GpuHandle = (D3D12_GPU_DESCRIPTOR_HANDLE)(m_AvailableGpuPtr);
+			
 		}
 	}
 
@@ -160,6 +166,26 @@ namespace Luden
 	uint32 D3D12DescriptorHeap::GetIndexFromOffset(D3D12Descriptor& Descriptor, uint32 Offset)
 	{
 		return static_cast<uint32>((Descriptor.CpuHandle.ptr + (usize)(Offset * m_DescriptorIncrementSize) - GetCpuStartHandlePtr()) / m_DescriptorIncrementSize);
+	}
+
+	D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorHeap::GetCpuStartHandle() const
+	{
+		return m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorHeap::GetGpuStartHandle() const
+	{
+		return m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	}
+
+	uint64 D3D12DescriptorHeap::GetCpuStartHandlePtr() const
+	{
+		return m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr;
+	}
+
+	uint64 D3D12DescriptorHeap::GetGpuStartHandlePtr() const
+	{
+		return m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
 	}
 } // namespace Luden
 	

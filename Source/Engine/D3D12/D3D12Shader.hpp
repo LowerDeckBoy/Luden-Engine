@@ -22,13 +22,19 @@ namespace Luden
 	{
 	public:
 		D3D12Shader() = default;
+		D3D12Shader(void* pData, usize Size, ShaderStageFlag ShaderStage)
+			:
+			Data(pData),
+			Size(Size),
+			ShaderStage(ShaderStage)
+		{
+
+		}
 		~D3D12Shader()
 		{
 			if (Data)
 			{
-				delete Data;
 				Data = nullptr;
-
 				Size = 0;
 			}
 		}
@@ -37,6 +43,8 @@ namespace Luden
 		{
 			return { Data, Size };
 		}
+
+		const char* ShaderName = "";
 
 		void* Data = nullptr;
 		usize Size = 0;

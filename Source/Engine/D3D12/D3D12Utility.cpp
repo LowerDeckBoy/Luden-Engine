@@ -35,11 +35,11 @@ namespace Luden
 			/* 2 */ Source.column(),
 			/* 3 */ Source.function_name());
 
-		std::string message = std::format("{}\n{}\n\n{}", hResultError, ResultString, where);
+		std::string message = std::format("{0}\n{1}\n\n{2}", hResultError, ResultString, where);
 
 		if (!Message.empty())
 		{
-			message.insert(0, std::format("{}\n\n", Message.data()));
+			message.insert(0, std::format("{0}\n\n", Message.data()));
 		}
 
 		::MessageBoxA(nullptr, message.data(), "D3D12 Error", MB_OK);
@@ -59,8 +59,6 @@ namespace Luden
 
 		if (DebugName.empty())
 		{
-			LOG_WARNING("Trying to set empty name for D3D12 object!");
-
 			return;
 		}
 

@@ -52,10 +52,10 @@ namespace Luden
 		desc.Width			= pWindow->Width;
 		desc.Height			= pWindow->Height;
 		desc.AlphaMode		= DXGI_ALPHA_MODE_UNSPECIFIED;
-		desc.Scaling		= DXGI_SCALING_STRETCH;
+		desc.Scaling		= DXGI_SCALING_NONE;
 		desc.Stereo			= FALSE;
 		desc.SampleDesc		= { 1, 0 };
-		desc.Flags			= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+		desc.Flags			= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
 		Ref<IDXGISwapChain1> swapchain;
 		VERIFY_D3D12_RESULT(pDevice->ParentAdapter->Factory->CreateSwapChainForHwnd(
@@ -70,12 +70,12 @@ namespace Luden
 		swapchain.As(m_SwapChain);
 		SAFE_RELEASE(swapchain);
 
+		VERIFY_D3D12_RESULT(m_SwapChain->SetMaximumFrameLatency(Config::Get().NumBackBuffers));
 		VERIFY_D3D12_RESULT(pDevice->ParentAdapter->Factory->MakeWindowAssociation(pWindow->Handle, DXGI_MWA_NO_ALT_ENTER));
 
 		m_SwapChainViewport.SetDimensions(desc.Width, desc.Height);
 
 		m_SwapChainDescriptorHeap.Create(pDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, Config::Get().NumBackBuffers, false);
-
 		CreateBackBuffers();
 
 		BackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
@@ -103,8 +103,16 @@ namespace Luden
 
 	void D3D12SwapChain::Present(uint32 SyncInterval)
 	{
-		VERIFY_D3D12_RESULT(m_SwapChain->Present(SyncInterval, (SyncInterval == 0) ? DXGI_PRESENT_ALLOW_TEARING : 0));
-
+		//VERIFY_D3D12_RESULT();
+		HRESULT present = m_SwapChain->Present(SyncInterval, (SyncInterval == 0) ? DXGI_PRESENT_ALLOW_TEARING : 0);
+		if (present == DXGI_ERROR_DEVICE_REMOVED)
+		{
+			VERIFY_D3D12_RESULT(m_ParentDevice->LogicalDevice->GetDeviceRemovedReason());
+		}
+		else
+		{
+			VERIFY_D3D12_RESULT(present);
+		}
 		//BackBufferIndex = (BackBufferIndex + 1) % Config::Get().NumBackBuffers;
 	}
 
@@ -115,7 +123,9 @@ namespace Luden
 			backbuffer.Release();
 		}
 
-		VERIFY_D3D12_RESULT(m_SwapChain->ResizeBuffers(Config::Get().NumBackBuffers, Width, Height, m_SwapChainFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING));
+		m_SwapChainViewport.SetDimensions(Width, Height);
+
+		VERIFY_D3D12_RESULT(m_SwapChain->ResizeBuffers(Config::Get().NumBackBuffers, Width, Height, m_SwapChainFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT));
 
 		CreateBackBuffers();
 
@@ -136,7 +146,7 @@ namespace Luden
 
 		Ref<IDXGIOutput> output;
 		VERIFY_D3D12_RESULT(m_ParentDevice->ParentAdapter->Adapter->EnumOutputs(0, &output), "Failed to enumerate DXGI Outputs!");
-
+		
 		output.As(m_DisplayOutput);
 		VERIFY_D3D12_RESULT(m_DisplayOutput->GetDesc1(&m_DisplayOutputDesc));
 	}

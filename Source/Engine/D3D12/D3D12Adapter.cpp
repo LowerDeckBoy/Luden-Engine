@@ -1,3 +1,4 @@
+#include "Config.hpp"
 #include "D3D12Adapter.hpp"
 #include "D3D12Utility.hpp"
 #include <Core/Logger.hpp>
@@ -7,12 +8,20 @@ namespace Luden
 {
 	D3D12Adapter::D3D12Adapter()
 	{
+		uint32 dxgiFactoryFlag = 0;
+		if (Config::Get().bEnableDebugLayer)
+		{
+			VERIFY_D3D12_RESULT(D3D12GetDebugInterface(IID_PPV_ARGS(&m_DebugDevice)));
+			m_DebugDevice->EnableDebugLayer();
 
-		VERIFY_D3D12_RESULT(D3D12GetDebugInterface(IID_PPV_ARGS(&m_DebugDevice)));
-		m_DebugDevice->EnableDebugLayer();
-		m_DebugDevice->SetEnableGPUBasedValidation(FALSE);
-
-		VERIFY_D3D12_RESULT(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&Factory)));
+			dxgiFactoryFlag |= DXGI_CREATE_FACTORY_DEBUG;
+		}
+		else
+		{
+			LOG_DEBUG("D3D12 Debug Layer is disabled.");
+		}
+		
+		VERIFY_D3D12_RESULT(CreateDXGIFactory2(dxgiFactoryFlag, IID_PPV_ARGS(&Factory)));
 
 		for (uint32 i = 0;
 			Factory->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&Adapter)) != DXGI_ERROR_NOT_FOUND;
@@ -27,7 +36,7 @@ namespace Luden
 		}
 
 		const SIZE_T vram = static_cast<SIZE_T>(Desc.DedicatedVideoMemory / 1024L / 1024L / 1000L);
-		LOG_INFO(L"GPU: {} {}GB", Desc.Description, vram);
+		LOG_INFO(L"GPU: {0} {1} GB.", Desc.Description, vram);
 
 	}
 

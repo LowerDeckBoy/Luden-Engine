@@ -8,6 +8,11 @@ namespace Luden
         Release();
     }
 
+    uint64 D3D12Resource::GetGpuAddress()
+    {
+        return GetHandleRaw()->GetGPUVirtualAddress();
+    }
+
     void D3D12Resource::Release()
     {
         SAFE_RELEASE(m_Resource);

@@ -31,9 +31,12 @@ namespace Luden
 			Index		= Other.Index;
 		}
 
+		//D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle;
+		//D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE CpuHandle;
 		CD3DX12_GPU_DESCRIPTOR_HANDLE GpuHandle;
 
+		// Index of this Descriptor inside of parent Heap.
 		uint32 Index = INVALID_DESCRIPTOR_INDEX;
 
 		constexpr bool IsValid() const
@@ -74,25 +77,15 @@ namespace Luden
 		uint32 GetIndex(D3D12Descriptor& Descriptor);
 		uint32 GetIndexFromOffset(D3D12Descriptor& Descriptor, uint32 Offset);
 
-		D3D12_CPU_DESCRIPTOR_HANDLE GetCpuStartHandle() const
-		{
-			return m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		}
+		D3D12_CPU_DESCRIPTOR_HANDLE GetCpuStartHandle() const;
+		
 
-		D3D12_GPU_DESCRIPTOR_HANDLE GetGpuStartHandle() const
-		{
-			return m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-		}
+		D3D12_GPU_DESCRIPTOR_HANDLE GetGpuStartHandle() const;
 
-		uint64 GetCpuStartHandlePtr() const
-		{
-			return m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr;
-		}
-
-		uint64 GetGpuStartHandlePtr() const
-		{
-			return m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr;
-		}
+		uint64 GetCpuStartHandlePtr() const;
+		
+		uint64 GetGpuStartHandlePtr() const;
+		
 
 		uint32 GetDescriptorIncrementSize() const
 		{

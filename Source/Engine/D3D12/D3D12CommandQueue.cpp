@@ -7,11 +7,9 @@
 
 namespace Luden
 {
-	D3D12Fence::D3D12Fence(D3D12Device* pDevice)
+	D3D12Fence::D3D12Fence(D3D12Device* pDevice, std::string_view DebugName)
 	{
-		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
-		FenceEvent = ::CreateEventA(nullptr, false, false, nullptr);
-		assert(FenceEvent);
+		Create(pDevice, DebugName);
 	}
 
 	D3D12Fence::~D3D12Fence()
@@ -20,24 +18,34 @@ namespace Luden
 		::CloseHandle(FenceEvent);
 	}
 
-	//void D3D12Fence::Signal(uint64 ValueToSignal) const
-	//{
-	//	VERIFY_D3D12_RESULT(Fence->Signal(ValueToSignal));
-	//}
+	void D3D12Fence::Create(D3D12Device* pDevice, std::string_view DebugName)
+	{
+		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
+		FenceEvent = ::CreateEventA(nullptr, false, false, nullptr);
+		assert(FenceEvent);
+		
+		NAME_D3D12_OBJECT(Fence.Get(), DebugName);
+	}
+
+	void D3D12Fence::Signal(uint64 ValueToSignal) const
+	{
+		VERIFY_D3D12_RESULT(Fence->Signal(ValueToSignal));
+	}
 
 	void D3D12Fence::Wait(uint64 Value)
 	{
+		Fence->Signal(Value);
 		auto completed = Fence->GetCompletedValue();
 		if (completed < Value)
 		{
-			::HANDLE event = ::CreateEventA(nullptr, false, false, "Fence Wait Event");
+			::HANDLE event = ::CreateEventA(nullptr, false, false, nullptr);
 			//VERIFY_D3D12_RESULT(Fence->SetEventOnCompletion(Value, FenceEvent));
 
 			if (event)
 			{
 				VERIFY_D3D12_RESULT(Fence->SetEventOnCompletion(Value, event));
 
-				if (::WaitForSingleObject(event, 5'000'000) == WAIT_TIMEOUT)
+				if (::WaitForSingleObject(event, 5'000) == WAIT_TIMEOUT)
 				{
 					LOG_FATAL("GPU TIMEOUT!");
 				}
@@ -46,7 +54,7 @@ namespace Luden
 		}
 		
 	}
-
+	
 	D3D12CommandQueue::D3D12CommandQueue(D3D12Device* pDevice, D3D12_COMMAND_LIST_TYPE QueueType)
 	{
 		D3D12_COMMAND_QUEUE_DESC desc{};
@@ -92,11 +100,22 @@ namespace Luden
 				VERIFY_D3D12_RESULT(list->Close());
 			}
 
-			commandLists.push_back(list->GetHandleRaw());
+			commandLists.emplace_back(list->GetHandleRaw());
 		}
 
 		m_CommandQueue->ExecuteCommandLists(static_cast<uint32>(commandLists.size()), commandLists.data());
 
+	}
+
+	void D3D12CommandQueue::Execute(D3D12CommandList* pCommandList)
+	{
+		if (pCommandList->IsOpen())
+		{
+			VERIFY_D3D12_RESULT(pCommandList->Close());
+		}
+
+		ID3D12CommandList* commandList[1] = { pCommandList->GetHandleRaw() };
+		m_CommandQueue->ExecuteCommandLists(1, &commandList[0]);
 	}
 
 	void D3D12CommandQueue::Signal(D3D12Fence* pFence, uint64 ValueToSignal)

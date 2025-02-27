@@ -35,9 +35,6 @@ namespace Luden
 
 		void Create(D3D12Device* pDevice, TextureDesc Desc);
 
-		void CreateShaderResource();
-		void CreateRenderTarget(D3D12DescriptorHeap* pDescriptorHeap);
-
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor RenderTargetHandle;
 		D3D12Descriptor DepthStencilHandle;
@@ -51,10 +48,10 @@ namespace Luden
 	{
 	public:
 		D3D12RenderTexture() = default;
-		D3D12RenderTexture(D3D12RHI* pD3D12RHI, TextureDesc Desc);
+		D3D12RenderTexture(D3D12Device* pDevice, TextureDesc Desc);
 		~D3D12RenderTexture();
 
-		void Create(D3D12RHI* pD3D12RHI, TextureDesc Desc, std::string_view DebugName = "");
+		void Create(D3D12Device* pDevice, TextureDesc Desc, std::string_view DebugName = "");
 
 		void Resize(uint32 Width, uint32 Height);
 
@@ -67,7 +64,7 @@ namespace Luden
 	private:
 		TextureDesc m_TextureDesc{};
 
-		D3D12RHI* m_D3D12RHI;
+		D3D12Device* m_Device;
 
 	};
 } // namespace Luden

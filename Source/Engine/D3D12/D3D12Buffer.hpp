@@ -1,13 +1,13 @@
 #pragma once
 
+#include "D3D12DescriptorHeap.hpp"
 #include "D3D12Resource.hpp"
 #include <Core/Types.hpp>
+#include <vector>
 
 namespace Luden
 {
-	class D3D12RHI;
 	class D3D12Device;
-	class D3D12Descriptor;
 	class D3D12Viewport;
 
 	enum class BufferUsageFlag
@@ -23,7 +23,7 @@ namespace Luden
 	struct BufferDesc
 	{
 		BufferUsageFlag BufferUsage;
-		void*	pData;
+		void*	Data;
 		uint32	NumElements;
 		uint32	Stride;
 
@@ -32,7 +32,7 @@ namespace Luden
 		uint64	Size;
 		
 		// By default all buffers are considered for bindless usage.
-		bool bBindless = true;
+		bool	bBindless = true;
 
 		// Optional
 		std::string_view Name = "";
@@ -47,17 +47,44 @@ namespace Luden
 
 		void Create(D3D12Device* pDevice, BufferDesc Desc);
 
+		D3D12Descriptor ShaderResourceView;
+
+		BufferDesc& GetBufferDesc()
+		{
+			return m_BufferDesc;
+		}
+
 	private:
 		BufferDesc m_BufferDesc{};
 		
 	};
 
-	template<typename T>
+	
 	class D3D12ConstantBuffer
 	{
 	public:
+		D3D12ConstantBuffer() = default;
+		D3D12ConstantBuffer(D3D12Device* pDevice, void* pData, usize Size);
+		~D3D12ConstantBuffer();
+
+		void Create(D3D12Device* pDevice, void* pData, usize Size);
+
+		// TODO: needs improvement
+		void Update(void* pUpdate);
+
+		Ref<ID3D12Resource>& GetBuffer();
+
+		void Release();
+
+		std::vector<uint8_t*> pDataBegin{};
 
 	private:
+		std::vector<Ref<ID3D12Resource>> m_Buffers;
+		std::vector<void*> m_Data{};
+		usize m_Size = 0;
+	
+		D3D12Device* m_Device;
+
 
 	};
 
@@ -65,11 +92,11 @@ namespace Luden
 	{
 	public:
 		D3D12DepthBuffer();
-		D3D12DepthBuffer(D3D12RHI* pD3D12RHI, D3D12Viewport* pViewport, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
+		D3D12DepthBuffer(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
 		~D3D12DepthBuffer();
 
-		void Create(D3D12RHI* pD3D12RHI, D3D12Viewport* pViewport, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
-		void Create(D3D12RHI* pD3D12RHI, uint32 Width, uint32 Height, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
+		void Create(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
+		void Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
 
 		void Resize(uint32 Width, uint32 Height);
 
@@ -77,8 +104,13 @@ namespace Luden
 		D3D12Descriptor DepthStencilHandle;
 		
 	private:
-		D3D12RHI* m_D3D12RHI = nullptr;
+		D3D12Device* m_Device = nullptr;
 		DXGI_FORMAT m_Format = DXGI_FORMAT_D32_FLOAT;
 
 	};
+
+	inline D3D12_INDEX_BUFFER_VIEW GetIndexView()
+	{
+		return D3D12_INDEX_BUFFER_VIEW();
+	}
 } // namespace Luden

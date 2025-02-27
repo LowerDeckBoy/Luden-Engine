@@ -3,6 +3,8 @@
 #include "Config.hpp"
 
 #include "D3D12Adapter.hpp"
+#include "D3D12DescriptorHeap.hpp"
+#include "D3D12Buffer.hpp"
 
 namespace Luden
 {
@@ -19,7 +21,28 @@ namespace Luden
 		Ref<D3D12MA::Allocator> D3D12MemoryAllocator;
 
 		uint32 NodeMask = 0;
+
+		Ref<ID3D12Device14> GetDevice();
+
+		void QueryDeviceFeatures();
 		
+		uint32 CreateBuffer(BufferDesc Desc);
+		uint32 CreateConstantBuffer(void* pData, usize Size);
+
+		std::vector<D3D12Buffer*> Buffers;
+		std::vector<D3D12ConstantBuffer*> ConstantBuffers;
+
+		// Create SRV for Texture usage.
+		void CreateShaderResourceView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 NumMips = 1, uint32 Count = 1);
+		// Create SRV for Buffer usage.
+		void CreateShaderResourceView(D3D12Buffer* pBuffer);
+		void CreateRenderTargetView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 Count = 1);
+		void CreateDepthStencilView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
+
+		D3D12DescriptorHeap* ShaderResourceHeap;
+		D3D12DescriptorHeap* RenderTargetHeap;
+		D3D12DescriptorHeap* DepthStencilHeap;
+
 	private:
 		Ref<IDXGIDebug1>		m_DXGIDebug;
 

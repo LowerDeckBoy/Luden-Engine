@@ -40,6 +40,7 @@ namespace Luden
 
 		void AddConstants(uint32 Count, uint32 RegisterSlot, uint32 RegisterSpace = 0, D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
 		void AddCBV(uint32 RegisterSlot, uint32 RegisterSpace = 0, D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
+		void AddSRV(uint32 RegisterSlot, uint32 RegisterSpace = 0, D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
 
 		void AddStaticSampler(uint32 RegisterSlot, uint32 RegisterSpace, D3D12_FILTER Filter, D3D12_TEXTURE_ADDRESS_MODE AddressMode, D3D12_COMPARISON_FUNC ComparisonFunc);
 

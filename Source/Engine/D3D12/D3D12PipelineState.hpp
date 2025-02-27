@@ -5,15 +5,14 @@
 #include <Core/RefPtr.hpp>
 #include <D3D12AgilitySDK/d3dx12/d3dx12.h>
 
+/*
+	For now there are two pipelines available: vertex and mesh.
+	Vertex pipeline will likely be removed at some later stage.
+*/
+
 namespace Luden
 {
 	class D3D12Device;
-
-	//enum class PipelineType
-	//{
-	//	Graphics,
-	//	Compute
-	//};
 
 	class D3D12PipelineState
 	{
@@ -39,8 +38,15 @@ namespace Luden
 		void SetName(std::string_view Name);
 
 		Ref<ID3D12PipelineState> m_PipelineState;
-	private:
+
+	protected:
+
 		PipelineType m_PipelineType;
+
+	};
+
+	class D3D12MeshPipelineState
+	{
 
 	};
 

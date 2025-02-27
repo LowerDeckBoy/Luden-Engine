@@ -18,6 +18,7 @@ namespace Luden
 		desc.Desc_1_2.NumParameters		= static_cast<uint32>(m_Parameters.size());
 		desc.Desc_1_2.pStaticSamplers	= m_StaticSamplers.data();
 		desc.Desc_1_2.NumStaticSamplers = static_cast<uint32>(m_StaticSamplers.size());
+		desc.Desc_1_2.Flags				= m_RootFlags;
 
 		Ref<ID3DBlob> signature;
 		Ref<ID3DBlob> error;
@@ -54,6 +55,18 @@ namespace Luden
 	{
 		D3D12_ROOT_PARAMETER1 parameter{};
 		parameter.ParameterType				= D3D12_ROOT_PARAMETER_TYPE_CBV;
+		parameter.Descriptor.ShaderRegister = RegisterSlot;
+		parameter.Descriptor.RegisterSpace	= RegisterSpace;
+		parameter.Descriptor.Flags			= D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC;
+		parameter.ShaderVisibility			= Visibility;
+
+		m_Parameters.emplace_back(parameter);
+	}
+
+	void D3D12RootSignature::AddSRV(uint32 RegisterSlot, uint32 RegisterSpace, D3D12_SHADER_VISIBILITY Visibility)
+	{
+		D3D12_ROOT_PARAMETER1 parameter{};
+		parameter.ParameterType				= D3D12_ROOT_PARAMETER_TYPE_SRV;
 		parameter.Descriptor.ShaderRegister = RegisterSlot;
 		parameter.Descriptor.RegisterSpace	= RegisterSpace;
 		parameter.Descriptor.Flags			= D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC;

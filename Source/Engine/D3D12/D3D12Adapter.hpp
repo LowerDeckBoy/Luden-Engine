@@ -19,11 +19,15 @@ namespace Luden
 		Ref<IDXGIFactory7> Factory;
 		Ref<IDXGIAdapter4> Adapter;
 
+		Ref<ID3D12Device14> LogicalDevice;
+
+		void CreateFactory();
+		void CreateAdapter();
+		void CreateDevice();
+
 		DXGI_ADAPTER_DESC3 Desc{};
 		
 		DXGI_QUERY_VIDEO_MEMORY_INFO MemoryInfo{};
-		DXGI_QUERY_VIDEO_MEMORY_INFO LocalMemoryInfo{};
-		DXGI_QUERY_VIDEO_MEMORY_INFO NonLocalMemoryInfo{};
 		uint64 AvailableMemory = 0;
 
 		// Minimal level of shader model that is required by D3D12 Render Hardware Interface

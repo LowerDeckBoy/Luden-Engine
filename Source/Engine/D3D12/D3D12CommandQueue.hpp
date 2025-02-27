@@ -2,6 +2,7 @@
 
 #include <Core/RefPtr.hpp>
 #include <Core/Types.hpp>
+#include <Core/String.hpp>
 #include <D3D12AgilitySDK/d3d12.h>
 #include <vector>
 
@@ -14,17 +15,19 @@ namespace Luden
 	{
 	public:
 		D3D12Fence() = default;
-		D3D12Fence(D3D12Device* pDevice);
+		D3D12Fence(D3D12Device* pDevice, std::string_view DebugName = "");
 		~D3D12Fence();
 
-		Ref<ID3D12Fence1> Fence;
+		Ref<ID3D12Fence> Fence;
 		::HANDLE FenceEvent{};
 		
-		//void Signal(uint64 ValueToSignal) const;
+		void Signal(uint64 ValueToSignal) const;
 		void Wait(uint64 Value);
 
 		uint64 CurrentValue = 0;
 		uint64 LastSignaledValue = 0;
+
+		void Create(D3D12Device* pDevice, std::string_view DebugName = "");
 	};
 
 	class D3D12CommandQueue
@@ -33,18 +36,14 @@ namespace Luden
 		D3D12CommandQueue(D3D12Device* pDevice, D3D12_COMMAND_LIST_TYPE QueueType);
 		~D3D12CommandQueue();
 
-		Ref<ID3D12CommandQueue>& GetHandle()
-		{
-			return m_CommandQueue;
-		}
-
-		ID3D12CommandQueue* GetHandleRaw()
-		{
-			return m_CommandQueue.Get();
-		}
+		Ref<ID3D12CommandQueue>&	GetHandle()		{ return m_CommandQueue; }
+		ID3D12CommandQueue*			GetHandleRaw()	{ return m_CommandQueue.Get();	}
 
 		// Close (if not closed already) and Execute each passed Command Lists.
 		void Execute(const std::vector<D3D12CommandList*>& CommandLists);
+
+		// Close (if not closed already) and execute single Command List.
+		void Execute(D3D12CommandList* pCommandList);
 
 		void Signal(D3D12Fence* pFence, uint64 ValueToSignal);
 		// Signal this Queue Fence.

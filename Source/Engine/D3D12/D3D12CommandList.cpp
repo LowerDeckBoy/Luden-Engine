@@ -5,6 +5,7 @@
 #include "D3D12Resource.hpp"
 #include "D3D12SwapChain.hpp"
 #include "D3D12CommandList.hpp"
+#include <D3D12AgilitySDK/d3dx12/d3dx12.h>
 #include "D3D12Utility.hpp"
 #include <Core/Logger.hpp>
 
@@ -86,6 +87,12 @@ namespace Luden
 		return hResult;
 	}
 
+	void D3D12CommandList::Flush()
+	{
+		//VERIFY_D3D12_RESULT(m_CommandAllocator->Reset());
+		VERIFY_D3D12_RESULT(m_GraphicsCommandList->Reset(m_CommandAllocator.Get(), nullptr));
+	}
+
 	void D3D12CommandList::SetDescriptorHeap(D3D12DescriptorHeap* pDescriptorHeap)
 	{
 		ID3D12DescriptorHeap* heaps[1] = { pDescriptorHeap->GetHandleRaw() };
@@ -117,6 +124,26 @@ namespace Luden
 		m_GraphicsCommandList->CopyResource(pDestination->GetHandleRaw(), pSource->GetHandleRaw());
 	}
 
+	void D3D12CommandList::CopyBufferToBuffer(D3D12Buffer* pSource, D3D12Buffer* pDestination)
+	{
+		D3D12_SUBRESOURCE_DATA subresource{};
+		subresource.pData		= pDestination->GetBufferDesc().Data;
+		subresource.RowPitch	= static_cast<LONG_PTR>(pDestination->GetBufferDesc().Size);
+		subresource.SlicePitch	= subresource.RowPitch;
+
+		::UpdateSubresources(GetHandleRaw(), pDestination->GetHandleRaw(), pSource->GetHandleRaw(), 0, 0, 1, &subresource);
+	}
+
+	void D3D12CommandList::CopyBufferToBuffer(D3D12Resource* pSource, D3D12Resource* pDestination, void* pData, uint64 Size)
+	{
+		D3D12_SUBRESOURCE_DATA subresource{};
+		subresource.pData = pData;
+		subresource.RowPitch = static_cast<LONG_PTR>(Size);
+		subresource.SlicePitch = subresource.RowPitch;
+
+		::UpdateSubresources(GetHandleRaw(), pDestination->GetHandleRaw(), pSource->GetHandleRaw(), 0, 0, 1, &subresource);
+	}
+
 	void D3D12CommandList::SetRootSignature(D3D12RootSignature* pRootSignature)
 	{
 		if (pRootSignature->GetPipelineType() == PipelineType::Graphics)
@@ -132,6 +159,81 @@ namespace Luden
 	void D3D12CommandList::SetPipelineState(D3D12PipelineState* pPipelineState)
 	{
 		m_GraphicsCommandList->SetPipelineState(pPipelineState->GetHandleRaw());
+	}
+
+	void D3D12CommandList::ClearDepthStencilView(D3D12Descriptor& DepthStencilView)
+	{
+		m_GraphicsCommandList->ClearDepthStencilView(DepthStencilView.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, D3D12_MAX_DEPTH, 0, 0, nullptr);
+	}
+
+	void D3D12CommandList::SetRenderTarget(D3D12Descriptor& RenderTargetView)
+	{
+		m_GraphicsCommandList->OMSetRenderTargets(1, &RenderTargetView.CpuHandle, false, nullptr);
+	}
+
+	void D3D12CommandList::SetRenderTarget(D3D12Descriptor& RenderTargetView, D3D12Descriptor& DepthStencilView)
+	{
+		m_GraphicsCommandList->OMSetRenderTargets(1, &RenderTargetView.CpuHandle, false, &DepthStencilView.CpuHandle);
+	}
+
+	void D3D12CommandList::ClearRenderTarget(D3D12Descriptor& RenderTargetView, std::array<float, 4> ClearColor)
+	{
+		m_GraphicsCommandList->ClearRenderTargetView(RenderTargetView.CpuHandle, ClearColor.data(), 0, nullptr);
+	}
+
+	void D3D12CommandList::PushConstants(uint32 Slot, uint32 Count, void* pData, uint32 Offset)
+	{
+		if (m_CommandListType == D3D12_COMMAND_LIST_TYPE_DIRECT)
+		{
+			m_GraphicsCommandList->SetGraphicsRoot32BitConstants(Slot, Count, pData, Offset);
+		}
+		else if (m_CommandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+		{
+			m_GraphicsCommandList->SetComputeRoot32BitConstants(Slot, Count, pData, Offset);
+		}
+	}
+
+	void D3D12CommandList::PushRootSRV(uint32 Slot, uint64 Address)
+	{
+		m_GraphicsCommandList->SetGraphicsRootShaderResourceView(Slot, (D3D12_GPU_VIRTUAL_ADDRESS)Address);
+	}
+
+	void D3D12CommandList::DispatchMesh(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ)
+	{
+		m_GraphicsCommandList->DispatchMesh(DispatchThreadX, DispatchThreadY, DispatchThreadZ);
+	}
+
+	void D3D12CommandList::DrawIndexed(uint32 IndexCount, uint32 BaseIndex, uint32 BaseVertex)
+	{
+		m_GraphicsCommandList->DrawIndexedInstanced(IndexCount, 1, BaseIndex, BaseVertex, 0);
+	}
+
+	void D3D12CommandList::SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW IndexBufferView)
+	{
+		m_GraphicsCommandList->IASetIndexBuffer(&IndexBufferView);
+	}
+
+	void D3D12CommandList::SetIndexBuffer(D3D12Buffer* pIndexBuffer)
+	{
+		auto view = D3D12_INDEX_BUFFER_VIEW(
+			pIndexBuffer->GetHandleRaw()->GetGPUVirtualAddress(),
+			static_cast<uint32>(pIndexBuffer->GetBufferDesc().Size),
+			DXGI_FORMAT_R32_UINT);
+		m_GraphicsCommandList->IASetIndexBuffer(&view);
+	}
+
+	void D3D12CommandList::SetConstantBuffer(uint32 RegisterSlot, D3D12ConstantBuffer* pConstantBuffer)
+	{
+		const auto address = pConstantBuffer->GetBuffer()->GetGPUVirtualAddress();
+
+		if (m_CommandListType == D3D12_COMMAND_LIST_TYPE_DIRECT)
+		{
+			m_GraphicsCommandList->SetGraphicsRootConstantBufferView(RegisterSlot, address);
+		}
+		else if (m_CommandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+		{
+			m_GraphicsCommandList->SetComputeRootConstantBufferView(RegisterSlot, address);
+		}
 	}
 
 } // namespace Luden

@@ -45,6 +45,8 @@ namespace Luden
 			return m_CurrentState;
 		}
 
+		uint64 GetGpuAddress();
+
 		// Release Resource, it's Allocation and clear all states to default ones.
 		void Release();
 

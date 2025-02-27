@@ -14,42 +14,52 @@ namespace Luden
 
 		SwapChain = new D3D12SwapChain(Device, GraphicsQueue, m_ParentWindow);
 
-		FrameFence = new D3D12Fence(Device);
-		NAME_D3D12_OBJECT(FrameFence->Fence.Get(), "D3D12 Frame Fence");
-
-		ShaderResourceHeap	= new D3D12DescriptorHeap(Device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1'000);
-		RenderTargetHeap	= new D3D12DescriptorHeap(Device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 128);
-		DepthStencilHeap	= new D3D12DescriptorHeap(Device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 64);
+		SceneDepthBuffer = new D3D12DepthBuffer(Device, &SwapChain->GetSwapChainViewport());
 
 		Frames.resize(Config::Get().NumBackBuffers);
-		FenceValue = 0;
-		FenceEvent = ::CreateEventA(nullptr, FALSE, FALSE, "Frame Fence Event");
 
-		assert(FenceEvent);
 		for (auto& frame : Frames)
 		{
 			frame.GraphicsCommandList = new D3D12CommandList(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
-			frame.FenceValue = 0;
+		}
+
+		// Frame sync
+		{
+			FrameSync.GraphicsFence.Create(Device, "D3D12 Frame Sync Graphics Fence");
+			FrameSync.Event = ::CreateEvent(nullptr, FALSE, FALSE, L"D3D12 Frame Sync Graphics Fence Event");
+			FrameSync.CurrentValues.resize(Config::Get().NumBackBuffers, 0);
+			FrameSync.SignaledValues.resize(Config::Get().NumBackBuffers, 0);
+			++FrameSync.CurrentValues.at(0);
 		}
 
 		bInitialized = true;
+
+		D3D12UploadContext::Create(this);
+
 	}
 
 	D3D12RHI::~D3D12RHI()
 	{
+		for (auto buffer : Device->Buffers)
+		{
+			//buffer->Release();
+			delete buffer;
+		}
+
+		for (auto buffer : Device->ConstantBuffers)
+		{
+			delete buffer;
+		}
+
 		for (auto& frame : Frames)
 		{
 			delete frame.GraphicsCommandList;
-
-			frame.FenceValue = 0;
 		}
 
-		delete ShaderResourceHeap;
-		delete RenderTargetHeap;
-		delete DepthStencilHeap;
+		SAFE_RELEASE(FrameSync.GraphicsFence.Fence);
 
-		delete FrameFence;
+		delete SceneDepthBuffer;
 
 		delete GraphicsQueue;
 		delete SwapChain;
@@ -59,33 +69,40 @@ namespace Luden
 
 	void D3D12RHI::Wait()
 	{
-		//GraphicsQueue->Signal(FrameFence, Frames.at(BackBufferIndex).FenceValue);
-		//FrameFence->Wait(Frames.at(BackBufferIndex).FenceValue);
-		//Frames.at(BackBufferIndex).FenceValue++;
-		
-		GraphicsQueue->Signal(FrameFence, FenceValue);
-		FrameFence->Wait(FenceValue);
-		Frames.at(BackBufferIndex).FenceValue = FenceValue;
+		GraphicsQueue->Signal(&FrameSync.GraphicsFence, FrameSync.GetCurrentValue());
+
+		if (SUCCEEDED(FrameSync.GraphicsFence.Fence->SetEventOnCompletion(FrameSync.GetCurrentValue(), FrameSync.Event)))
+		{
+			if (::WaitForSingleObject(FrameSync.Event, 3'000) == WAIT_TIMEOUT)
+			{
+				LOG_ERROR("GPU Timeout (Wait())");
+			}
+		}
+		else
+		{
+			LOG_FATAL("[Wait()]: FrameSync.Fence.Fence->SetEventOnCompletion(FrameSync.GetCurrentValue(), FrameSync.Event)");
+		}
+
+		FrameSync.SignaledValues.at(BackBufferIndex) = FrameSync.GetCurrentValue();
+		FrameSync.CurrentValues.at(BackBufferIndex)++;
 
 	}
 
 	void D3D12RHI::Flush()
 	{
-		for (auto& frame : Frames)
-		{
-			frame.Wait(FrameFence, FenceEvent);
-		}
-
 		ID3D12Fence* fence = nullptr;
 		VERIFY_D3D12_RESULT(Device->LogicalDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
 
-		VERIFY_D3D12_RESULT(GraphicsQueue->GetHandleRaw()->Signal(fence, 1));
+		VERIFY_D3D12_RESULT(GraphicsQueue->GetHandle()->Signal(fence, 1));
 
 		HANDLE fenceEvent = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		fence->SetEventOnCompletion(1, fenceEvent);
+		VERIFY_D3D12_RESULT(fence->SetEventOnCompletion(1, fenceEvent));
 		if (fenceEvent)
 		{
-			::WaitForSingleObject(fenceEvent, 5'000'000);
+			if (::WaitForSingleObject(fenceEvent, 2'000) == WAIT_TIMEOUT)
+			{
+				LOG_FATAL("GPU Timeout (Flush)");
+			}
 			::CloseHandle(fenceEvent);
 		}
 
@@ -94,29 +111,42 @@ namespace Luden
 		SAFE_DELETE(fence);
 	}
 
+	void D3D12RHI::Present(uint32 SyncInterval)
+	{
+		SwapChain->Present(SyncInterval);
+
+		AdvanceFrame();
+	}
+
 	void D3D12RHI::AdvanceFrame()
 	{
-		uint64& fenceValue = FenceValue;
-		++fenceValue;
-		Frames.at(BackBufferIndex).FenceValue = fenceValue;
-		GraphicsQueue->Signal(FrameFence, fenceValue);
-		UpdateBackBufferIndex();
-		//GraphicsQueue->Signal(FrameFence, Frames.at(BackBufferIndex)->FenceValue);
-		//BackBufferIndex = (BackBufferIndex + 1) % Config::Get().NumBackBuffers;
+		const uint64 currentFenceValue = FrameSync.GetCurrentValue();
 
-		/*
-		const uint64 frameValue = Frames.at(BackBufferIndex).FenceValue;
-		GraphicsQueue->Signal(FrameFence, frameValue);
+		GraphicsQueue->Signal(&FrameSync.GraphicsFence, currentFenceValue);
 
 		UpdateBackBufferIndex();
 
-		if (FrameFence->Fence->GetCompletedValue() < Frames.at(BackBufferIndex).FenceValue)
+		const uint64& nextFenceValue = FrameSync.GetCurrentValue();
+
+		//if (FrameSync.SignaledValues.at(BackBufferIndex) <= nextFenceValue)
+		if (FrameSync.GraphicsFence.Fence->GetCompletedValue() < nextFenceValue)
 		{
-			FrameFence->Wait(Frames.at(BackBufferIndex).FenceValue);
+			if (SUCCEEDED(FrameSync.GraphicsFence.Fence->SetEventOnCompletion(nextFenceValue, FrameSync.Event)))
+			{
+				if (::WaitForSingleObject(FrameSync.Event, 3'000) == WAIT_TIMEOUT)
+				{
+					LOG_ERROR("GPU Timeout (AdvanceFrame())");
+				}
+			}
+			else
+			{
+				LOG_FATAL("[AdvanceFrame()]: FrameSync.Fence.Fence->SetEventOnCompletion(FrameSync.GetCurrentValue(), FrameSync.Event)");
+			}
 		}
 
-		Frames.at(BackBufferIndex).FenceValue = frameValue + 1;
-		*/
+		FrameSync.SignaledValues.at(BackBufferIndex) = currentFenceValue;
+		FrameSync.CurrentValues.at(BackBufferIndex) = (currentFenceValue + 1);
+		
 	}
 
 	uint64 D3D12RHI::QueryAdapterMemory() const
@@ -126,75 +156,58 @@ namespace Luden
 
 	void D3D12RHI::CreateShaderResourceView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 NumMips, uint32 Count)
 	{
-		const auto& resourceDesc = pResource->GetHandle()->GetDesc1();
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
-		desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		desc.Format = resourceDesc.Format;
-
-		desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		desc.Texture2D.MipLevels = NumMips;
-		desc.Texture2D.MostDetailedMip = 0;
-		desc.Texture2D.PlaneSlice = 0;
-
-		ShaderResourceHeap->Allocate(Descriptor, Count);
-
-		Device->LogicalDevice->CreateShaderResourceView(pResource->GetHandleRaw(), &desc, Descriptor.CpuHandle);
+		Device->CreateShaderResourceView(pResource, Descriptor, NumMips, Count);
 	}
 
 	void D3D12RHI::CreateRenderTargetView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 Count)
 	{
-		const auto& resourceDesc = pResource->GetHandle()->GetDesc1();
-
-		D3D12_RENDER_TARGET_VIEW_DESC desc{};
-		desc.Format = resourceDesc.Format;
-		desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-		desc.Texture2D.MipSlice = 0;
-
-		RenderTargetHeap->Allocate(Descriptor, Count);
-
-		Device->LogicalDevice->CreateRenderTargetView(pResource->GetHandleRaw(), &desc, Descriptor.CpuHandle);
+		Device->CreateRenderTargetView(pResource, Descriptor, Count);
 	}
 
 	void D3D12RHI::CreateDepthStencilView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, DXGI_FORMAT Format)
 	{
-		D3D12_DEPTH_STENCIL_VIEW_DESC desc{};
-		desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		desc.Texture2D.MipSlice = 0;
-		desc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
-		desc.Format = Format;
-
-		DepthStencilHeap->Allocate(Descriptor);
-
-		Device->LogicalDevice->CreateDepthStencilView(pResource->GetHandleRaw(), &desc, Descriptor.CpuHandle);
+		Device->CreateDepthStencilView(pResource, Descriptor, Format);
 	}
 
 	D3D12DepthBuffer D3D12RHI::CreateDepthBuffer(DXGI_FORMAT Format)
 	{
-		return D3D12DepthBuffer(this, &SwapChain->GetSwapChainViewport(), Format);
+		return D3D12DepthBuffer(Device, &SwapChain->GetSwapChainViewport(), Format);
 	}
 
-	void Frame::Wait(D3D12Fence* pFence) const
+	void FFrameSync::Wait()
 	{
-		if (pFence->Fence->GetCompletedValue() < FenceValue)
+		uint64 current = GetCurrentValue();
+		auto& fence = GraphicsFence;
+		uint64 completed = fence.Fence->GetCompletedValue();
+		if (completed < current)
 		{
-			VERIFY_D3D12_RESULT(pFence->Fence->SetEventOnCompletion(FenceValue, pFence->FenceEvent));
-			if (::WaitForSingleObjectEx(pFence->FenceEvent, 2'000'000, FALSE) == WAIT_TIMEOUT)
+			HRESULT res = fence.Fence->SetEventOnCompletion(current, Event);
+			if (SUCCEEDED(res))
 			{
-				LOG_FATAL("GPU TIMEOUT");
+				if (::WaitForSingleObject(Event, 2'000) != WAIT_OBJECT_0)
+				{
+					LOG_FATAL("GPU Timeout!");
+				}
+			}
+			else
+			{
+				LOG_FATAL("Failed to sync frames!");
+				const auto fmt = std::format("completed: {0} < current: {1}", completed, current);
+				LOG_FATAL(fmt);
+				VERIFY_D3D12_RESULT(res);
+				std::exit(-1);
 			}
 		}
+		
 	}
 
-	void Frame::Wait(D3D12Fence* pFence, ::HANDLE Event) const
+	void FFrameSync::Signal(D3D12CommandQueue* pCommandQueue)
 	{
-		if (pFence->Fence->GetCompletedValue() < FenceValue)
-		{
-			VERIFY_D3D12_RESULT(pFence->Fence->SetEventOnCompletion(FenceValue, Event));
-			if (::WaitForSingleObjectEx(Event, 2'000'000, TRUE) == WAIT_TIMEOUT)
-			{
-				LOG_FATAL("GPU TIMEOUT");
-			}
-		}
+		pCommandQueue->Signal(&GraphicsFence, CurrentValues.at(BackBufferIndex));
+	}
+
+	void FFrameSync::Signal(D3D12CommandQueue* pCommandQueue, uint64 Value)
+	{
+		pCommandQueue->Signal(&GraphicsFence, Value);
 	}
 } // namespace Luden
