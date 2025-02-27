@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Core/String.hpp>
 #include <ImGui/imgui_internal.h>
 
 namespace Luden::gui
@@ -12,6 +13,11 @@ namespace Luden::gui
 	inline void SeparatorHorizontal()
 	{
 		ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+	}
+
+	inline void SeparatorText(std::string_view Text)
+	{
+		ImGui::SeparatorText(Text.data());
 	}
 
 } // namespace Luden::gui

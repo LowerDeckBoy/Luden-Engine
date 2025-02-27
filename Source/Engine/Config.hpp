@@ -1,5 +1,11 @@
 #pragma once
 
+/*=================================================================================
+	Config.hpp
+
+	Static struct of helper options used across Engine and Editor.
+=================================================================================*/
+
 #include <Core/Types.hpp>
 
 namespace Luden
@@ -15,16 +21,30 @@ namespace Luden
 
 		bool bEnableDebugLayer = true;
 
+		// Note: don't change during runtime.
 		// Either 2 or 3.
 		uint32 NumBackBuffers = 2;
 
+		// DXGI Sync Intervals:
 		// 0 - VSync off
 		// 1 - VSync on
 		// 2 - VSync half
-		uint32 SyncInterval = 0;
+		// 3 - VSync third
+		// 4 - VSync quarter
+		int32 SyncInterval = 1;
 
-		bool Raytracing = false;
-		bool MeshShading = false;
+		// If SyncInterval == 0.
+		// Frame limit can be set to value in range [24; 240].
+		bool bAllowLimitFrameRate = false;
+
+		bool bMeshlets = true;
+		bool bRaytracing = false;
+
+		bool bDrawSky = false;
+
+		// Debug grid for Editor Mode.
+		// Placeholder for now.
+		bool bDrawGrid = false;
 
 	};
 } // namespace Luden

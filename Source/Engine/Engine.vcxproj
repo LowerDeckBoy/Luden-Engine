@@ -27,7 +27,7 @@
     <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -49,17 +49,28 @@
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Build\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Build\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;ENGINE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(SolutionDir)Source;$(ProjectDir);$(SolutionDir)Dependencies</AdditionalIncludeDirectories>
       <CallingConvention>StdCall</CallingConvention>
       <CompileAs>CompileAsCpp</CompileAs>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -71,17 +82,24 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Lib>
     <PostBuildEvent>
-      <Command>IF EXIST "$(SolutionDir)Binaries\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul)</Command>
+      <Command>IF EXIST "$(SolutionDir)Binaries\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul)
+
+IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(OutDir)\Assets\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Assets\" "$(OutDir)\" &gt; nul)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp23</LanguageStandard>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <CallingConvention>StdCall</CallingConvention>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(ProjectDir);$(SolutionDir)Dependencies</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -89,9 +107,23 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>IF EXIST "$(SolutionDir)Binaries\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul)
+
+IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(OutDir)\Assets\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Assets\" "$(OutDir)\" &gt; nul)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Asset\Asset.hpp" />
+    <ClInclude Include="Asset\AssetManager.hpp" />
+    <ClInclude Include="Asset\AssetImporter.hpp" />
     <ClInclude Include="Config.hpp" />
+    <ClInclude Include="D3D12\D3D12UploadContext.hpp" />
+    <ClInclude Include="D3D12\D3D12Raytracing.hpp" />
+    <ClInclude Include="D3D12\D3D12Memory.hpp" />
+    <ClInclude Include="D3D12\D3D12Shader.hpp" />
+    <ClInclude Include="D3D12\D3D12Texture.hpp" />
+    <ClInclude Include="D3D12\D3D12CommandList.hpp" />
     <ClInclude Include="D3D12\D3D12RHI.hpp" />
     <ClInclude Include="D3D12\D3D12SwapChain.hpp" />
     <ClInclude Include="D3D12\D3D12Resource.hpp" />
@@ -103,13 +135,39 @@
     <ClInclude Include="D3D12\D3D12DescriptorHeap.hpp" />
     <ClInclude Include="D3D12\D3D12Device.hpp" />
     <ClInclude Include="D3D12\D3D12Utility.hpp" />
+    <ClInclude Include="ECS\Components\BoundingBoxComponent.hpp" />
+    <ClInclude Include="ECS\Components\CameraComponent.hpp" />
+    <ClInclude Include="ECS\Components\DirectionalLightComponent.hpp" />
+    <ClInclude Include="ECS\Components\PointLightComponent.hpp" />
+    <ClInclude Include="ECS\Components\StaticMeshComponent.hpp" />
+    <ClInclude Include="ECS\Components\NameComponent.hpp" />
+    <ClInclude Include="ECS\Components\TransformComponent.hpp" />
+    <ClInclude Include="ECS\Entity.hpp" />
+    <ClInclude Include="ECS\World.hpp" />
+    <ClInclude Include="Graphics\Material.hpp" />
+    <ClInclude Include="Graphics\Mesh.hpp" />
+    <ClInclude Include="Graphics\Model.hpp" />
+    <ClInclude Include="Renderer\Techniques\GBuffer.hpp" />
+    <ClInclude Include="Renderer\Renderer.hpp" />
+    <ClInclude Include="Renderer\RenderPass.hpp" />
     <ClInclude Include="RHI\Common.hpp" />
+    <ClInclude Include="RHI\Constants.hpp" />
     <ClInclude Include="RHI\Defines.hpp" />
     <ClInclude Include="RHI\State.hpp" />
     <ClInclude Include="RHI\Types.hpp" />
+    <ClInclude Include="Scene\Actor.hpp" />
+    <ClInclude Include="Scene\SceneSerializer.hpp" />
+    <ClInclude Include="Scene\SceneCamera.hpp" />
     <ClInclude Include="Scene\Scene.hpp" />
+    <ClInclude Include="Asset\ShaderCompiler.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Asset\AssetManager.cpp" />
+    <ClCompile Include="Asset\AssetImporter.cpp" />
+    <ClCompile Include="D3D12\D3D12UploadContext.cpp" />
+    <ClCompile Include="D3D12\D3D12Raytracing.cpp" />
+    <ClCompile Include="D3D12\D3D12Texture.cpp" />
+    <ClCompile Include="D3D12\D3D12CommandList.cpp" />
     <ClCompile Include="D3D12\D3D12RHI.cpp" />
     <ClCompile Include="D3D12\D3D12SwapChain.cpp" />
     <ClCompile Include="D3D12\D3D12Resource.cpp" />
@@ -121,7 +179,17 @@
     <ClCompile Include="D3D12\D3D12DescriptorHeap.cpp" />
     <ClCompile Include="D3D12\D3D12Device.cpp" />
     <ClCompile Include="D3D12\D3D12Utility.cpp" />
+    <ClCompile Include="ECS\Entity.cpp" />
+    <ClCompile Include="ECS\World.cpp" />
+    <ClCompile Include="Graphics\Model.cpp" />
+    <ClCompile Include="Renderer\Techniques\GBuffer.cpp" />
+    <ClCompile Include="Renderer\Renderer.cpp" />
+    <ClCompile Include="Renderer\RenderPass.cpp" />
+    <ClCompile Include="RHI\Types.cpp" />
+    <ClCompile Include="Scene\SceneSerializer.cpp" />
+    <ClCompile Include="Scene\SceneCamera.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
+    <ClCompile Include="Asset\ShaderCompiler.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

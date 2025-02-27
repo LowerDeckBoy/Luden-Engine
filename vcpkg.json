@@ -1,0 +1,13 @@
+{
+	"name": "luden-engine",
+	"version-string": "0.0.1",
+	"dependencies": [
+		"assimp",
+		{
+			"name": "directxtex",
+			"features": [ "dx12" ]
+		},
+		"directxmesh",
+		"meshoptimizer"
+	]
+}

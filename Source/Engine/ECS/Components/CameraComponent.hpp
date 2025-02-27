@@ -2,6 +2,10 @@
 
 #include <DirectXMath.h>
 
+constexpr DirectX::XMVECTOR ForwardVector	= DirectX::XMVECTOR(0.0f, 0.0f, 1.0f, 0.0f);
+constexpr DirectX::XMVECTOR RightVector		= DirectX::XMVECTOR(1.0f, 0.0f, 0.0f, 0.0f);
+constexpr DirectX::XMVECTOR UpVector		= DirectX::XMVECTOR(0.0f, 1.0f, 0.0f, 0.0f);
+
 namespace Luden::ecs
 {
 	struct CameraComponent

@@ -56,17 +56,7 @@ namespace Luden::Core
 			{
 				DeltaTime = 0.0f;
 			}
-		}
 
-		f64 TotalTime() const
-		{
-			auto totalTime = std::chrono::duration_cast<std::chrono::seconds>(m_CurrentTime - m_StartTime);
-
-			return static_cast<f64>(totalTime.count());
-		}
-
-		void GetFrameStats()
-		{
 			++FrameCount;
 
 			if ((TotalTime() - ElapsedTime) < 1.0)
@@ -75,18 +65,32 @@ namespace Luden::Core
 			}
 
 			FPS = FrameCount;
-			Miliseconds = 1000.0 / FPS;
-
+			Miliseconds = FrameTime;
+			//Miliseconds = 1000.0 / FPS;
+			//Miliseconds = (1000.0 / (std::chrono::duration<f64, std::milli>(m_StopTime - m_CurrentTime).count()));
 
 			FrameCount = 0;
 			ElapsedTime += 1.0;
-
 		}
 
-		inline void SetFrameLimit(f64 Limit)
+		f64 TotalTime() const
+		{
+			auto totalTime = std::chrono::duration_cast<std::chrono::seconds>(m_CurrentTime - m_StartTime);
+
+			return static_cast<f64>(totalTime.count());
+		}
+		
+		// Get Frame time in miliseconds.
+		void GetFrameTime()
+		{
+			m_StopTime = std::chrono::steady_clock::now();
+
+			FrameTime = std::chrono::duration<f64, std::milli>(m_StopTime - m_CurrentTime).count();
+		}
+
+		inline void SetFrameLimit(int32 Limit)
 		{
 			FrameLimit = Limit;
-			//FrameLimit = std::clamp(Limit, 24,)
 		}
 
 		void Reset()
@@ -107,7 +111,12 @@ namespace Luden::Core
 
 		// TODO:
 		// Set to limit max fps.
-		f64		FrameLimit = 60.0;
+		int32 FrameLimit = 60;
+
+		// Time in miliseconds.
+		f64 FrameTime = 0.0;
+
+		//bool bAllowFrameRateLimit = false;
 
 	private:
 

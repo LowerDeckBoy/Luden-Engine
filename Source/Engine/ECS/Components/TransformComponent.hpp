@@ -45,6 +45,5 @@ namespace Luden::ecs
 
 			Update();
 		}
-
 	};
 } // namespace Luden::ecs

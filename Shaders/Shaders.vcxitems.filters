@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <FxCompile Include="$(MSBuildThisFileDirectory)Common.hlsli" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)MS.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Base.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Test.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)MeshBasic.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Mesh.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Camera.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Transform.hlsli" />
+  </ItemGroup>
+</Project>

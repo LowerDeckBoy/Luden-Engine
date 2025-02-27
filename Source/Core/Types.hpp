@@ -18,3 +18,5 @@ using f64		= double;
 
 using usize		= std::size_t;
 
+// TODO:
+// IsFloatingPoint<T>()

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Export.hpp"
 #include "../Types.hpp"
 #include <cmath>
 
@@ -14,13 +15,13 @@ namespace Luden
 
 	#define ALIGN(Value, Alignment) (Value + (Alignment - 1)) & ~(Alignment - 1)
 
-	static constexpr uint32 Clamp(uint32 Value, uint32 Min, uint32 Max)
+	constexpr uint32 CORE_API Clamp(uint32 Value, uint32 Min, uint32 Max)
 	{
 		return (Value < Min) ? Min : (Value > Max) ? Max : Value;
 	}
 
 	template<typename T>
-	static constexpr T Clamp(T Value, T Min, T Max)
+	constexpr T CORE_API Clamp(T Value, T Min, T Max)
 	{
 		return (Value < Min) ? Min : (Value > Max) ? Max : Value;
 	}

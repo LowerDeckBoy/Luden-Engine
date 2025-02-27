@@ -5,6 +5,7 @@
 #include <FontAwsome6/IconsFontAwesome6.h>
 #include <Platform/Utility.hpp>
 #include "Components/Helpers.hpp"
+#include "Components/Components.hpp"
 
 namespace Luden
 {
@@ -17,6 +18,8 @@ namespace Luden
     {
         ImGui_ImplDX12_Shutdown();
         ImGui_ImplWin32_Shutdown();
+
+        ImGui_ImplDX12_InvalidateDeviceObjects();
         ImGui::DestroyContext();
     }
 
@@ -25,7 +28,7 @@ namespace Luden
         m_Renderer      = pRenderer;
         m_ParentWindow  = pParentWindow;
         m_Timer         = pApplicationTimer;
-
+        
         IMGUI_CHECKVERSION();
 
         ImGui::CreateContext();
@@ -33,7 +36,7 @@ namespace Luden
         ImGuiIO& IO = ImGui::GetIO();
         m_Theme = &ImGui::GetStyle();
 
-        gui::DarkTheme(pParentWindow, *m_Theme);
+        gui::DarkTheme(*m_Theme);
 
         // Enable Docking
         IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
@@ -41,21 +44,15 @@ namespace Luden
         IO.ConfigFlags  |= ImGuiConfigFlags_DockingEnable;
         IO.ConfigFlags  |= ImGuiConfigFlags_ViewportsEnable;
 
+        ImGui_ImplWin32_EnableDpiAwareness();
         ImGui_ImplWin32_Init(pParentWindow->Handle);
-        ImGui_ImplDX12_Init(m_Renderer->GetRHI()->Device->Device,
+        ImGui_ImplDX12_Init(m_Renderer->GetRHI()->Device->LogicalDevice,
             Config::Get().NumBackBuffers,
             m_Renderer->GetRHI()->SwapChain->GetSwapChainFormat(),
-            m_Renderer->GetRHI()->ShaderResourceHeap->GetHandleRaw(),
-            m_Renderer->GetRHI()->ShaderResourceHeap->GetHandleRaw()->GetCPUDescriptorHandleForHeapStart(),
-            m_Renderer->GetRHI()->ShaderResourceHeap->GetHandleRaw()->GetGPUDescriptorHandleForHeapStart());
+            m_Renderer->GetRHI()->Device->ShaderResourceHeap->GetHandleRaw(),
+            m_Renderer->GetRHI()->Device->ShaderResourceHeap->GetHandleRaw()->GetCPUDescriptorHandleForHeapStart(),
+            m_Renderer->GetRHI()->Device->ShaderResourceHeap->GetHandleRaw()->GetGPUDescriptorHandleForHeapStart());
 
-
-        m_MainViewport = ImGui::GetMainViewport();
-        m_MainViewport->Flags |= ImGuiViewportFlags_TopMost;
-        m_MainViewport->Flags |= ImGuiViewportFlags_OwnedByApp;
-
-        //m_Renderer->Resize();
-        
         // Font and Icons
         {
             m_MainFont = IO.Fonts->AddFontFromFileTTF(FontPath, FontSize);
@@ -68,6 +65,16 @@ namespace Luden
             iconsConfig.GlyphMinAdvanceX = iconsSize;
             iconsConfig.SizePixels = iconsSize;
             IO.Fonts->AddFontFromFileTTF(IconsFontPath, iconsSize, &iconsConfig, iconsRanges);
+        }
+
+        m_MainViewport = ImGui::GetMainViewport();
+        m_MainViewport->Flags |= ImGuiViewportFlags_TopMost;
+        m_MainViewport->Flags |= ImGuiViewportFlags_OwnedByApp;
+
+
+        if (!ImGui_ImplDX12_CreateDeviceObjects())
+        {
+            LOG_WARNING("Failed to call ImGui_ImplDX12_CreateDeviceObjects()");
         }
        
     }
@@ -82,37 +89,21 @@ namespace Luden
         ImGui::PushFont(m_MainFont);
 
         m_MainViewport = ImGui::GetMainViewport();
-        ImGui::DockSpaceOverViewport(m_MainViewport->ID);
+        ImGui::DockSpaceOverViewport(m_MainViewport->ID, m_MainViewport);
 
     }
 
     void Editor::End()
     {
-        {
-            ImGui::BeginMainMenuBar();
-
-            if (ImGui::BeginMenu("File"))
-            {
-                if (ImGui::MenuItem("Exit"))
-                {
-                    m_ParentWindow->bShouldClose = true;
-                }
-
-                ImGui::EndMenu();
-            }
-
-            DisplayDebugInfo();
-
-            ImGui::EndMainMenuBar();
-        }
+        DrawMainMenuBar();
 
         {
             ImGui::Begin("Hierarchy");
-
-            DrawSceneControlPanel();
             
-            gui::SeparatorHorizontal();
-
+            DrawSceneControlPanel();
+            DrawActorsData();
+            DrawLightData();
+            
             ImGui::End();
         }
         
@@ -138,6 +129,11 @@ namespace Luden
         ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetRHI()->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandleRaw());
     }
 
+    void Editor::SetActiveScene(Scene* pScene)
+    {
+        m_CurrentScene = pScene;
+    }
+
     void Editor::SetSceneImage(D3D12Descriptor& TextureDescriptor)
     {
         if (TextureDescriptor.GpuHandle.ptr == 0)
@@ -145,44 +141,87 @@ namespace Luden
             return;
         }
 
-        auto viewportSize = ImGui::GetContentRegionAvail();
+        const auto& viewportSize = ImGui::GetContentRegionAvail();
         ImGui::Image((ImTextureID)TextureDescriptor.GpuHandle.ptr, viewportSize);
+    }
+
+    void Editor::DrawMainMenuBar()
+    {
+        ImGui::BeginMainMenuBar();
+
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Exit"))
+            {
+                m_ParentWindow->bShouldClose = true;
+            }
+
+            ImGui::EndMenu();
+        }
+
+        DisplayDebugInfo();
+
+        ImGui::EndMainMenuBar();
     }
 
     void Editor::DrawSceneControlPanel()
     {
-        if (ImGui::TreeNodeEx("Scene"))
+        if (ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_FramePadding))
         {
-            gui::SeparatorHorizontal();
-
+            ImGui::SeparatorText("Config");
             auto& config = Config::Get();
-
+            
             if (ImGui::BeginTable("##data", 2))
             {
+
                 // Row 0
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
 
-                ImGui::Text("Sync interval:");
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("V-Sync:");
                 static const char* syncing[]{ "Off", "On", "Half", "Third", "Quarter" };
                 ImGui::TableNextColumn();
                 ImGui::Combo("##Interval:", &config.SyncInterval, syncing, IM_ARRAYSIZE(syncing));
 
-                // Temporarly
-                ImGui::BeginDisabled();
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                if (config.SyncInterval == 0)
+                {
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::Text("Limit frame rate:");
+                    ImGui::TableNextColumn();
+                    ImGui::Checkbox("##Limit frames", &config.bAllowLimitFrameRate);
 
-                // Row 1
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    if (config.bAllowLimitFrameRate)
+                    {
+                        ImGui::AlignTextToFramePadding();
+                        ImGui::Text("Frame limit:");
+                        ImGui::TableNextColumn();
+                        ImGui::SliderInt("##Frame limit:", &m_Timer->FrameLimit, 24, 240);
+                    }
+                }
+
+
+                // Row 1;
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
 
-                ImGui::Text("Raytracing: ");
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("Meshlets: ");
                 ImGui::TableNextColumn();
-                ImGui::Checkbox("##raytracing", &config.bRaytracing);
+                ImGui::Checkbox("##meshlets", &config.bMeshlets);
+
+                // Temporarly
+                ImGui::BeginDisabled();
 
                 // Row 2;
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
 
+                ImGui::AlignTextToFramePadding();
                 ImGui::Text("Draw sky: ");
                 ImGui::TableNextColumn();
                 ImGui::Checkbox("##drawSky", &config.bDrawSky);
@@ -191,6 +230,7 @@ namespace Luden
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
 
+                ImGui::AlignTextToFramePadding();
                 ImGui::Text("Draw grid: ");
                 ImGui::TableNextColumn();
                 ImGui::Checkbox("##drawGrid", &config.bDrawGrid);
@@ -198,11 +238,30 @@ namespace Luden
                 ImGui::EndDisabled();
 
                 ImGui::EndTable();
+               
 
+                // Scene camera controls here
+                ImGui::SeparatorText("Camera");
+                gui::Math::Float3("Position", m_Renderer->Camera->Position);
             }
 
             ImGui::TreePop();
         }
+    }
+
+    void Editor::DrawPropertyPanel()
+    {
+        ImGui::Begin("Properties");
+
+        ImGui::End();
+    }
+
+    void Editor::DrawLogsPanel()
+    {
+        ImGui::Begin("Logs");
+
+        ImGui::End();
+
     }
 
     void Editor::DisplayDebugInfo()
@@ -213,8 +272,60 @@ namespace Luden
        
         gui::SeparatorVertical();
 
-        ImGui::Text("mem: %.2fMB", Platform::ReadRAM());
+        ImGui::Text("Mem: %.3fMB", Platform::GetMemoryUsage());
         ImGui::Text("VRAM: %dMB", m_Renderer->GetRHI()->QueryAdapterMemory());
+
+    }
+
+    void Editor::DrawActorsData()
+    {
+        // Sanity check
+        // For now, it's possible that no scene can be active at run-time.
+        if (!m_CurrentScene)
+        {
+            return; 
+        }
+
+        if (ImGui::TreeNodeEx("Actors", ImGuiTreeNodeFlags_FramePadding))
+        {
+            if (m_CurrentScene->Models.empty())
+            {
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("Empty scene...");
+                ImGui::TreePop();
+
+                return;
+            }
+
+            for (auto& model : m_CurrentScene->Models)
+            {
+               const auto& nameComponent = model.GetComponent<ecs::NameComponent>();
+               
+               if (ImGui::TreeNodeEx(nameComponent.Name.c_str(), ImGuiTreeNodeFlags_FramePadding))
+               {
+                   auto& tranformComponent = model.GetComponent<ecs::TransformComponent>();
+                   
+                   gui::Math::Float3("Position",   tranformComponent.Translation);
+                   gui::Math::Float3("Rotation",   tranformComponent.Rotation);
+                   gui::Math::Float3("Scale",      tranformComponent.Scale);
+                   
+                   ImGui::TreePop();
+               }
+            }
+
+            ImGui::TreePop();
+        }
+
+    }
+
+    void Editor::DrawLightData()
+    {
+        if (ImGui::TreeNodeEx("Lighting", ImGuiTreeNodeFlags_FramePadding))
+        {
+            // Draw all lights here
+
+            ImGui::TreePop();
+        }
     }
 
 } // namespace Luden

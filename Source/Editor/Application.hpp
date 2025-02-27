@@ -1,13 +1,12 @@
 #pragma once
 
-#include <Core/Timer.hpp>
-#include <Platform/Window.hpp>
-
-
-
-#include <Engine/D3D12/D3D12RHI.hpp>
 #include <Asset/ShaderCompiler.hpp>
+#include <Core/Timer.hpp>
+#include <Engine/Scene/Scene.hpp>
+#include <Engine/Scene/SceneCamera.hpp>
+#include <Platform/Window.hpp>
 #include <Renderer/Renderer.hpp>
+#include <Asset/AssetImporter.hpp>
 
 #include "Editor.hpp"
 
@@ -23,11 +22,19 @@ namespace Luden
 		void Run();
 		void Shutdown();
 
+		static AssetImporter Importer;
+
+		Scene* MainScene;
+
+		std::map<std::string, Scene*> Scenes;
+
+		SceneCamera* Camera;
+
 	protected:
 		Platform::Window Window;
 		std::unique_ptr<Editor> m_Editor;
 		
-		static LRESULT CALLBACK EditorWindowProc(::HWND Handle, UINT32 Message, WPARAM wParam, LPARAM lParam);
+		static LRESULT  EditorWindowProc(::HWND Handle, UINT32 Message, WPARAM wParam, LPARAM lParam);
 
 		ShaderCompiler* m_ShaderCompiler;
 

@@ -24,7 +24,7 @@ namespace Luden::Core
 		Fatal,
 		Debug
 	};
-
+	
 	class CORE_API Logger
 	{
 	public:

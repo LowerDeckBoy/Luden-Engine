@@ -71,8 +71,9 @@ namespace Luden
 		DirectX::XMFLOAT3 m_Right					= DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
 		DirectX::XMFLOAT3 m_Upward					= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
-		DirectX::XMFLOAT3 const m_DefaultPosition	= DirectX::XMFLOAT3(0.0f, 1.0f, -10.0f);
-		DirectX::XMFLOAT3 const m_DefaultTarget		= DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f);
+		DirectX::XMFLOAT3 const m_DefaultPosition	= DirectX::XMFLOAT3(0.0f, 1.0f, -20.0f);
+		//DirectX::XMFLOAT3 const m_DefaultTarget		= DirectX::XMFLOAT3(0.0f, 20.0f, 0.0f);
+		DirectX::XMFLOAT3 const m_DefaultTarget		= DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
 		DirectX::XMFLOAT3 const m_DefaultUp			= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultForward	= DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);

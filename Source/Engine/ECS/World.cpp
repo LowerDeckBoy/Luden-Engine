@@ -30,12 +30,13 @@ namespace Luden
 
 	void World::CreateEntity(Entity* pEntity)
 	{
-		if (pEntity->IsValid())
-		{
-			return;
-		}
+		//if (pEntity->IsValid())
+		//{
+		//	return;
+		//}
 
 		pEntity->m_Handle = m_Registry->create();
+		pEntity->m_ParentWorld = this;
 	}
 
 } // namespace Luden

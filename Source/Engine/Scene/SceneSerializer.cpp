@@ -3,6 +3,7 @@
 #include <Core/Logger.hpp>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <print>
 
 namespace Luden
 {
@@ -25,35 +26,45 @@ namespace Luden
 			return;
 		}
 
-		std::string sceneInfo = std::format("Scene: {} info:\n", (Path.filename().string()));
+		std::print("{0}", std::format("\x1b[32m[Debug]\x1b[37m Scene loading: {} info:", (Path.filename().string())));
 
-		std::ifstream f(Path.c_str());
-		nlohmann::json json = nlohmann::json::parse(f);
+		std::ifstream file(Path.c_str());
+		nlohmann::json json = nlohmann::json::parse(file);
 		
 		for (const auto& record : json["scene"]["models"])
 		{
-			const auto& name = std::string(record["name"]);
-			const auto& path = std::string(record["path"]);
+			const auto& name		= std::string(record["name"]);
+			const auto& path		= std::string(record["path"]);
 		
+			const auto& translation	= record["transform"]["translation"];
+			const auto& rotation	= record["transform"]["rotation"];
+			const auto& scale		= record["transform"]["scale"];
+
+			std::print("\n\t- loading: {0}", name);
+
 			Model model{};
 			pScene->GetWorld()->CreateEntity(&model);
 			
-			model.AddComponent<ecs::TagComponent>(name);
-			model.AddComponent<ecs::TransformComponent>();
+			model.AddComponent<ecs::NameComponent>(name);
+			model.AddComponent<ecs::TransformComponent>(
+				 DirectX::XMFLOAT3(translation[0], translation[1], translation[2]),
+				 DirectX::XMFLOAT3(rotation[0], rotation[1], rotation[2]),
+				 DirectX::XMFLOAT3(scale[0], scale[1], scale[2]));
 
 			auto startTime = std::chrono::high_resolution_clock::now();
-			pImporter->ImportStaticMesh(path, model.StaticMesh);
+			pImporter->ImportStaticMesh(path, model);
 			auto endTime = std::chrono::high_resolution_clock::now();
 
-			pScene->Models.emplace_back(model);
+			std::print(", load time: {0}", std::chrono::duration<f64>(endTime - startTime));
 
-			sceneInfo.append(std::format("- {0}, load time: {1}\n", name, std::chrono::duration<f64>(endTime - startTime)));
+			model.SetFilepath(path);
+			pScene->Models.emplace_back(model);
 			
 		}
 
-		LOG_DEBUG(sceneInfo);
+		std::println();
 
-		f.close();
-
+		file.close();
+		
 	}
 } // namespace Luden

@@ -5,6 +5,8 @@
 #include <memory>
 #include <wrl/client.h>
 
+//struct IUnknown;
+
 namespace Luden
 {
 	template<typename T>
@@ -42,12 +44,13 @@ namespace Luden
 		uint32 Release()
 		{
 			uint32 prevCount = m_RefCount.fetch_sub(1);
-
+		
 			if (prevCount == 1)
 			{
 				delete m_Ptr;
+				m_RefCount = 0;
 			}
-
+		
 			return prevCount;
 		}
 
@@ -121,6 +124,16 @@ namespace Luden
 			return *m_Ptr;
 		}
 
+		Ref& operator=(const Ref& Other) noexcept
+		{
+			if (m_Ptr != Other.m_Ptr)
+			{
+				Ref(Other).Swap(*this);
+			}
+			return *this;
+		}
+
+
 		void Swap(Ref&& Other) noexcept
 		{
 			std::swap(m_Ptr, Other.m_Ptr);
@@ -129,6 +142,11 @@ namespace Luden
 		void Swap(Ref& Other) noexcept
 		{
 			std::swap(m_Ptr, Other.m_Ptr);
+		}
+
+		uint32 AddRef()
+		{
+			m_RefCount.fetch_add(1);
 		}
 
 
@@ -150,7 +168,8 @@ namespace Luden
 			if (temp != nullptr)
 			{
 				m_Ptr = nullptr;
-				temp->Release();
+				//temp->Release();
+				refCount = temp->Release();
 			}
 
 			return refCount;
