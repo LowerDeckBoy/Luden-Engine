@@ -37,7 +37,10 @@ namespace Luden
 		// Frame limit can be set to value in range [24; 240].
 		bool bAllowLimitFrameRate = false;
 
-		bool bMeshlets = true;
+		// If false - switch to vertex shading.
+		bool bMeshShading = true;
+		bool bDrawMeshlets = true;
+
 		bool bRaytracing = false;
 
 		bool bDrawSky = false;

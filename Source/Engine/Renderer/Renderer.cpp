@@ -171,7 +171,7 @@ namespace Luden
 
 		auto* device = m_D3D12RHI->Device;
 
-		if (Config::Get().bMeshlets)
+		if (Config::Get().bMeshShading)
 		{
 			CurrentFrame.GraphicsCommandList->SetRootSignature(&MeshRS);
 			CurrentFrame.GraphicsCommandList->SetPipelineState(&MeshPSO);
@@ -200,13 +200,15 @@ namespace Luden
 					{
 						uint32 vertex;
 						uint32 meshlet;
+						uint32 bDrawMeshlets;
 					} buffers
 					{
 						.vertex = vertexBuffer,
-						.meshlet = meshletBuffer
+						.meshlet = meshletBuffer,
+						.bDrawMeshlets = (uint32)Config::Get().bDrawMeshlets
 					};
 
-					CurrentFrame.GraphicsCommandList->PushConstants(1, 2, &buffers);
+					CurrentFrame.GraphicsCommandList->PushConstants(1, 3, &buffers);
 					CurrentFrame.GraphicsCommandList->PushRootSRV(2, meshletVerticesBuffer);
 					CurrentFrame.GraphicsCommandList->PushRootSRV(3, meshletTrianglesBuffer);
 
@@ -290,7 +292,7 @@ namespace Luden
 		// Mesh
 		{
 			MeshRS.AddCBV(0);			// Transform matrices
-			MeshRS.AddConstants(2, 1);	// Vertex and Meshlet Buffers
+			MeshRS.AddConstants(3, 1);	// Vertex and Meshlet Buffers
 			MeshRS.AddSRV(0);			// Meshlet Vertices Buffer
 			MeshRS.AddSRV(1);			// Meshlet Triangles Buffer
 			MeshRS.AddStaticSampler(0, 0, D3D12_FILTER_MAXIMUM_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_COMPARISON_FUNC_LESS_EQUAL);
@@ -301,7 +303,7 @@ namespace Luden
 			builder.SetMeshShader(&MeshMS);
 			builder.SetPixelShader(&MeshPS);
 			builder.EnableDepth(true);
-			builder.SetCullMode(D3D12_CULL_MODE_NONE);
+			builder.SetCullMode(D3D12_CULL_MODE_BACK);
 			builder.SetRenderTargetFormats({ m_D3D12RHI->SwapChain->GetSwapChainFormat() });
 
 			VERIFY_D3D12_RESULT(builder.Build(MeshPSO));

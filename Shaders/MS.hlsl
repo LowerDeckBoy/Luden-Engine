@@ -17,6 +17,7 @@ struct PushConstants
 {
 	uint VertexIndex;
 	uint MeshletIndex;
+	uint bDrawMeshlets;
 };
 
 struct Vertex
@@ -33,8 +34,7 @@ struct VertexOut
 	float4	WorldPosition	: WORLD_POSITION;
 	float2	TexCoord		: TEXCOORD;
 	float3	Normal			: NORMAL;
-	float3	Tangent			: TANGENT;
-	float3	Color			: COL;
+	float4	Tangent			: TANGENT;
 	uint	MeshletIndex	: COLOR0;
 };
 
@@ -47,6 +47,17 @@ ConstantBuffer<Transform>		Transforms			: register(b0);
 ConstantBuffer<PushConstants>	Constants			: register(b1);
 StructuredBuffer<uint>			UniqueVertexIndices : register(t0);
 StructuredBuffer<uint>			PrimitiveIndices	: register(t1);
+
+uint Hash(uint Value)
+{
+	Value = (Value + 0x7ed55d16) + (Value << 12);
+	Value = (Value ^ 0xc761c23c) ^ (Value >> 19);
+	Value = (Value + 0x165667b1) + (Value << 5);
+	Value = (Value + 0xd3a2646c) ^ (Value << 9);
+	Value = (Value + 0xfd7046c5) + (Value << 3);
+	Value = (Value ^ 0xb55a4f09) ^ (Value >> 16);
+	return Value;
+}
 
 // Get Triangle from given location and unpack it.
 uint3 GetPrimitive(uint Location)
@@ -62,9 +73,16 @@ uint3 GetPrimitive(uint Location)
 
 float3 GetMeshletColor(uint MeshletIndex)
 {
-	return float3(float(MeshletIndex & 1),
-			float(MeshletIndex & 3) / 4,
-			float(MeshletIndex & 7) / 8);
+	uint mhash = Hash(MeshletIndex);
+	
+	return float3(
+		float(mhash & 255),
+		float((mhash >> 8) & 255),
+		float((mhash >> 16) & 255)) / 255.0;
+
+	//return float3(float(MeshletIndex & 1),
+	//		float(MeshletIndex & 3) / 4,
+	//		float(MeshletIndex & 7) / 8);
 }
 
 VertexOut GetVertexAttributes(uint VertexIndex, uint MeshletIndex)
@@ -74,11 +92,11 @@ VertexOut GetVertexAttributes(uint VertexIndex, uint MeshletIndex)
 
 	VertexOut vout;
 	
-	vout.Position	= mul(Transforms.WVP, float4(vertex.Position, 1.0f));
-	vout.TexCoord	= vertex.TexCoord;
-	vout.Normal		= mul((float3x3)Transforms.World, vertex.Normal);
-	vout.Tangent	= mul((float3x3)Transforms.World, vertex.Tangent.xyz);
-	vout.Color		= GetMeshletColor(MeshletIndex);
+	vout.Position		= mul(Transforms.WVP, float4(vertex.Position, 1.0f));
+	vout.TexCoord		= vertex.TexCoord;
+	vout.Normal			= mul((float3x3)Transforms.World, vertex.Normal);
+	vout.Tangent		= mul(Transforms.World, vertex.Tangent);
+	vout.MeshletIndex	= MeshletIndex;
 	
 	return vout;
 }
@@ -111,7 +129,15 @@ void MSMain(
 
 float4 PSMain(VertexOut pin) : SV_TARGET
 {
-	return float4(pin.Color, 1.0f);
+	float3 output = pin.Normal;
+	
+	if (Constants.bDrawMeshlets)
+	{
+		float3 meshletColor = GetMeshletColor(pin.MeshletIndex);
+		return float4(meshletColor, 1.0f);
+	}
+
+	return float4(output, 1.0f);
 }
 
 #endif // MESH_HLSL

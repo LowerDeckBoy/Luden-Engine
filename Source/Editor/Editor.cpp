@@ -204,15 +204,25 @@ namespace Luden
                     }
                 }
 
-
                 // Row 1;
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
 
                 ImGui::AlignTextToFramePadding();
-                ImGui::Text("Meshlets: ");
+                ImGui::Text("Mesh shading: ");
                 ImGui::TableNextColumn();
-                ImGui::Checkbox("##meshlets", &config.bMeshlets);
+                ImGui::Checkbox("##Mesh shading", &config.bMeshShading);
+
+                if (config.bMeshShading)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::Text("Meshlets: ");
+                    ImGui::TableNextColumn();
+                    ImGui::Checkbox("##meshlets", &config.bDrawMeshlets);
+                }    
 
                 // Temporarly
                 ImGui::BeginDisabled();
