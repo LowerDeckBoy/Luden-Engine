@@ -9,7 +9,6 @@
 #include "Material.hpp"
 #include "Mesh.hpp"
 #include "RHI/Constants.hpp"
-//#include "Scene/Scene.hpp"
 #include <Core/File.hpp>
 
 namespace Luden
@@ -25,7 +24,7 @@ namespace Luden
 		std::vector<StaticMesh> Meshes;
 
 		uint32 ConstantBuffer;
-		Constants::cbPerObject cbPerObject{};
+		Constants::ObjectTranforms cbObjectTransforms{};
 
 		Filepath GetFilepath()
 		{

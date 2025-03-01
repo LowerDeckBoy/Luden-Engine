@@ -23,15 +23,15 @@ namespace Luden
 
 	struct StaticMesh
 	{
-		std::vector<uint32>						Indices;
+		std::vector<uint32>	Indices;
 
-		std::vector<Vertex>						Vertices;
+		std::vector<Vertex>	Vertices;
 
-		std::vector<DirectX::Meshlet>			Meshlets;
-		std::vector<uint8>						MeshletVertices;
-		std::vector<DirectX::MeshletTriangle>	MeshletTriangles;
+		std::vector<DirectX::Meshlet> Meshlets;
+		std::vector<uint8> MeshletVertices;
+		std::vector<DirectX::MeshletTriangle> MeshletTriangles;
 		
-		ecs::BoundingBoxComponent				BoundingBox;
+		ecs::BoundingBoxComponent BoundingBox;
 
 		DirectX::XMMATRIX WorldMatrix = DirectX::XMMatrixIdentity();
 

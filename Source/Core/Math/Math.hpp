@@ -4,7 +4,7 @@
 #include "../Types.hpp"
 #include <cmath>
 
-namespace Luden
+namespace Luden::Math
 {
 	constexpr f32 PI		= 3.1415926535f;
 	constexpr f32 TwoPI		= 2.0f * PI;
@@ -15,15 +15,14 @@ namespace Luden
 
 	#define ALIGN(Value, Alignment) (Value + (Alignment - 1)) & ~(Alignment - 1)
 
-	constexpr uint32 CORE_API Clamp(uint32 Value, uint32 Min, uint32 Max)
+	constexpr uint32 Clamp(uint32 Value, uint32 Min, uint32 Max)
 	{
 		return (Value < Min) ? Min : (Value > Max) ? Max : Value;
 	}
 
-	template<typename T>
-	constexpr T CORE_API Clamp(T Value, T Min, T Max)
+	constexpr f32 Clamp(f32 Value, f32 Min, f32 Max)
 	{
 		return (Value < Min) ? Min : (Value > Max) ? Max : Value;
 	}
-
-} // namespace Luden
+	
+} // namespace Luden::Math

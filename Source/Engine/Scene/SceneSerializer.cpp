@@ -36,7 +36,7 @@ namespace Luden
 			const auto& name		= std::string(record["name"]);
 			const auto& path		= std::string(record["path"]);
 		
-			const auto& translation	= record["transform"]["translation"];
+			const auto& position	= record["transform"]["position"];
 			const auto& rotation	= record["transform"]["rotation"];
 			const auto& scale		= record["transform"]["scale"];
 
@@ -47,7 +47,7 @@ namespace Luden
 			
 			model.AddComponent<ecs::NameComponent>(name);
 			model.AddComponent<ecs::TransformComponent>(
-				 DirectX::XMFLOAT3(translation[0], translation[1], translation[2]),
+				 DirectX::XMFLOAT3(position[0], position[1], position[2]),
 				 DirectX::XMFLOAT3(rotation[0], rotation[1], rotation[2]),
 				 DirectX::XMFLOAT3(scale[0], scale[1], scale[2]));
 

@@ -1,14 +1,10 @@
 #pragma once
 
-/*
-
-*/
-
 #include <DirectXMath.h>
 
 namespace Luden::Constants
 {
-	struct cbPerObject
+	struct ObjectTranforms
 	{
 		DirectX::XMMATRIX WVP;
 		DirectX::XMMATRIX World;

@@ -1,14 +1,12 @@
 #include "D3D12/D3D12Device.hpp"
-#include "Model.hpp"
 #include "D3D12/D3D12UploadContext.hpp"
+#include "Model.hpp"
 
 namespace Luden
 {
 	void Model::Create(D3D12Device* pDevice)
 	{
-		//pScene->CreateEntity(*this);
-
-		ConstantBuffer = pDevice->CreateConstantBuffer(&cbPerObject, sizeof(cbPerObject));
+		ConstantBuffer = pDevice->CreateConstantBuffer(&cbObjectTransforms, sizeof(cbObjectTransforms));
 
 		for (auto& mesh : Meshes)
 		{
@@ -34,8 +32,6 @@ namespace Luden
 				.Format			= DXGI_FORMAT_R32_UINT
 			};
 
-			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.VertexBuffer), mesh.NumVertices * (uint64)sizeof(Vertex));
-			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.IndexBuffer), mesh.NumIndices * (uint64)sizeof(uint32));
 
 			mesh.MeshletsBuffer = pDevice->CreateBuffer({
 				.BufferUsage	= BufferUsageFlag::Structured,
@@ -61,12 +57,14 @@ namespace Luden
 				.bBindless		= true
 				});
 
-			
+
+			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.VertexBuffer),			mesh.NumVertices			 * (uint64)sizeof(Vertex));
+			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.IndexBuffer),				mesh.NumIndices				 * (uint64)sizeof(uint32));
 			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletsBuffer),			mesh.NumMeshlets			 * sizeof(DirectX::Meshlet));
 			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletsVerticesBuffer),	mesh.MeshletVertices.size()  * sizeof(uint8));
 			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletsTrianglesBuffer), mesh.MeshletTriangles.size() * sizeof(DirectX::MeshletTriangle));
 
-			//D3D12UploadContext::Upload();
+			D3D12UploadContext::Upload();
 		}
 
 	}
