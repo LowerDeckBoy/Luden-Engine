@@ -5,6 +5,11 @@ namespace Luden
 {
 	bool Entity::IsValid()
 	{
-		return m_ParentWorld->m_Registry->valid(m_Handle);
+		return m_ParentWorld->Registry->valid(m_Handle);
+	}
+
+	bool Entity::IsAlive()
+	{
+		return m_ParentWorld != nullptr;
 	}
 } // namespace Luden

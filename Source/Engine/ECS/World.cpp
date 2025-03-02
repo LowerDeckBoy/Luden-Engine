@@ -5,25 +5,24 @@ namespace Luden
 {
 	World::World()
 	{
-		m_Registry = new entt::registry();
+		Registry = new entt::registry();
 	}
 
 	World::~World()
 	{
-		if (m_Registry)
+		if (Registry)
 		{
-			m_Registry->clear();
+			Registry->clear();
 
-			delete m_Registry;
-
-			m_Registry = nullptr;
+			delete Registry;
+			Registry = nullptr;
 		}
 	}
 
 	Entity World::CreateEntity()
 	{
 		Entity entity{};
-		entity.m_Handle = m_Registry->create();
+		entity.m_Handle = Registry->create();
 		
 		return entity;
 	}
@@ -35,7 +34,7 @@ namespace Luden
 		//	return;
 		//}
 
-		pEntity->m_Handle = m_Registry->create();
+		pEntity->m_Handle = Registry->create();
 		pEntity->m_ParentWorld = this;
 	}
 

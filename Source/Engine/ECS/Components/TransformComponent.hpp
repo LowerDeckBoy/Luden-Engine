@@ -1,9 +1,14 @@
 #pragma once
 
+#include <Core/Math/Math.hpp>
 #include <DirectXMath.h>
 
 namespace Luden::ecs
 {
+	// Use to convert object's rotation from degrees to radians.
+	// Mostly for editor usage.
+	const DirectX::XMVECTOR RadiansVector = DirectX::XMVectorSet(Math::Deg2Rad, Math::Deg2Rad, Math::Deg2Rad, 1.0f);
+
 	struct TransformComponent
 	{
 		TransformComponent() 
@@ -33,7 +38,7 @@ namespace Luden::ecs
 		{
 			WorldMatrix =
 				DirectX::XMMatrixScalingFromVector(XMLoadFloat3(&Scale)) *
-				DirectX::XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&Rotation)) *
+				DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMVectorMultiply((XMLoadFloat3(&Rotation)), RadiansVector)) *
 				DirectX::XMMatrixTranslationFromVector(XMLoadFloat3(&Translation));
 		}
 

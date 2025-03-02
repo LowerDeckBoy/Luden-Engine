@@ -20,8 +20,9 @@ namespace Luden
 
 		void CreateEntity(Entity* pEntity);
 
+		entt::registry* Registry = nullptr;
+
 	private:
-		entt::registry* m_Registry = nullptr;
 
 	};
 } // namespace Luden
