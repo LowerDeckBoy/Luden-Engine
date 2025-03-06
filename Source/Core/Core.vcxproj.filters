@@ -21,6 +21,9 @@
     <ClCompile Include="Core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Assert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.hpp">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Thread.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Assert.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

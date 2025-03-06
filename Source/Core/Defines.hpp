@@ -5,7 +5,11 @@
 #endif
 
 #if defined (_DEBUG) || (DEBUG)
-	#define CORE_DEBUG
+	#define CORE_DEBUG		1
+	#define CORE_RELEASE	0
+#else
+	#define CORE_DEBUG		0
+	#define CORE_RELEASE	1
 #endif
 
 #define CORE_STRINGIFY(Arg) #Arg

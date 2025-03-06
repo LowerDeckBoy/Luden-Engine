@@ -2,6 +2,7 @@
 
 #include "String.hpp"
 #include <format>
+#include <print>
 
 namespace Luden::Core
 {

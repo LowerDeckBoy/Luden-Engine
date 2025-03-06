@@ -109,7 +109,6 @@ namespace Luden::Core
 		f64		ElapsedTime = 0.0f;
 		f64		Miliseconds = 0.0f;
 
-		// TODO:
 		// Set to limit max fps.
 		int32 FrameLimit = 60;
 

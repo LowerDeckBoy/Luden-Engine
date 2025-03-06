@@ -99,10 +99,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Assert.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Assert.hpp" />
     <ClInclude Include="Core.hpp" />
     <ClInclude Include="Defines.hpp" />
     <ClInclude Include="Export.hpp" />

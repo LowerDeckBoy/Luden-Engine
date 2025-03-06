@@ -1,6 +1,5 @@
 #include "Logger.hpp"
 #include <chrono>
-#include <print>
 
 namespace Luden::Core
 {
