@@ -9,6 +9,13 @@ Mostly made for testing and learning purposes for building graphics and generall
 Note:
 Repo does not provide model assets.
 
-##
+## Showcase
 
-![bistro_meshlets](Media/bistro_meshlets.png)
+| Bistro exterior											| Bistro interior											|
+| --------------------------------------------------------- | --------------------------------------------------------- |
+| ![bistro_meshlets](Media/bistro_exterior_meshlets.png)	| ![bistro_meshlets](Media/bistro_interior_meshlets.png)	|
+
+<!---
+![bistro_meshlets](Media/bistro_exterior_meshlets.png)
+![bistro_meshlets](Media/bistro_interior_meshlets.png)
+--->
