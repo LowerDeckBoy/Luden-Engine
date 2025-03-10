@@ -1,7 +1,8 @@
 #include "SceneCamera.hpp"
 #include <Platform/Window.hpp>
 #include <array>
-
+#include <Core/Logger.hpp>
+#include <Core/Math/Math.hpp>
 #pragma comment(lib, "dinput8")
 
 using namespace DirectX;
@@ -26,16 +27,23 @@ namespace Luden
 		DxInput->CreateDevice(GUID_SysMouse, &DxMouse, NULL);
 		DxMouse->SetDataFormat(&c_dfDIMouse);
 		DxMouse->SetCooperativeLevel(pWindow->Handle, DISCL_NONEXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
+
+		Frustum.Origin = Target;
 	}
 
 	SceneCamera::~SceneCamera()
 	{
+		
 	}
 
 	void SceneCamera::Resize()
 	{
 		AspectRatio = (f32)m_ParentWindow->Width / m_ParentWindow->Height;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
+		
+		Frustum.CreateFromMatrix(Frustum, XMLoadFloat4x4(&Projection));
+
+		Update();
 	}
 
 	void SceneCamera::Tick(f64 DeltaTime)
@@ -54,9 +62,13 @@ namespace Luden
 		{
 			m_ParentWindow->OnCursorShow();
 
-			Update();
-
 			return;
+		}
+
+		// Adjust camera speed on mouse scroll.
+		if (mouseState.lZ)
+		{
+			CameraSpeed = Math::Clamp(CameraSpeed - (-mouseState.lZ * 0.01f), 1.0f, 100.0f);
 		}
 
 		DxKeyboard->GetDeviceState(sizeof(keyboardState), reinterpret_cast<LPVOID>(&keyboardState));
@@ -155,6 +167,11 @@ namespace Luden
 
 	bool SceneCamera::IsInFrustrum(ecs::BoundingBoxComponent& BoundingBox, DirectX::XMFLOAT4X4 Transform)
 	{
+
+		std::array<DirectX::XMFLOAT3, 8> corners{};
+		Frustum.GetCorners(corners.data());
+
+
 		return false;
 	}
 } // namespace Luden

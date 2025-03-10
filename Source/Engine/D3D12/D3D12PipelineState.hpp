@@ -14,6 +14,21 @@ namespace Luden
 {
 	class D3D12Device;
 
+	class D3D12Pipeline
+	{
+	public:
+
+		D3D12Shader* Amplification;
+		D3D12Shader* Mesh;
+		D3D12Shader* Pixel;
+
+		Ref<ID3D12PipelineState> PipelineState;
+
+	private:
+		PipelineType m_PipelineType;
+
+	};
+
 	class D3D12PipelineState
 	{
 	public:

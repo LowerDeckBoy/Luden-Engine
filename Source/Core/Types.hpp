@@ -18,5 +18,20 @@ using f64		= double;
 
 using usize		= std::size_t;
 
-// TODO:
-// IsFloatingPoint<T>()
+template<typename T>
+constexpr bool IsFloatingPoint()
+{
+	return std::is_floating_point<T>();
+}
+
+/* =========================== Running x64 platform only =========================== */
+
+static_assert(sizeof(int8)   == 1,	"Failed to assert *int8* size!" );
+static_assert(sizeof(int16)  == 2,	"Failed to assert *int16* size!");
+static_assert(sizeof(int32)  == 4,	"Failed to assert *int32* size!");
+static_assert(sizeof(int64)  == 8 ,	"Failed to assert *int64* size!");
+
+static_assert(sizeof(uint8)  == 1,  "Failed to assert *uint8* size!" );
+static_assert(sizeof(uint16) == 2,	"Failed to assert *uint16* size!");
+static_assert(sizeof(uint32) == 4,	"Failed to assert *uint32* size!");
+static_assert(sizeof(uint64) == 8,	"Failed to assert *uint64* size!");

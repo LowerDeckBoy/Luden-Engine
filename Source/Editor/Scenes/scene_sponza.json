@@ -3,11 +3,11 @@
 		"models": [
 			{
 				"name": "Sponza",
-				"path": "../../Assets/Models/sponza/sponza.gltf",
+				"path": "../../Assets/Models/Sponza/Sponza.gltf",
 				"transform": {
-					"translation": [ 0.0, 0.0, -16.0 ],
-					"rotation": [ 0.0, 1.625, 0.0 ],
-					"scale": [ 1.0, 1.0, 1.0 ]
+					"position": [ 0.0, 0.0, -10.0 ],
+					"rotation": [ 0.0, -80, 0.0 ],
+					"scale":	[ 1.0, 1.0, 1.0 ]
 				}
 			}
 		],

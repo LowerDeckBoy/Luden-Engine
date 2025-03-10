@@ -76,6 +76,8 @@ namespace Luden
 
 		void ClearRenderTarget(D3D12Descriptor& RenderTargetView, std::array<float, 4> ClearColor = DefaultClearColor);
 
+		void SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY PrimitiveTopology);
+
 		void PushConstants(uint32 Slot, uint32 Count, void* pData, uint32 Offset = 0);
 		void PushRootSRV(uint32 Slot, uint64 Address);
 
@@ -94,6 +96,20 @@ namespace Luden
 		D3D12_COMMAND_LIST_TYPE				m_CommandListType;
 		
 		bool bIsOpen = false;
+
+	}; // class D3D12CommandList
+
+	class D3D12CommandSignature
+	{
+	public:
+		D3D12CommandSignature(D3D12Device* pDevice);
+		~D3D12CommandSignature();
+
+		Ref<ID3D12CommandSignature>&	GetHandle()		{ return m_CommandSignature;		}
+		ID3D12CommandSignature*			GetHandleRaw()	{ return m_CommandSignature.Get();	}
+
+	private:
+		Ref<ID3D12CommandSignature> m_CommandSignature;
 
 	};
 } // namespace Luden

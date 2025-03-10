@@ -35,14 +35,14 @@ namespace Luden::Core
 		template<typename... LogArgs>
 		static void Log(LogLevel Level, std::string_view Message, LogArgs&&... Args)
 		{
-			const auto fmt = std::vformat(Message, std::make_format_args(std::forward<LogArgs>(Args)...));
+			const auto fmt = std::vformat(Message, std::make_format_args(Args...));
 			WriteLog(Level, fmt);
 		}
 
 		template<typename... LogArgs>
 		static void Log(LogLevel Level, std::wstring_view Message, LogArgs&&... Args)
 		{
-			const auto fmt = std::vformat(Message, std::make_wformat_args(std::forward<LogArgs>(Args)...));
+			const auto fmt = std::vformat(Message, std::make_wformat_args(Args...));
 			WriteLog(Level, fmt);
 		}
 

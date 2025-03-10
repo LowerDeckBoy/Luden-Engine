@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include "D3D12Utility.hpp"
 #include <exception>
+#include "Core/Assert.hpp"
 
 namespace Luden
 {
@@ -26,16 +27,10 @@ namespace Luden
 		char hResultError[512]{};
 		::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hResult, 0, hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
 
-		const char* filename = strrchr(Source.file_name(), '\\') ? strrchr(Source.file_name(), '\\') + 1 : Source.file_name();
-
-		std::string where = std::format(
-			"File: {0} ({1}:{2})\nFunction: {3}\n",
-			/* 0 */ filename,
-			/* 1 */ Source.line(),
-			/* 2 */ Source.column(),
-			/* 3 */ Source.function_name());
-
-		std::string message = std::format("{0}\n{1}\n\n{2}", hResultError, ResultString, where);
+		std::string message = std::format("{0}\n{1}\n\n{2}", 
+			hResultError, 
+			ResultString, 
+			Core::Assert::GetWhereCalled(Source));
 
 		if (!Message.empty())
 		{
@@ -44,8 +39,12 @@ namespace Luden
 
 		::MessageBoxA(nullptr, message.data(), "D3D12 Error", MB_OK);
 
-		// Temporarly
-		throw std::exception();
+	#if CORE_DEBUG
+		__debugbreak();
+	#else
+		// Temporal
+		throw std::expection("");
+	#endif
 	}
 
 	void Util::NameD3D12Object(ID3D12Object* pD3D12Object, std::string_view DebugName)

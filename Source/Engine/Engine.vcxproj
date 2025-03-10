@@ -64,7 +64,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(ProjectDir);$(SolutionDir)Dependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(ProjectDir);$(SolutionDir)Dependencies;$(ProjectDir)Dependencies</AdditionalIncludeDirectories>
       <CallingConvention>StdCall</CallingConvention>
       <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
@@ -114,9 +114,8 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Asset\Asset.hpp" />
-    <ClInclude Include="Asset\AssetManager.hpp" />
     <ClInclude Include="Asset\AssetImporter.hpp" />
+    <ClInclude Include="Asset\ShaderCache.hpp" />
     <ClInclude Include="Config.hpp" />
     <ClInclude Include="D3D12\D3D12UploadContext.hpp" />
     <ClInclude Include="D3D12\D3D12Raytracing.hpp" />
@@ -135,6 +134,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="D3D12\D3D12DescriptorHeap.hpp" />
     <ClInclude Include="D3D12\D3D12Device.hpp" />
     <ClInclude Include="D3D12\D3D12Utility.hpp" />
+    <ClInclude Include="Dependencies\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="ECS\Components\BoundingBoxComponent.hpp" />
     <ClInclude Include="ECS\Components\CameraComponent.hpp" />
     <ClInclude Include="ECS\Components\DirectionalLightComponent.hpp" />
@@ -144,6 +144,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="ECS\Components\TransformComponent.hpp" />
     <ClInclude Include="ECS\Entity.hpp" />
     <ClInclude Include="ECS\World.hpp" />
+    <ClInclude Include="Graphics\Animation.hpp" />
     <ClInclude Include="Graphics\Material.hpp" />
     <ClInclude Include="Graphics\Mesh.hpp" />
     <ClInclude Include="Graphics\Model.hpp" />
@@ -162,7 +163,6 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Asset\ShaderCompiler.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Asset\AssetManager.cpp" />
     <ClCompile Include="Asset\AssetImporter.cpp" />
     <ClCompile Include="D3D12\D3D12UploadContext.cpp" />
     <ClCompile Include="D3D12\D3D12Raytracing.cpp" />
@@ -179,6 +179,22 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="D3D12\D3D12DescriptorHeap.cpp" />
     <ClCompile Include="D3D12\D3D12Device.cpp" />
     <ClCompile Include="D3D12\D3D12Utility.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\allocator.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\clusterizer.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\indexcodec.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\indexgenerator.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\overdrawanalyzer.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\overdrawoptimizer.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\quantization.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\simplifier.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\spatialorder.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\stripifier.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\vcacheanalyzer.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\vcacheoptimizer.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\vertexcodec.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\vertexfilter.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\vfetchanalyzer.cpp" />
+    <ClCompile Include="Dependencies\meshoptimizer\vfetchoptimizer.cpp" />
     <ClCompile Include="ECS\Entity.cpp" />
     <ClCompile Include="ECS\World.cpp" />
     <ClCompile Include="Graphics\Model.cpp" />

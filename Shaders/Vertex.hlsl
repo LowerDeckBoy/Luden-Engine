@@ -1,3 +1,15 @@
+#ifndef VERTEX_HLSL
+#define VERTEX_HLSL
+
+#define ROOT_SIG	"RootFlags(CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |"\
+					"DENY_HULL_SHADER_ROOT_ACCESS |"\
+					"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
+					"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
+					"CBV(b0, space=0), "\
+					"RootConstants(num32BitConstants=1, b1), "\
+					"StaticSampler(s0, "\
+                             "addressU = TEXTURE_ADDRESS_WRAP, "\
+                             "filter = FILTER_MAXIMUM_ANISOTROPIC )"
 
 struct MeshData
 {
@@ -43,6 +55,7 @@ struct VertexOutput
 	float3 Bitangent		: BITANGENT;
 };
 
+[RootSignature(ROOT_SIG)]
 VertexOutput VSMain(uint VertexId : SV_VertexID)
 {
 	Vertex vertex = LoadVertex(VertexId);
@@ -62,3 +75,5 @@ float4 PSMain(VertexOutput pin) : SV_Target0
 {
 	return float4(pin.Normal, 1.0f);
 }
+
+#endif // VERTEX_HLSL

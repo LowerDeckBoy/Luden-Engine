@@ -17,7 +17,7 @@ namespace Luden
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandAllocator(CommandListType, IID_PPV_ARGS(&m_CommandAllocator)));
 		//VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandList(pDevice->NodeMask, CommandListType, m_CommandAllocator, nullptr, IID_PPV_ARGS(&m_GraphicsCommandList)));
 		//m_GraphicsCommandList->Close();
-
+		
 		m_CommandListType = CommandListType;
 
 		// Set debug names for given type of commands.
@@ -179,6 +179,11 @@ namespace Luden
 	void D3D12CommandList::ClearRenderTarget(D3D12Descriptor& RenderTargetView, std::array<float, 4> ClearColor)
 	{
 		m_GraphicsCommandList->ClearRenderTargetView(RenderTargetView.CpuHandle, ClearColor.data(), 0, nullptr);
+	}
+
+	void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY PrimitiveTopology)
+	{
+		m_GraphicsCommandList->IASetPrimitiveTopology(PrimitiveTopology);
 	}
 
 	void D3D12CommandList::PushConstants(uint32 Slot, uint32 Count, void* pData, uint32 Offset)

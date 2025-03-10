@@ -56,7 +56,7 @@ namespace Luden
 			return Data != nullptr && Size != 0;
 		}
 
-		// Flag to true, if this Shader has specified RootSignature.
+		// Flag as true, if this Shader has specified RootSignature.
 		// Thus, RootSignature object can be created from Shader Bytecode.
 		bool bHasRootSignature = false;
 

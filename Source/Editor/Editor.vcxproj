@@ -63,7 +63,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>Default</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Source\Engine;$(SolutionDir)Source;$(ProjectDir);$(ProjectDir)Dependencies;$(SolutionDir)Dependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source\Engine;$(SolutionDir)Source;$(ProjectDir);$(ProjectDir)Dependencies;$(SolutionDir)Dependencies;$(SolutionDir)Source\Engine\Dependencies</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <CallingConvention>StdCall</CallingConvention>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -126,6 +126,7 @@
     <ClInclude Include="Colors.hpp" />
     <ClInclude Include="Components\Components.hpp" />
     <ClInclude Include="Components\Helpers.hpp" />
+    <ClInclude Include="Components\Model.hpp" />
     <ClInclude Include="Dependencies\ImGui\imconfig.h" />
     <ClInclude Include="Dependencies\ImGui\imgui.h" />
     <ClInclude Include="Dependencies\ImGui\imgui_impl_dx12.h" />
@@ -144,6 +145,7 @@
     </None>
     <None Include="Scenes\scene_sponza.json" />
     <None Include="Scenes\scene_bistro.json" />
+    <None Include="Scenes\scene_stanford.json" />
     <None Include="Scenes\scene_test.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

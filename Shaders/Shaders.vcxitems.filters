@@ -1,16 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <FxCompile Include="$(MSBuildThisFileDirectory)Common.hlsli" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Common\Common.hlsli" />
     <FxCompile Include="$(MSBuildThisFileDirectory)MS.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Base.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)Test.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Vertex.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)MeshBasic.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)MSStreamed.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Mesh.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)Camera.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)Transform.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Camera.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Transform.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Meshlet.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="NewFilter1">
+      <UniqueIdentifier>{60986820-6f91-427a-9f76-43755d4f6f2b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

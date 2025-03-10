@@ -1,47 +1,85 @@
 #include "Components.hpp"
+#include "../Colors.hpp"
 #include <ImGui/imgui_internal.h>
 
 namespace Luden::gui::Math
 {
-	void Float3(std::string_view Label, DirectX::XMFLOAT3& Float3)
+	bool Float3(std::string_view Label, DirectX::XMFLOAT3& Float3)
 	{
-		if (ImGui::BeginTable(Label.data(), 2, ImGuiTableFlags_BordersInner | ImGuiTableFlags_Resizable))
-		{
-			ImGui::PushID(Label.data());
-			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_IndentDisable | ImGuiTableColumnFlags_WidthFixed, 90.0f);
+		//if (ImGui::BeginTable(Label.data(), 2, ImGuiTableFlags_BordersInner | ImGuiTableFlags_Resizable))
+		//{
+		//	/*
+		//	ImGui::PushID(Label.data());
+		//	ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_IndentDisable | ImGuiTableColumnFlags_WidthFixed, 90.0f);
+		//
+		//	ImGui::TableNextRow();
+		//	ImGui::TableNextColumn();
+		//	ImGui::AlignTextToFramePadding();
+		//	ImGui::Text(Label.data());
+		//	ImGui::TableNextColumn();
+		//
+		//	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+		//	ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth() * 1.25f);
+		//
+		//	ImGui::Button("");
+		//	ImGui::SameLine();
+		//	ImGui::DragFloat("##X", &Float3.x);
+		//	ImGui::PopItemWidth();
+		//	ImGui::SameLine();
+		//
+		//	ImGui::Button("");
+		//	ImGui::SameLine();
+		//	ImGui::DragFloat("##Y", &Float3.y);
+		//	ImGui::PopItemWidth();
+		//	ImGui::SameLine();
+		//
+		//	ImGui::Button("");
+		//	ImGui::SameLine();
+		//	ImGui::DragFloat("##Z", &Float3.z);
+		//	ImGui::PopItemWidth();
+		//	ImGui::SameLine();
+		//
+		//	ImGui::PopStyleVar();
+		//	ImGui::PopID();
+		//
+		//	*/
+		//	ImGui::EndTable();
+		//	
+		//}
 
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::Text(Label.data());
-			ImGui::TableNextColumn();
+		bool bDragged = false;
 
-			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
-			ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth() * 1.25f);
+		ImGui::PushID(Label.data());
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth() * 1.25f);
 
-			ImGui::Button("X");
-			ImGui::SameLine();
-			ImGui::DragFloat("##X", &Float3.x);
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
+		ImGui::PushStyleColor(ImGuiCol_Button, Color::Red);
+		if (ImGui::Button("##x")) { Float3.x = 0.0f; }
+		ImGui::PopStyleColor();
+		ImGui::SameLine();
+		if (ImGui::DragFloat("##X", &Float3.x)) { bDragged = true; }
+		ImGui::PopItemWidth();
+		ImGui::SameLine();
+		
+		ImGui::PushStyleColor(ImGuiCol_Button, Color::Green);
+		if (ImGui::Button("##y")) { Float3.y = 0.0f; }
+		ImGui::PopStyleColor();
+		ImGui::SameLine();
+		if (ImGui::DragFloat("##Y", &Float3.y)) { bDragged = true; }
+		ImGui::PopItemWidth();
+		ImGui::SameLine();
 
-			ImGui::Button("Y");
-			ImGui::SameLine();
-			ImGui::DragFloat("##Y", &Float3.y);
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
+		ImGui::PushStyleColor(ImGuiCol_Button, Color::Blue);
+		if (ImGui::Button("##z")) { Float3.z = 0.0f; }
+		ImGui::PopStyleColor();
+		ImGui::SameLine();
+		if (ImGui::DragFloat("##Z", &Float3.z)) { bDragged = true; }
+		ImGui::PopItemWidth();
 
-			ImGui::Button("Z");
-			ImGui::SameLine();
-			ImGui::DragFloat("##Z", &Float3.z);
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
+		ImGui::PopID();
+		ImGui::PopStyleVar();
 
-			ImGui::PopStyleVar();
-			ImGui::PopID();
-
-			ImGui::EndTable();
-		}
+		return bDragged;
 	}
 
 	void Float4(std::string_view Label, DirectX::XMFLOAT4& Float4)

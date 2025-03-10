@@ -11,8 +11,7 @@ namespace Luden
 	{
 		if (!File::Exists(Path))
 		{
-			const auto& filename = Path.filename().string();
-			LOG_WARNING("File: {0} doesn't exists!", filename);
+			LOG_WARNING("File: {0} doesn't exists!", Path.filename().string());
 
 			return;
 		}

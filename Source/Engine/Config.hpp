@@ -35,12 +35,19 @@ namespace Luden
 
 		// If SyncInterval == 0.
 		// Frame limit can be set to value in range [24; 240].
-		bool bAllowLimitFrameRate = false;
+		bool bAllowFixedFrameRate = false;
+
+		// TODO:
+		// Clamp frame rate to desired [min;max] range.
+		bool bAllowSmoothFrameRate = false;
 
 		// If false - switch to vertex shading.
 		bool bMeshShading = true;
+		
 		bool bDrawMeshlets = true;
 
+		// True, to dispatch Raytracing.
+		// Else, use raster mode.
 		bool bRaytracing = false;
 
 		bool bDrawSky = false;

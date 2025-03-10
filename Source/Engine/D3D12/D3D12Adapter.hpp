@@ -21,10 +21,6 @@ namespace Luden
 
 		Ref<ID3D12Device14> LogicalDevice;
 
-		void CreateFactory();
-		void CreateAdapter();
-		void CreateDevice();
-
 		DXGI_ADAPTER_DESC3 Desc{};
 		
 		DXGI_QUERY_VIDEO_MEMORY_INFO MemoryInfo{};

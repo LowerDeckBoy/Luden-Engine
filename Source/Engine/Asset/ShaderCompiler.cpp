@@ -39,27 +39,27 @@ namespace Luden
 		SAFE_RELEASE(m_DxcIncludeHandler);
 	}
 
-	D3D12Shader ShaderCompiler::CompileVS(Filepath Path, std::string_view EntryPoint)
+	D3D12Shader ShaderCompiler::CompileVS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
 	{
-		return Compile(Path, ShaderStageFlag::Vertex, EntryPoint);
+		return Compile(Path, ShaderStageFlag::Vertex, EntryPoint, bHasRootSignature);
 	}
 
-	D3D12Shader ShaderCompiler::CompileAS(Filepath Path, std::string_view EntryPoint)
+	D3D12Shader ShaderCompiler::CompileAS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
 	{
-		return Compile(Path, ShaderStageFlag::Amplification, EntryPoint);
+		return Compile(Path, ShaderStageFlag::Amplification, EntryPoint, bHasRootSignature);
 	}
 
-	D3D12Shader ShaderCompiler::CompileMS(Filepath Path, std::string_view EntryPoint)
+	D3D12Shader ShaderCompiler::CompileMS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
 	{
-		return Compile(Path, ShaderStageFlag::Mesh, EntryPoint);
+		return Compile(Path, ShaderStageFlag::Mesh, EntryPoint, bHasRootSignature);
 	}
 
-	D3D12Shader ShaderCompiler::CompilePS(Filepath Path, std::string_view EntryPoint)
+	D3D12Shader ShaderCompiler::CompilePS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
 	{
-		return Compile(Path, ShaderStageFlag::Pixel, EntryPoint);
+		return Compile(Path, ShaderStageFlag::Pixel, EntryPoint, bHasRootSignature);
 	}
 
-	D3D12Shader ShaderCompiler::Compile(Filepath Path, ShaderStageFlag ShaderStage, std::string_view EntryPoint)
+	D3D12Shader ShaderCompiler::Compile(Filepath Path, ShaderStageFlag ShaderStage, std::string_view EntryPoint, bool bHasRootSignature)
 	{
 		const auto path = File::GetRelativePath(Path);
 
@@ -72,6 +72,31 @@ namespace Luden
 
 		std::wstring entryPoint = String::ToWide(EntryPoint);
 
+		/*
+		std::vector<LPCWSTR> arguments;
+		arguments.push_back(L"-E");
+		arguments.push_back(entryPoint.c_str());
+		if (bHasRootSignature)
+		{
+			arguments.push_back(L"-T");
+			arguments.push_back(L"rootsig_1_1");
+		}
+		arguments.push_back(L"-T");
+		arguments.push_back(shaderType.c_str());
+		arguments.push_back(L"-I Shaders/");
+		arguments.push_back(L"-I ");
+		arguments.push_back(parentPath.c_str());
+		arguments.push_back(L"-HV 2021");
+		arguments.push_back(DXC_ARG_ALL_RESOURCES_BOUND);
+	#if defined (_DEBUG)
+		arguments.push_back(DXC_ARG_DEBUG);
+		arguments.push_back(DXC_ARG_DEBUG_NAME_FOR_SOURCE);
+		arguments.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);
+	#else
+		arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);
+	#endif
+		*/
+		
 		std::vector<LPCWSTR> arguments = {
 			// Entry point
 			L"-E", entryPoint.c_str(),
@@ -91,7 +116,7 @@ namespace Luden
 			DXC_ARG_OPTIMIZATION_LEVEL3
 	#endif
 		};
-
+		
 
 		DxcBuffer buffer{ 
 			sourceBlob->GetBufferPointer(), 
@@ -116,10 +141,11 @@ namespace Luden
 		VERIFY_D3D12_RESULT(dxcResult->GetResult(&blob));
 
 		D3D12Shader output;
-		output.ShaderName = "test";
-		output.Data = blob->GetBufferPointer();
-		output.Size = blob->GetBufferSize();
-		output.ShaderStage = ShaderStage;
+		output.ShaderName			= "test";
+		output.Data					= blob->GetBufferPointer();
+		output.Size					= blob->GetBufferSize();
+		output.ShaderStage			= ShaderStage;
+		output.bHasRootSignature	= bHasRootSignature;
 
 		return output;
 		//return D3D12Shader("test", blob->GetBufferPointer(), blob->GetBufferSize(), ShaderStage);

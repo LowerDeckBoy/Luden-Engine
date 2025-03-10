@@ -5,18 +5,19 @@
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_impl_dx12.h>
 #include <ImGui/imgui_impl_win32.h>
+#include <Core/Assert.hpp>
 
 extern "C"
 {
-	__declspec(dllexport) extern const UINT  D3D12SDKVersion = 614;
-	__declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
+	__declspec(dllexport) extern const UINT  D3D12SDKVersion	= RHI_D3D12AGILITYSDK_VERSION;
+	__declspec(dllexport) extern const char* D3D12SDKPath		= RHI_D3D12AGILITYSDK_PATH;
 }
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace Luden
 {
-	AssetImporter Application::Importer = {};
+	AssetImporter Application::Importer;
 
 	bool Application::bIsResizing = false;
 
@@ -48,6 +49,7 @@ namespace Luden
 		MainScene = new Scene();
 
 		//SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_test.json");
+		//SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_stanford.json");
 		SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_sponza.json");
 		//SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_bistro.json");
 
@@ -59,7 +61,7 @@ namespace Luden
 		m_Renderer->Resize();
 
 		bIsResizing = false;
-
+		
 	}
 
 	void Application::Run()
@@ -86,9 +88,9 @@ namespace Luden
 
 			m_Timer.GetFrameTime();
 			
-			if (Config::Get().bAllowLimitFrameRate)
+			if (Config::Get().bAllowFixedFrameRate)
 			{
-				if (m_Timer.FrameTime < (1000.0 / (f64)m_Timer.FrameLimit))
+				if (m_Timer.FrameTime <= (1000.0 / (f64)m_Timer.FrameLimit))
 				{
 					continue;
 				}
@@ -171,7 +173,7 @@ namespace Luden
 			break;
 		}
 		case WM_QUIT:
-			[[fallthrough]];
+			FALLTHROUGH;
 		case WM_DESTROY:
 		{
 			::PostQuitMessage(0);

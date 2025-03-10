@@ -109,8 +109,12 @@ namespace Luden
 
 	};
 
-	inline D3D12_INDEX_BUFFER_VIEW GetIndexView()
+	inline D3D12_INDEX_BUFFER_VIEW GetIndexView(D3D12Buffer* pBuffer)
 	{
-		return D3D12_INDEX_BUFFER_VIEW();
+		return D3D12_INDEX_BUFFER_VIEW{
+			.BufferLocation = pBuffer->GetGpuAddress(),
+			.SizeInBytes	= static_cast<uint32>(pBuffer->GetBufferDesc().Size),
+			.Format			= DXGI_FORMAT_R32_UINT
+		};
 	}
 } // namespace Luden

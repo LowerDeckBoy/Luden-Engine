@@ -5,6 +5,7 @@
 #include <Engine/Scene/Scene.hpp>
 #include <Engine/Scene/SceneCamera.hpp>
 #include <Platform/Window.hpp>
+#include <Engine/RHI/Defines.hpp>
 #include <Renderer/Renderer.hpp>
 #include <Asset/AssetImporter.hpp>
 

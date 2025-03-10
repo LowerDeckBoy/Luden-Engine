@@ -2,6 +2,7 @@
 
 #include "D3D12DescriptorHeap.hpp"
 #include "D3D12Resource.hpp"
+#include <Core/File.hpp>
 
 namespace Luden
 {
@@ -18,7 +19,7 @@ namespace Luden
 	struct TextureDesc
 	{
 		TextureUsageFlag	Usage;
-		void*				pData;
+		void*				Data;
 		uint32				Width;
 		uint32				Height;
 		DXGI_FORMAT			Format;
@@ -30,10 +31,14 @@ namespace Luden
 	{
 	public:
 		D3D12Texture() = default;
+		// Create texture Resource from desc.
 		D3D12Texture(D3D12Device* pDevice, TextureDesc Desc);
+		// Create texture Resource from file.
+		D3D12Texture(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
 		~D3D12Texture();
 
 		void Create(D3D12Device* pDevice, TextureDesc Desc);
+		void Create(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
 
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor RenderTargetHandle;

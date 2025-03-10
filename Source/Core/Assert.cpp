@@ -11,7 +11,7 @@ namespace Luden::Core
 
 	std::string Assert::GetWhereCalled(const std::source_location & Location)
 	{
-		return std::format("\tFile: {0} ({1}:{2})\n\tFunction: {3}",
+		return std::format("File: {0} ({1}:{2})\nFunction: {3}",
 			ExtractFilename(Location.file_name()),
 			Location.line(),
 			Location.column(),

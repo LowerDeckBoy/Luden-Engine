@@ -2,6 +2,7 @@
 
 #define _XM_SSE4_INTRINSICS_
 #include <DirectXMath.h>
+#include <DirectXCollision.h>
 
 #ifndef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
@@ -18,6 +19,16 @@ namespace Luden::Platform
 
 namespace Luden
 {
+	struct FFrustumPlane
+	{
+
+	};
+
+	struct FFrustum
+	{
+
+	};
+
 	class SceneCamera
 	{
 	public:
@@ -39,10 +50,12 @@ namespace Luden
 		DirectX::XMFLOAT4X4 InversedView;
 		DirectX::XMFLOAT4X4 InversedProjection;
 
+		DirectX::BoundingFrustum Frustum;
+
 		DirectX::XMMATRIX GetViewProjection() const;
 
 		f32 zNear		= 1.0f;
-		f32 zFar		= 5000.0f;
+		f32 zFar		= 10000.0f;
 
 		f32 AspectRatio = 1.0f;
 		f32 FieldOfView = 45.0f;
@@ -52,15 +65,9 @@ namespace Luden
 		
 		f32 CameraSpeed = 15.0f;
 
+		// TODO:
 		// Check whether BoundingBox is inside of Camera's frustrum.
 		bool IsInFrustrum(ecs::BoundingBoxComponent& BoundingBox, DirectX::XMFLOAT4X4 Transform);
-
-		struct Plane
-		{
-			DirectX::XMFLOAT3 Normal;
-			float Distance;
-		};
-		//std::array<Plane, 6> Frustrums;
 
 	private:
 		Platform::Window* m_ParentWindow;
@@ -71,8 +78,7 @@ namespace Luden
 		DirectX::XMFLOAT3 m_Right					= DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
 		DirectX::XMFLOAT3 m_Upward					= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
-		DirectX::XMFLOAT3 const m_DefaultPosition	= DirectX::XMFLOAT3(0.0f, 1.0f, -20.0f);
-		//DirectX::XMFLOAT3 const m_DefaultTarget		= DirectX::XMFLOAT3(0.0f, 20.0f, 0.0f);
+		DirectX::XMFLOAT3 const m_DefaultPosition	= DirectX::XMFLOAT3(0.0f, 1.0f, -15.0f);
 		DirectX::XMFLOAT3 const m_DefaultTarget		= DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
 		DirectX::XMFLOAT3 const m_DefaultUp			= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 

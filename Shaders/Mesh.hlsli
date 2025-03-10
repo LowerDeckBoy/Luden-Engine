@@ -10,12 +10,14 @@ struct StaticMeshData
 	uint TangentsIndex;
 };
 
+
+
 struct Meshlet
 {
-	uint VertexCount;
 	uint VertexOffset;
-	uint TriangleCount;
 	uint TriangleOffset;
+	uint VertexCount;
+	uint TriangleCount;
 };
 
 //struct Vertex
@@ -23,7 +25,7 @@ struct Meshlet
 //	float3 Position;
 //	float2 TexCoords;
 //	float3 Normal;
-//	float3 Tangent;
+//	float4 Tangent;
 //};
 
 #endif // MESH_HLSLI

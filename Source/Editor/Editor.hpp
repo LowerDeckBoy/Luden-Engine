@@ -57,8 +57,10 @@ namespace Luden
 		// just for readability sake.
 		void DrawLightData();
 
+		void DrawEntityComponents(Entity& Entity);
+
 		// Indicates which Entity to display in Properties panel.
-		Entity m_SelectedEntity;
+		Entity m_SelectedEntity{};
 
 	private:
 		Platform::Window* m_ParentWindow;

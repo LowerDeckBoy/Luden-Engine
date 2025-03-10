@@ -35,8 +35,7 @@ namespace Luden
 			}
 		}
 
-		const SIZE_T vram = static_cast<SIZE_T>(Desc.DedicatedVideoMemory / 1024L / 1024L / 1000L);
-		LOG_INFO(L"GPU: {0} {1} GB.", Desc.Description, vram);
+		LOG_INFO(L"GPU: {0} {1} GB.", Desc.Description, (Desc.DedicatedVideoMemory / 1024L / 1024L / 1000L));
 
 	}
 

@@ -145,16 +145,16 @@ namespace Luden
         pDataBegin.resize(numBackBuffers);
 
         D3D12_RESOURCE_DESC desc{};
-        desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        desc.Format = DXGI_FORMAT_UNKNOWN;
-        desc.Width = static_cast<uint64>(Size);
-        desc.Height = 1;
-        desc.DepthOrArraySize = 1;
-        desc.MipLevels = 1;
-        desc.Alignment = 0;
-        desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-        desc.SampleDesc = { 1, 0 };
-        desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+        desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+        desc.Format             = DXGI_FORMAT_UNKNOWN;
+        desc.Width              = static_cast<uint64>(Size);
+        desc.Height             = 1;
+        desc.DepthOrArraySize   = 1;
+        desc.MipLevels          = 1;
+        desc.Alignment          = 0;
+        desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        desc.SampleDesc         = { 1, 0 };
+        desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
 
         auto heapProperties = D3D::HeapPropertiesUpload();
 

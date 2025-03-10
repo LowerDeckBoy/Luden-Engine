@@ -38,6 +38,11 @@ namespace Luden
 			return m_World;
 		}
 
+		entt::registry* GetRegistry()
+		{
+			return m_World->Registry;
+		}
+
 	private:
 		Filepath m_Filepath;
 

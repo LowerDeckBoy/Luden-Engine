@@ -19,6 +19,9 @@ namespace Luden
 
 	protected:
 		D3D12RHI* m_RHI;
+
+		D3D12RootSignature*		m_RootSignature;
+		D3D12MeshPipelineState* m_MPSO;
 		// RootSignature
 		// PipelineState
 

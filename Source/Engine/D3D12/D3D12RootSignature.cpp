@@ -2,6 +2,7 @@
 #include "D3D12Shader.hpp"
 #include "D3D12RootSignature.hpp"
 #include "D3D12Utility.hpp"
+#include <Core/Assert.hpp>
 
 namespace Luden
 {
@@ -32,6 +33,8 @@ namespace Luden
 
 	HRESULT D3D12RootSignature::BuildFromShader(D3D12Device* pDevice, D3D12Shader* pShader, PipelineType Type)
 	{
+		ASSERT_LOG(pShader->bHasRootSignature, "Shader doesn't specify any RootSignature!");
+
 		const auto& bytecode = pShader->Bytecode();
 
 		m_PipelineType = Type;

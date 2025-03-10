@@ -22,6 +22,7 @@ namespace Luden::Core
 
 		static void MakeAssertionWithMessage(bool Expression, const char* StringExpression, std::source_location SourceLocation, std::string_view Message);
 		
+		// Returns std:format with information where assertion was called: file, line, function.
 		static std::string GetWhereCalled(const std::source_location& Location);
 
 	};
