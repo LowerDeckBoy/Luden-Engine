@@ -3,21 +3,18 @@
 
 #include "Mesh.hlsli"
 
-#define ROOT_SIG	"RootFlags(CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |"\
-					"DENY_HULL_SHADER_ROOT_ACCESS |"\
-					"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
-					"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
-					"CBV(b0, space=0), "\
-					"RootConstants(num32BitConstants=3, b1), "\
-					"SRV(t0), "\
-					"SRV(t1), "\
-					"StaticSampler(s0, "\
-                             "addressU = TEXTURE_ADDRESS_WRAP, "\
-                             "filter = FILTER_MAXIMUM_ANISOTROPIC )"
+#define ROOT_SIG "RootFlags(CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |"\
+	"DENY_HULL_SHADER_ROOT_ACCESS |"\
+	"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
+	"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
+	"CBV(b0, space=0), "\
+	"RootConstants(num32BitConstants=5, b1), "\
+	"StaticSampler(s0, "\
+		"addressU = TEXTURE_ADDRESS_WRAP, "\
+		"filter = FILTER_MAXIMUM_ANISOTROPIC )"
 
-							 
-static const uint MAX_TRIANGLES = 124;
-static const uint MAX_VERTICES = 64;
+		
+#define AS_GROUP_SIZE 32
 
 struct Transform
 {
@@ -30,6 +27,8 @@ struct PushConstants
 {
 	uint VertexIndex;
 	uint MeshletIndex;
+	uint MeshletVerticesIndex;
+	uint MeshletTrianglesIndex;
 	uint bDrawMeshlets;
 };
 
@@ -43,84 +42,46 @@ struct Vertex
 
 struct VertexOut
 {
-	float4 Position			: SV_POSITION;
-	float4 WorldPosition	: WORLD_POSITION;
-	float2 TexCoord			: TEXCOORD;
-	float3 Normal			: NORMAL;
-	float4 Tangent			: TANGENT;
-	uint MeshletIndex		: COLOR0;
+	float4	Position		: SV_POSITION;
+	float4	WorldPosition	: WORLD_POSITION;
+	float2	TexCoord		: TEXCOORD;
+	float3	Normal			: NORMAL;
+	float4	Tangent			: TANGENT;
+	uint	MeshletIndex	: COLOR0;
 };
 
-struct VertexData
+ConstantBuffer<Transform>		Transforms	: register(b0);
+ConstantBuffer<PushConstants>	Constants	: register(b1);
+
+VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 {
-	uint Index;
-};
-
-ConstantBuffer<Transform> Transforms		: register(b0);
-ConstantBuffer<PushConstants> Constants		: register(b1);
-StructuredBuffer<uint> UniqueVertexIndices	: register(t0);
-StructuredBuffer<uint> PrimitiveIndices		: register(t1);
-
-uint Hash(uint Value)
-{
-	Value = (Value + 0x7ed55d16) + (Value << 12);
-	Value = (Value ^ 0xc761c23c) ^ (Value >> 19);
-	Value = (Value + 0x165667b1) + (Value << 5);
-	Value = (Value + 0xd3a2646c) ^ (Value << 9);
-	Value = (Value + 0xfd7046c5) + (Value << 3);
-	Value = (Value ^ 0xb55a4f09) ^ (Value >> 16);
-	return Value;
-}
-
-// Get Triangle from given location and unpack it.
-uint3 GetPrimitive(uint Location)
-{
-	uint packed = PrimitiveIndices[Location];
-	
-	//uint idx0 = (packed) & 0x3FF;
-	//uint idx1 = (packed >> 10) & 0x3FF;
-	//uint idx2 = (packed >> 20) & 0x3FF;
-	
-	uint idx0 = (packed		 ) & 0x3FF;
-	uint idx1 = (packed >> 10) & 0x3FF;
-	uint idx2 = (packed >> 20) & 0x3FF;
-	
-	return uint3(idx0, idx1, idx2);
-}
-
-float3 GetMeshletColor(uint MeshletIndex)
-{
-	uint mhash = Hash(MeshletIndex);
-	
-	return float3(
-		float(mhash			& 255),
-		float((mhash >> 8 )	& 255),
-		float((mhash >> 16) & 255)) / 255.0;
-
-	//return float3(float(MeshletIndex & 1),
-	//		float(MeshletIndex & 3) / 4,
-	//		float(MeshletIndex & 7) / 8);
-}
-
-VertexOut GetVertexAttributes(uint VertexIndex, uint MeshletIndex)
-{
-	StructuredBuffer<Vertex> VertexBuffer = ResourceDescriptorHeap[Constants.VertexIndex];
-	Vertex vertex = VertexBuffer[VertexIndex];
-
 	VertexOut vout;
 	
-	vout.Position		= mul(Transforms.WVP, float4(vertex.Position, 1.0f));
-	vout.TexCoord		= vertex.TexCoord;
-	vout.Normal			= normalize(mul((float3x3) Transforms.World, vertex.Normal));
-	vout.Tangent		= mul(Transforms.World, vertex.Tangent);
+	vout.Position		= mul(Transforms.WVP, float4(InVertex.Position, 1.0f));
+	vout.TexCoord		= InVertex.TexCoord;
+	vout.Normal			= normalize(mul((float3x3) Transforms.World, InVertex.Normal));
+	vout.Tangent		= mul(Transforms.World, InVertex.Tangent);
 	vout.MeshletIndex	= MeshletIndex;
 	
 	return vout;
 }
 
-void ASMain()
+struct Payload
 {
+	uint MeshletIndices[AS_GROUP_SIZE];
+};
 
+groupshared Payload sPayload;
+
+[NumThreads(AS_GROUP_SIZE, 1, 1)]
+void ASMain(
+	uint GroupThreadID		: SV_GroupThreadID,
+	uint DispatchThreadID	: SV_DispatchThreadID,
+	uint GroupID			: SV_GroupID)
+{
+	sPayload.MeshletIndices[GroupThreadID] = DispatchThreadID;
+	
+	DispatchMesh(AS_GROUP_SIZE, 1, 1, sPayload);
 }
 
 [RootSignature(ROOT_SIG)]
@@ -129,40 +90,33 @@ void ASMain()
 void MSMain(
 	uint GroupThreadID : SV_GroupThreadID,
 	uint GroupID : SV_GroupID,
+	in payload Payload payload,
 	out indices uint3 Triangles[MAX_TRIANGLES],
 	out vertices VertexOut Vertices[MAX_VERTICES])
 {
-	StructuredBuffer<Meshlet> Meshlets = ResourceDescriptorHeap[Constants.MeshletIndex];
+	StructuredBuffer<Meshlet>	Meshlets			= ResourceDescriptorHeap[Constants.MeshletIndex];
+	StructuredBuffer<Vertex>	VertexBuffer		= ResourceDescriptorHeap[Constants.VertexIndex];
+	StructuredBuffer<uint>		MeshletVertices		= ResourceDescriptorHeap[Constants.MeshletVerticesIndex];
+	StructuredBuffer<uint>		MeshletTriangles	= ResourceDescriptorHeap[Constants.MeshletTrianglesIndex];
 	
-	Meshlet meshlet = Meshlets[GroupID];
+	uint meshletIndex = payload.MeshletIndices[GroupID];
+	Meshlet meshlet = Meshlets[meshletIndex];
 
 	SetMeshOutputCounts(meshlet.VertexCount, meshlet.TriangleCount);
 
-	//if (GroupThreadID < meshlet.TriangleCount)
-	//{
-	//	Triangles[GroupThreadID] = GetPrimitive(meshlet.TriangleOffset + GroupThreadID);
-	//}
-	//
-	//if (GroupThreadID < meshlet.VertexCount)
-	//{
-	//	uint vertexIndex = UniqueVertexIndices[meshlet.VertexOffset + GroupThreadID];
-	//	Vertices[GroupThreadID] = GetVertexAttributes(vertexIndex, GroupID);
-	//}
-	
-	for (uint i = GroupThreadID; i < meshlet.TriangleCount; i += 128)
-	{
-		uint offset = meshlet.TriangleOffset + i * 3;
-		Triangles[i] = uint3(
-            PrimitiveIndices[offset],
-            PrimitiveIndices[offset + 1],
-            PrimitiveIndices[offset + 2]
-        );
+	if (GroupThreadID < meshlet.TriangleCount)
+	{ 
+		uint packed = MeshletTriangles.Load(meshlet.TriangleOffset + GroupThreadID);
+
+		Triangles[GroupThreadID] = UnpackTriangle(packed);
 	}
 	
-	for (uint j = GroupThreadID; j < meshlet.VertexCount; j += 128)
+	if (GroupThreadID < meshlet.VertexCount)
 	{
-		uint index = UniqueVertexIndices[meshlet.VertexOffset + j];
-		Vertices[j] = GetVertexAttributes(index, GroupID);
+		uint vertexIndex = MeshletVertices[meshlet.VertexOffset + GroupThreadID];
+		Vertex vertex = VertexBuffer[vertexIndex];
+		
+		Vertices[GroupThreadID] = GetVertexAttributes(vertex, GroupID);
 	}
 
 }
@@ -173,7 +127,7 @@ float4 PSMain(VertexOut pin) : SV_TARGET
 	
 	if (Constants.bDrawMeshlets)
 	{
-		float3 meshletColor = GetMeshletColor(pin.MeshletIndex);
+		float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
 		return float4(meshletColor, 1.0f);
 	}
 
