@@ -1,6 +1,8 @@
+#include <Asset/AssetImporter.hpp>
 #include "Renderer.hpp"
 #include "D3D12/D3D12Utility.hpp"
 #include <Core/Logger.hpp>
+#include <Core/Math/Math.hpp>
 
 namespace Luden
 {
@@ -23,12 +25,10 @@ namespace Luden
 
 		Camera = new SceneCamera(pParentWindow);
 
-		//BaseVS = m_ShaderCompiler->CompileVS("../../Shaders/Base.hlsl");
-		//BasePS = m_ShaderCompiler->CompilePS("../../Shaders/Base.hlsl");
-
 		VertexVS = m_ShaderCompiler->CompileVS("../../Shaders/Vertex.hlsl", true);
 		VertexPS = m_ShaderCompiler->CompilePS("../../Shaders/Vertex.hlsl", false);
 
+		MeshAS = m_ShaderCompiler->CompileAS("../../Shaders/MS.hlsl", true);
 		MeshMS = m_ShaderCompiler->CompileMS("../../Shaders/MS.hlsl", true);
 		MeshPS = m_ShaderCompiler->CompilePS("../../Shaders/MS.hlsl", false);
 
@@ -40,6 +40,7 @@ namespace Luden
 	{
 		SceneTextures.Scene.Release();
 		D3D12UploadContext::Release();
+		
 	}
 
 	void Renderer::BeginFrame()
@@ -137,13 +138,15 @@ namespace Luden
 
 	void Renderer::Draw(Scene* pScene, Frame& CurrentFrame)
 	{
-		if (pScene->Models.empty())
+		if (!pScene || pScene->Models.empty())
 		{
 			return;
 		}
 
-		auto* device = m_D3D12RHI->Device;
+		CulledVertices = 0;
 
+		auto* device = m_D3D12RHI->Device;
+		
 		if (Config::Get().bMeshShading)
 		{
 			CurrentFrame.GraphicsCommandList->SetRootSignature(&MeshRS);
@@ -153,41 +156,42 @@ namespace Luden
 			{
 				auto& transform = model.GetComponent<ecs::TransformComponent>();
 				transform.Update();
-
+				
 				auto* constantBuffer = device->ConstantBuffers.at(model.ConstantBuffer);
-				model.cbObjectTransforms = {
-					DirectX::XMMatrixTranspose(transform.WorldMatrix * Camera->GetViewProjection()), 
-					DirectX::XMMatrixTranspose(transform.WorldMatrix) 
-					};
-				constantBuffer->Update(&model.cbObjectTransforms);
-
 				CurrentFrame.GraphicsCommandList->SetConstantBuffer(0, constantBuffer);
-
+				
 				for (auto& mesh : model.Meshes)
 				{
+					mesh.Transform.Update();
+					model.cbObjectTransforms.WVP	= DirectX::XMMatrixTranspose(mesh.Transform.WorldMatrix * transform.WorldMatrix * Camera->GetViewProjection());
+					model.cbObjectTransforms.World	= DirectX::XMMatrixTranspose(mesh.Transform.WorldMatrix * transform.WorldMatrix);
+					constantBuffer->Update(&model.cbObjectTransforms);
+
 					uint32 vertexBuffer				= device->Buffers.at(mesh.VertexBuffer)->ShaderResourceView.Index;
 					uint32 meshletBuffer			= device->Buffers.at(mesh.MeshletsBuffer)->ShaderResourceView.Index;
-					uint64 meshletVerticesBuffer	= device->Buffers.at(mesh.MeshletVerticesBuffer)->GetGpuAddress();
-					uint64 meshletTrianglesBuffer	= device->Buffers.at(mesh.MeshletTrianglesBuffer)->GetGpuAddress();
+					uint32 meshletVerticesBuffer	= device->Buffers.at(mesh.MeshletVerticesBuffer)->ShaderResourceView.Index;
+					uint32 meshletTrianglesBuffer	= device->Buffers.at(mesh.MeshletTrianglesBuffer)->ShaderResourceView.Index;
 
 					struct
 					{
 						uint32 vertex;
 						uint32 meshlet;
+						uint32 meshletVertices;
+						uint32 meshletTriangles;
 						uint32 bDrawMeshlets;
 					} buffers
 					{
 						.vertex = vertexBuffer,
 						.meshlet = meshletBuffer,
+						.meshletVertices = meshletVerticesBuffer,
+						.meshletTriangles = meshletTrianglesBuffer,
 						.bDrawMeshlets = (uint32)Config::Get().bDrawMeshlets,
 					};
 
-					CurrentFrame.GraphicsCommandList->PushConstants(1, 3, &buffers);
-					CurrentFrame.GraphicsCommandList->PushRootSRV(2, meshletVerticesBuffer);
-					CurrentFrame.GraphicsCommandList->PushRootSRV(3, meshletTrianglesBuffer);
+					CurrentFrame.GraphicsCommandList->PushConstants(1, 5, &buffers);
 
-					CurrentFrame.GraphicsCommandList->DispatchMesh(mesh.NumMeshlets, 1, 1);
-
+					//CurrentFrame.GraphicsCommandList->DispatchMesh(mesh.NumMeshlets, 1, 1);
+					CurrentFrame.GraphicsCommandList->DispatchMesh(ROUND_UP(mesh.NumMeshlets / 32), 1, 1);
 				}
 			}
 		}
@@ -195,23 +199,35 @@ namespace Luden
 		{
 			CurrentFrame.GraphicsCommandList->SetRootSignature(&VertexRS);
 			CurrentFrame.GraphicsCommandList->SetPipelineState(&VertexPSO);
-		
+			
 			for (auto& model : pScene->Models)
 			{
 				auto& transform = model.GetComponent<ecs::TransformComponent>();
 				transform.Update();
 		
 				auto* constantBuffer = device->ConstantBuffers.at(model.ConstantBuffer);
-		
-				model.cbObjectTransforms = {
-					DirectX::XMMatrixTranspose(transform.WorldMatrix * Camera->GetViewProjection()), 
-					DirectX::XMMatrixTranspose(transform.WorldMatrix) 
-					};
-				constantBuffer->Update(&model.cbObjectTransforms);
 				CurrentFrame.GraphicsCommandList->SetConstantBuffer(0, constantBuffer);
 		
 				for (auto& mesh : model.Meshes)
 				{
+					mesh.Transform.Update();
+					model.cbObjectTransforms.WVP	= DirectX::XMMatrixTranspose(mesh.Transform.WorldMatrix * transform.WorldMatrix * Camera->GetViewProjection());
+					model.cbObjectTransforms.World	= DirectX::XMMatrixTranspose(mesh.Transform.WorldMatrix * transform.WorldMatrix);
+					constantBuffer->Update(&model.cbObjectTransforms);
+					
+
+					//DirectX::XMStoreFloat4x4(&mat, Camera->GetViewProjection());
+					//DirectX::XMStoreFloat4x4(&mat, transform.WorldMatrix);
+					
+					//DirectX::XMStoreFloat4x4(&mat, mesh.Transform.WorldMatrix * Camera->GetViewProjection());
+					//DirectX::XMFLOAT4X4 mat;
+					//DirectX::XMStoreFloat4x4(&mat, model.cbObjectTransforms.World * Camera->GetViewProjection());
+					//if (!Camera->IsInFrustrum(mesh.BoundingBox, mat))
+					//{
+					//	CulledVertices += mesh.NumVertices;
+					//	continue;
+					//}
+
 					auto* vertexBuffer = device->Buffers.at(mesh.VertexBuffer);
 		
 					CurrentFrame.GraphicsCommandList->PushConstants(1, 1, &vertexBuffer->ShaderResourceView.Index);
@@ -250,6 +266,7 @@ namespace Luden
 
 			D3D12MeshPipelineStateBuilder builder(m_D3D12RHI->Device);
 			builder.SetRootSignature(&MeshRS);
+			builder.SetAmplificationShader(&MeshAS);
 			builder.SetMeshShader(&MeshMS);
 			builder.SetPixelShader(&MeshPS);
 			builder.EnableDepth(true);
@@ -271,6 +288,104 @@ namespace Luden
 
 		//D3D12UploadContext::Upload();
 
+	}
+
+	bool Renderer::AddModel(AssetImporter* pAssetImporter, Filepath Path)
+	{
+		Model model{};
+		
+		auto importStartTime = std::chrono::high_resolution_clock::now();
+
+		ActiveScene->GetWorld()->CreateEntity(&model);
+
+		model.AddComponent<ecs::NameComponent>(File::GetFilename(Path));
+		model.AddComponent<ecs::TransformComponent>();
+
+		if (!pAssetImporter->ImportStaticMesh(Path, model))
+		{	
+			// LOG
+			return false;
+		}
+
+		auto importEndTime = std::chrono::high_resolution_clock::now();
+		LOG_DEBUG("{0} import time: {1}", File::GetFilename(Path), std::chrono::duration<f64>(importEndTime - importStartTime));
+
+		model.Create(m_D3D12RHI->Device);
+
+		ActiveScene->Models.push_back(model);
+
+		return true;
+
+	}
+
+	void Renderer::ReleaseActiveScene()
+	{
+		m_D3D12RHI->Wait();
+
+		auto unloadStartTime = std::chrono::high_resolution_clock::now();
+
+		for (auto& frame : m_D3D12RHI->Frames)
+		{
+			frame.GraphicsCommandList->Open();
+		}
+
+		for (auto buffer : m_D3D12RHI->Device->Buffers)
+		{
+			delete buffer;
+		}
+
+		for (auto buffer : m_D3D12RHI->Device->ConstantBuffers)
+		{
+			delete buffer;
+		}
+
+		m_D3D12RHI->Device->ConstantBuffers.clear(); 
+		m_D3D12RHI->Device->ConstantBuffers.shrink_to_fit();
+		m_D3D12RHI->Device->Buffers.clear();
+		m_D3D12RHI->Device->Buffers.shrink_to_fit();
+		
+		for (auto& model : ActiveScene->Models)
+		{
+			model.Release();
+		}
+
+		ActiveScene->Models.clear();
+
+		std::vector<D3D12CommandList*> lists;
+		for (auto& frame : m_D3D12RHI->Frames)
+		{
+			lists.emplace_back(frame.GraphicsCommandList);
+		}
+
+		m_D3D12RHI->Device->ShaderResourceHeap->Reset();
+		m_D3D12RHI->GraphicsQueue->Execute(lists);
+		m_D3D12RHI->Wait();
+		
+		auto unloadEndTime = std::chrono::high_resolution_clock::now();
+		LOG_DEBUG("Scene: {0} unloaded. Unload time: {1}.", ActiveScene->Name, std::chrono::duration<f64>(unloadEndTime - unloadStartTime));
+
+	}
+
+	void Renderer::HandleRequests()
+	{
+		if (bRequestCleanup)
+		{
+			ReleaseActiveScene();
+			bRequestCleanup = false;
+		}
+
+		//if (bRequestSceneLoad)
+		//{
+		//	bRequestSceneLoad = false;
+		//	MainScene = nullptr;
+		//	MainScene = new Scene();
+		//	SceneSerializer::Load(&Importer, MainScene, m_Renderer->SceneToLoad);
+		//	InitializeScene(MainScene);
+		//	ActiveScene = MainScene;
+		//	SceneToLoad = "";
+		//	GetRHI()->Wait();
+		//	//continue;
+		//}
 	}
 
 } // namespace Luden

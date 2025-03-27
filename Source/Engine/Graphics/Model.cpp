@@ -1,3 +1,4 @@
+#include "Config.hpp"
 #include "D3D12/D3D12Device.hpp"
 #include "D3D12/D3D12UploadContext.hpp"
 #include "Model.hpp"
@@ -15,7 +16,8 @@ namespace Luden
 				.Data			= mesh.Vertices.data(),
 				.NumElements	= mesh.NumVertices,
 				.Stride			= sizeof(Vertex),
-				.bBindless		= true
+				.bBindless		= true,
+				.Name			= mesh.Name + " Vertex Buffer"
 				});
 			
 			mesh.IndexBuffer = pDevice->CreateBuffer({
@@ -23,7 +25,8 @@ namespace Luden
 				.Data			= mesh.Indices.data(),
 				.NumElements	= mesh.NumIndices,
 				.Stride			= sizeof(uint32),
-				.bBindless		= false
+				.bBindless		= false,
+				.Name			= mesh.Name + " Index Buffer"
 				});
 
 			mesh.IndexBufferView = D3D12_INDEX_BUFFER_VIEW{
@@ -37,7 +40,8 @@ namespace Luden
 				.Data			= mesh.Meshlets.data(),
 				.NumElements	= mesh.NumMeshlets,
 				.Stride			= sizeof(mesh.Meshlets.at(0)),
-				.bBindless		= true
+				.bBindless		= true,
+				.Name			= mesh.Name + " Meshlet Buffer"
 				});
 
 			mesh.MeshletVerticesBuffer = pDevice->CreateBuffer({
@@ -45,58 +49,99 @@ namespace Luden
 				.Data			= mesh.MeshletVertices.data(),
 				.NumElements	= (uint32)mesh.MeshletVertices.size(),
 				.Stride			= sizeof(mesh.MeshletVertices.at(0)),
-				.bBindless		= false
+				.bBindless		= true,
+				.Name			= mesh.Name + " MeshletVertices Buffer"
 				});
 
-			//mesh.MeshletsTrianglesBuffer = pDevice->CreateBuffer({
+			// Test
+			// Repacking Triangles
+			std::vector<uint32> meshletTrianglesRepacked;
+			for (auto& meshlet : mesh.Meshlets)
+			{
+				// Save triangle offset for current meshlet
+				uint32 triangleOffset = static_cast<uint32>(meshletTrianglesRepacked.size());
+
+				// Repack to uint32
+				for (uint32 i = 0; i < meshlet.triangle_count; ++i)
+				{
+					uint32 i0 = 3 * i + 0 + meshlet.triangle_offset;
+					uint32 i1 = 3 * i + 1 + meshlet.triangle_offset;
+					uint32 i2 = 3 * i + 2 + meshlet.triangle_offset;
+
+					uint8_t  vIdx0 = mesh.MeshletTriangles[i0];
+					uint8_t  vIdx1 = mesh.MeshletTriangles[i1];
+					uint8_t  vIdx2 = mesh.MeshletTriangles[i2];
+					uint32_t packed = 
+						((static_cast<uint32>(vIdx0) & 0xFF) << 0) |
+						((static_cast<uint32>(vIdx1) & 0xFF) << 8) |
+						((static_cast<uint32>(vIdx2) & 0xFF) << 16);
+					meshletTrianglesRepacked.push_back(packed);
+				}
+
+				// Update triangle offset for current meshlet
+				meshlet.triangle_offset = triangleOffset;
+			}
+			
+			mesh.MeshletTrianglesBuffer = pDevice->CreateBuffer({
+				.BufferUsage	= BufferUsageFlag::Structured,
+				.Data			= meshletTrianglesRepacked.data(),
+				.NumElements	= (uint32)meshletTrianglesRepacked.size(),
+				.Stride			= sizeof(meshletTrianglesRepacked.at(0)),
+				.bBindless		= true,
+				.Name			= mesh.Name + " MeshletTrianglesBuffer"
+				});
+
+			
+			//std::vector<uint32_t> meshletPrimitives;
+			//for (auto& val : mesh.MeshletTriangles)
+			//{
+			//	meshletPrimitives.push_back(static_cast<uint32_t>(val));
+			//}
+			//
+			//mesh.MeshletTrianglesBuffer = pDevice->CreateBuffer({
+			//	.BufferUsage	= BufferUsageFlag::Structured,
+			//	.Data			= meshletPrimitives.data(),
+			//	.NumElements	= (uint32)meshletPrimitives.size(),
+			//	.Stride			= sizeof(uint32),
+			//	.bBindless		= false,
+			//	.Name = "Model MeshletTriangles Buffer"
+			//	});
+			
+
+			//mesh.MeshletTrianglesBuffer = pDevice->CreateBuffer({
 			//	.BufferUsage	= BufferUsageFlag::Structured,
 			//	.Data			= mesh.MeshletTriangles.data(),
 			//	.NumElements	= (uint32)mesh.MeshletTriangles.size(),
 			//	.Stride			= sizeof(mesh.MeshletTriangles.at(0)),
-			//	.bBindless		= false
+			//	.bBindless		= false,
+			//	.Name			= "Model MeshletTriangles Buffer"
 			//	});
-
-			std::vector<uint32_t> meshletPrimitives;
-			for (auto& val : mesh.MeshletTriangles)
-			{
-				meshletPrimitives.push_back(static_cast<uint32_t>(val));
-			}
-
-			//auto triangles = reinterpret_cast<uint32*>(mesh.MeshletTriangles.data());
-			//size_t trianglesCount = mesh.MeshletTriangles.size() / sizeof(uint32);
-
-			mesh.MeshletTrianglesBuffer = pDevice->CreateBuffer({
-				.BufferUsage	= BufferUsageFlag::Structured,
-				.Data			= meshletPrimitives.data(),
-				.NumElements	= (uint32)meshletPrimitives.size(),
-				.Stride			= sizeof(uint32),
-				.bBindless		= false
-				});
-			//.Stride = sizeof(mesh.MeshletTriangles.at(0)),
 
 			mesh.MeshletBoundsBuffer = pDevice->CreateBuffer({
 				.BufferUsage	= BufferUsageFlag::Structured,
 				.Data			= mesh.MeshletBounds.data(),
 				.NumElements	= (uint32)mesh.MeshletBounds.size(),
 				.Stride			= sizeof(mesh.MeshletBounds.at(0)),
-				.bBindless		= false
+				.bBindless		= true,
+				.Name			= mesh.Name + " MeshletBounds Buffer"
 				});
 
-
-			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.VertexBuffer),			(uint64)mesh.NumVertices	 * sizeof(Vertex));
-			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.IndexBuffer),				(uint64)mesh.NumIndices		 * sizeof(uint32));
-			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletsBuffer),			(uint64)mesh.NumMeshlets	 * sizeof(mesh.Meshlets.at(0)));
-			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletVerticesBuffer),	mesh.MeshletVertices.size()  * sizeof(mesh.MeshletVertices.at(0)));
-			//D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletTrianglesBuffer), mesh.MeshletTriangles.size() * sizeof(mesh.MeshletTriangles.at(0)));
-			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletTrianglesBuffer),	meshletPrimitives.size()	 * sizeof(uint32));
-			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletBoundsBuffer),		mesh.MeshletBounds.size()	 * sizeof(mesh.MeshletBounds.at(0)));
-
-			//D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletsBuffer), (uint64)mesh.NumMeshlets * sizeof(DirectX::Meshlet));
-			//D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletsVerticesBuffer), mesh.MeshletVertices.size() * sizeof(uint8));
-			//D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletsTrianglesBuffer), mesh.MeshletTriangles.size() * sizeof(DirectX::MeshletTriangle));
+			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.VertexBuffer),			(uint64)mesh.NumVertices			* sizeof(Vertex));
+			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.IndexBuffer),				(uint64)mesh.NumIndices				* sizeof(uint32));
+			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletsBuffer),			(uint64)mesh.NumMeshlets			* sizeof(mesh.Meshlets.at(0)));
+			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletVerticesBuffer),	mesh.MeshletVertices.size()			* sizeof(mesh.MeshletVertices.at(0)));
+			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletTrianglesBuffer),	meshletTrianglesRepacked.size()		* sizeof(uint32));
+			D3D12UploadContext::UploadBuffer(pDevice->Buffers.at(mesh.MeshletBoundsBuffer),		mesh.MeshletBounds.size()			* sizeof(mesh.MeshletBounds.at(0)));
 
 			D3D12UploadContext::Upload();
 		}
+	}
 
+	void Model::Release()
+	{
+		Entity::RemoveComponent<ecs::TransformComponent>();
+		Entity::RemoveComponent<ecs::NameComponent>();
+
+		Entity::Destroy();
 	}
 } // namespace Luden

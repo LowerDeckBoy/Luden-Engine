@@ -13,12 +13,11 @@ namespace Luden
 {
 	struct SceneRenderTargets
 	{
-		uint32 GBuffer;
 		// Final image
 		//uint32 Scene;
 		D3D12RenderTexture Scene;
 	};
-	 
+	
 	class Renderer
 	{
 	public:
@@ -49,7 +48,22 @@ namespace Luden
 
 		void InitializeScene(Scene* pScene);
 
+		// Import model to active scene.
+		bool AddModel(AssetImporter* pAssetImporter, Filepath Path);
+
+		void ReleaseActiveScene();
+
 		SceneCamera* Camera;
+
+		void HandleRequests();
+
+		// TODO:
+		// Clean these up
+		bool bRequestCleanup = false;
+		bool bRequestSceneLoad = false;
+		Filepath SceneToLoad;
+		
+		uint64 CulledVertices = 0;
 
 	private:
 		D3D12RHI* m_D3D12RHI;
@@ -69,6 +83,7 @@ namespace Luden
 		D3D12RootSignature VertexRS;
 		D3D12PipelineState VertexPSO;
 
+		D3D12Shader MeshAS;
 		D3D12Shader MeshMS;
 		D3D12Shader MeshPS;
 

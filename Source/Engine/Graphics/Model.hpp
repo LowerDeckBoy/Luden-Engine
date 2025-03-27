@@ -18,7 +18,7 @@ namespace Luden
 	public:
 		Model() = default;
 		
-		// Create Buffer Resources for this model.
+		// Create and upload Buffer Resources.
 		void Create(D3D12Device* pDevice);
 
 		// Single StaticMesh built from submeshes?
@@ -26,7 +26,6 @@ namespace Luden
 
 		std::vector<StaticMesh> Meshes;
 		std::vector<Material>	Materials;
-		//std::unordered_map<Filepath, Material>	Materials;
 
 		uint32 ConstantBuffer;
 		Constants::ObjectTranforms cbObjectTransforms{};
@@ -41,9 +40,7 @@ namespace Luden
 			m_Filepath = Path;
 		}
 
-		//uint32 TotalVertexCount;
-		//uint32 TotalIndexCount;
-		//uint32 TotalMeshletCount;
+		void Release();
 
 	private:
 		Filepath m_Filepath;
