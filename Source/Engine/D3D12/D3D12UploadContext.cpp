@@ -24,8 +24,15 @@ namespace Luden
 
 	void D3D12UploadContext::Release()
 	{
-		delete CommandList;
-		delete UploadQueue;
+		if (CommandList)
+		{
+			delete CommandList;
+		}
+
+		if (UploadQueue)
+		{
+			delete UploadQueue;
+		}
 	}
 
 	void D3D12UploadContext::Upload()
@@ -71,7 +78,8 @@ namespace Luden
 	void D3D12UploadContext::UploadBuffer(D3D12Buffer* pBuffer, uint64 Size)
 	{
 		UploadResourceRequest request{};
-		request.Resource = pBuffer;
+		request.UploadType	= EUploadType::Buffer;
+		request.Resource	= pBuffer;
 
 		const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(Size);
 
@@ -96,5 +104,11 @@ namespace Luden
 
 		PendingRequests.push_back(request);
 
+	}
+	void D3D12UploadContext::UploadTexture(D3D12Texture* pTexture, uint64 Size)
+	{
+		UploadResourceRequest request{};
+		request.UploadType = EUploadType::Texture;
+		request.Resource = pTexture;
 	}
 } // namespace Luden

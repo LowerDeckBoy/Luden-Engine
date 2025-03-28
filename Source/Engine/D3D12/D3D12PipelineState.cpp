@@ -4,6 +4,20 @@
 
 namespace Luden
 {
+	D3D12Pipeline::D3D12Pipeline()
+		: RootSignature(nullptr),
+		Amplification(nullptr),
+		Mesh(nullptr),
+		Pixel(nullptr),
+		m_PipelineType(PipelineType::Graphics)
+	{
+	}
+
+	D3D12PipelineState::~D3D12PipelineState()
+	{
+		SAFE_RELEASE(m_PipelineState);
+	}
+
 	void D3D12PipelineState::SetName(std::string_view Name)
 	{
 		NAME_D3D12_OBJECT(m_PipelineState.Get(), Name);
@@ -39,7 +53,7 @@ namespace Luden
 		m_Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
 		m_Desc.DSVFormat = m_DepthFormat;
-		
+		Pipeline.GetHandle().AddRef();
 		return m_Device->LogicalDevice->CreateGraphicsPipelineState(&m_Desc, IID_PPV_ARGS(&Pipeline.GetHandle()));
 	}
 
@@ -111,8 +125,6 @@ namespace Luden
 
 	HRESULT D3D12MeshPipelineStateBuilder::Build(D3D12PipelineState& Pipeline)
 	{
-		m_Desc.AS.pShaderBytecode = nullptr;
-		m_Desc.AS.BytecodeLength = 0;
 
 		m_Desc.NodeMask = m_Device->NodeMask;
 		m_Desc.RasterizerState = m_RasterizerDesc;
@@ -134,7 +146,7 @@ namespace Luden
 		D3D12_PIPELINE_STATE_STREAM_DESC streamDesc{};
 		streamDesc.SizeInBytes = sizeof(psoStream);
 		streamDesc.pPipelineStateSubobjectStream = &psoStream;
-
+		Pipeline.GetHandle().AddRef();
 		return m_Device->LogicalDevice->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&Pipeline.GetHandle()));
 	}
 
@@ -193,4 +205,5 @@ namespace Luden
 			m_Desc.RTVFormats[i] = Formats.at(i);
 		}
 	}
+
 } // namespace Luden

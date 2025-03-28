@@ -11,14 +11,22 @@
 namespace Luden
 {
 	class D3D12Buffer;
+	class D3D12Texture;
 	class D3D12Resource;
 	class D3D12RHI;
 
+	enum EUploadType
+	{
+		Buffer,
+		Texture
+	};
+
 	struct UploadResourceRequest
 	{
-		D3D12Resource* Resource;
-		D3D12Resource* UploadResource;
+		D3D12Resource*	Resource;
+		D3D12Resource*	UploadResource;
 
+		EUploadType		UploadType;
 	};
 
 	class D3D12UploadContext
@@ -32,6 +40,7 @@ namespace Luden
 		static void Upload();
 
 		static void UploadBuffer(D3D12Buffer* pBuffer, uint64 Size);
+		static void UploadTexture(D3D12Texture* pTexture, uint64 Size);
 
 		static std::vector<UploadResourceRequest> PendingRequests;
 

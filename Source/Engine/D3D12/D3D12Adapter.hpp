@@ -27,15 +27,18 @@ namespace Luden
 		uint64 AvailableMemory = 0;
 
 		// Minimal level of shader model that is required by D3D12 Render Hardware Interface
-		// in order to support for bindless approach of HLSL 
-		// ResourceDescriptorHeap[] and SamplerDescriptorHeap[] 
+		// in order to support for bindless approach of HLSL ResourceDescriptorHeap[] and SamplerDescriptorHeap[].
 		D3D_SHADER_MODEL const MinRequiredShaderModel = D3D_SHADER_MODEL_6_6;
 
 		D3D_SHADER_MODEL MaxSupportedShaderModel = D3D_SHADER_MODEL_NONE;
 
 		D3D_FEATURE_LEVEL MinRequiredFeatureLevel = D3D_FEATURE_LEVEL_12_2;
 
-		uint64 QueryAdapterMemory() const;
+		uint64 QueryAdapterMemory();
+
+		f64 GetCurrentMemoryUsage();
+		// aka Budget.
+		f64 GetDeviceTotalMemory() const;
 
 	private:
 		Ref<ID3D12Debug6> m_DebugDevice;

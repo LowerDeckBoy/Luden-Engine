@@ -35,7 +35,7 @@ namespace Luden
 		bool	bBindless = true;
 
 		// Optional
-		std::string_view Name = "";
+		std::string Name = "";
 	};
 
 	class D3D12Buffer : public D3D12Resource

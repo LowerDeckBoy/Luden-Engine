@@ -43,7 +43,6 @@ namespace Luden
 	{
 		for (auto buffer : Device->Buffers)
 		{
-			//buffer->Release();
 			delete buffer;
 		}
 

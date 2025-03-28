@@ -1,6 +1,7 @@
 #include "Config.hpp"
 #include "D3D12Adapter.hpp"
 #include "D3D12Utility.hpp"
+#include "D3D12Memory.hpp"
 #include <Core/Logger.hpp>
 #include <iostream>
 
@@ -45,11 +46,20 @@ namespace Luden
 		SAFE_RELEASE(Factory);
 	}
 
-	uint64 D3D12Adapter::QueryAdapterMemory() const
+	uint64 D3D12Adapter::QueryAdapterMemory()
 	{
-		DXGI_QUERY_VIDEO_MEMORY_INFO memoryInfo{};
-		Adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &memoryInfo);
+		Adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &MemoryInfo);
 		
-		return (memoryInfo.CurrentUsage / 1024 / 1024);
+		return BYTES_TO_MEGABYTES(MemoryInfo.CurrentUsage);
+	}
+	f64 D3D12Adapter::GetCurrentMemoryUsage()
+	{
+		Adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &MemoryInfo);
+
+		return MemoryInfo.CurrentUsage / 1024.0 / 1024.0 / 1024.0;
+	}
+	f64 D3D12Adapter::GetDeviceTotalMemory() const
+	{
+		return MemoryInfo.Budget / 1024.0 / 1024.0 / 1024.0;
 	}
 } // namespace Luden

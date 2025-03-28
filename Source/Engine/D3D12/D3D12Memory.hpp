@@ -6,6 +6,9 @@
 
 #include <D3D12AgilitySDK/d3dx12/d3dx12_resource_helpers.h>
 
+#define BYTES_TO_MEGABYTES(Bytes) (Bytes / 1024 / 1024)
+#define BYTES_TO_GIGABYTES(Bytes) (BYTES_TO_MEGABYTES(Bytes) / 1024)
+
 namespace Luden::D3D
 {
 	inline D3D12_HEAP_PROPERTIES HeapPropertiesDefault()

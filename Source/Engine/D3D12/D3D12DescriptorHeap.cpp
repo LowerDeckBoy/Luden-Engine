@@ -88,13 +88,10 @@ namespace Luden
 
 		m_DescriptorType = DescriptorType;
 
-		//m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandlePtr()); //  + m_DescriptorIncrementSize
-		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr) ; //  
-		//m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr); //  
+		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr); //  
 
 		if (bIsShaderVisible)
 		{
-			//m_AvailableGpuPtr = static_cast<uint64>(GetGpuStartHandle().ptr) + m_DescriptorIncrementSize;
 			m_AvailableGpuPtr = static_cast<uint64>(GetGpuStartHandle().ptr);
 		}
 	}
@@ -104,6 +101,9 @@ namespace Luden
 		if (!CanAllocate())
 		{
 			LOG_WARNING("Current Descriptor is full and can't allocate anymore!");
+
+			// Temporarly
+			__debugbreak();
 
 			return;
 		}
@@ -129,6 +129,8 @@ namespace Luden
 			Descriptor.GpuHandle = (D3D12_GPU_DESCRIPTOR_HANDLE)(m_AvailableGpuPtr);
 			
 		}
+
+		++m_CurrentAllocations;
 	}
 
 	void D3D12DescriptorHeap::Override(D3D12Descriptor& Descriptor)
@@ -147,11 +149,11 @@ namespace Luden
 
 	void D3D12DescriptorHeap::Reset()
 	{
-		m_AvailableCpuPtr = GetCpuStartHandlePtr();
+		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr + m_DescriptorIncrementSize);
 
 		if (bIsShaderVisible)
 		{
-			m_AvailableGpuPtr = GetGpuStartHandlePtr();
+			m_AvailableGpuPtr = static_cast<uint64>(GetGpuStartHandle().ptr + m_DescriptorIncrementSize);
 		}
 
 		m_CurrentAllocations = 0;

@@ -53,6 +53,11 @@ namespace Luden
         {
             pDevice->CreateShaderResourceView(this);   
         }
+
+        if (!Desc.Name.empty())
+        {
+            NAME_D3D12_OBJECT(m_Resource.Get(), Desc.Name);
+        }
     }
 
     D3D12DepthBuffer::D3D12DepthBuffer() = default;
@@ -151,7 +156,7 @@ namespace Luden
         desc.Height             = 1;
         desc.DepthOrArraySize   = 1;
         desc.MipLevels          = 1;
-        desc.Alignment          = 0;
+        desc.Alignment          = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
         desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
         desc.SampleDesc         = { 1, 0 };
         desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
@@ -170,22 +175,10 @@ namespace Luden
 
             m_Data.at(i) = pData;
 
-            //const auto flags = D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_COMMITTED | D3D12MA::ALLOCATION_FLAGS::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY;
-            //Ref<D3D12MA::Allocation> allocation;
-            //D3D12Memory::Allocate(&m_Buffers.at(i), &allocation, desc, AllocType::eDefault, flags);
-
-            //D3D12_CONSTANT_BUFFER_VIEW_DESC bufferView{};
-            //bufferView.BufferLocation = m_Buffers.at(i).Get()->GetGPUVirtualAddress();
-            //bufferView.SizeInBytes = static_cast<uint32>(dataSize);
-
             // Persistent mapping
             const D3D12_RANGE readRange(0, 0);
             VERIFY_D3D12_RESULT(m_Buffers.at(i)->Map(0, &readRange, reinterpret_cast<void**>(&pDataBegin.at(i))));
             std::memcpy(pDataBegin.at(i), &pData, m_Size);
-
-            //SAFE_RELEASE(allocation);
-
-            //m_Buffers.at(i)->SetName(L"Const Buffer");
         }
     }
 

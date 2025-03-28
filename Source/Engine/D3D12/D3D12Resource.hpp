@@ -9,7 +9,6 @@ namespace Luden
 {
 	class D3D12Device;
 
-	// Wrapper for ID3D12Resource2
 	enum class ResourceUsageFlag
 	{
 		Uninitialized,

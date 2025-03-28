@@ -94,9 +94,9 @@ namespace Luden
 		}
 
 		// TODO:
-		void EnterFullScreen();
+		//void EnterFullScreen();
 		// TODO:
-		void ExitFullScreen();
+		//void ExitFullScreen();
 
 	private:
 		void CreateSwapChain(D3D12Device* pDevice, D3D12CommandQueue* pCommandQueue, Platform::Window* pWindow);

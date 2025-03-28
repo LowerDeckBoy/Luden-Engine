@@ -38,7 +38,8 @@ namespace Luden
 		~D3D12Texture();
 
 		void Create(D3D12Device* pDevice, TextureDesc Desc);
-		void Create(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
+		void CreateFromMemory(D3D12Device* pDevice, TextureDesc Desc);
+		void CreateFromFile(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
 
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor RenderTargetHandle;

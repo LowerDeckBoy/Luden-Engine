@@ -17,6 +17,9 @@ namespace Luden
 	class D3D12Pipeline
 	{
 	public:
+		D3D12Pipeline();
+
+		D3D12RootSignature* RootSignature;
 
 		D3D12Shader* Amplification;
 		D3D12Shader* Mesh;
@@ -33,7 +36,7 @@ namespace Luden
 	{
 	public:
 		D3D12PipelineState() = default;
-		~D3D12PipelineState() = default;
+		~D3D12PipelineState();
 
 		Ref<ID3D12PipelineState>& GetHandle()
 		{

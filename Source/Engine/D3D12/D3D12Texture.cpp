@@ -12,10 +12,9 @@ namespace Luden
 	{
 	}
 
-	D3D12Texture::D3D12Texture(D3D12Device* /* pDevice */, TextureDesc Desc, Filepath Path)
+	D3D12Texture::D3D12Texture(D3D12Device* pDevice, TextureDesc Desc, Filepath Path)
 		: m_TextureDesc(Desc)
 	{
-		
 		D3D12_RESOURCE_DESC1 desc{};
 		desc.Dimension			= D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		desc.Format				= Desc.Format;
@@ -26,6 +25,17 @@ namespace Luden
 		desc.Layout				= D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		desc.Alignment			= D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 		desc.SampleDesc			= { 1, 0 };
+
+		const auto& heapProperties = D3D::HeapPropertiesDefault();
+		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommittedResource2(
+			&heapProperties,
+			D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES,
+			&desc,
+			D3D12_RESOURCE_STATE_COMMON,
+			nullptr,
+			nullptr,
+			IID_PPV_ARGS(&m_Resource)
+		));
 
 	}
 
