@@ -48,7 +48,7 @@ namespace Luden
 	private:
 		TextureDesc m_TextureDesc{};
 
-	};
+	}; // class D3D12Texture
 
 	class D3D12RenderTexture : public D3D12Resource
 	{
@@ -72,5 +72,5 @@ namespace Luden
 
 		D3D12Device* m_Device;
 
-	};
+	}; // class D3D12RenderTexture
 } // namespace Luden
