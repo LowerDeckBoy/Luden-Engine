@@ -1,11 +1,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <Core/Defines.hpp>
 #include "Config.hpp"
+#include "D3D12/D3D12Device.hpp"
 #include "Graphics/Model.hpp"
 #include "AssetImporter.hpp"
 #include <Core/Logger.hpp>
-
-#include <assimp/GltfMaterial.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
@@ -13,10 +12,7 @@
 #include <cgltf/cgltf.h>
 
 #include <meshoptimizer/meshoptimizer.h>
-
 #include <DirectXTex.h>
-
-
 
 namespace Luden
 {
@@ -86,12 +82,13 @@ namespace Luden
 			aiProcess_ConvertToLeftHanded |
 			aiProcess_Triangulate |
 			aiProcess_JoinIdenticalVertices |
-			aiProcess_SortByPType |
+			aiProcess_RemoveRedundantMaterials |
+			aiProcess_FindInstances |
+			//aiProcess_PreTransformVertices |
 			aiProcess_GenBoundingBoxes;
 
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(Path.string(), (uint32)loadFlags);
-
 		if (!scene || !scene->mRootNode || !scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
 		{
 			LOG_WARNING("\n\tFailed to load model: {0}, reason: {1}", scene->GetShortFilename(Path.string().c_str()), importer.GetErrorString());
@@ -100,17 +97,20 @@ namespace Luden
 
 			return false;
 		}
-
+		
 		OutModel.Meshes.reserve(scene->mNumMeshes);
+		OutModel.Materials.reserve(scene->mNumMaterials);
 
 		FAssimpLoadingData data{};
 		data.Scene = scene;
+		data.Path = Path;
 
-		TraverseNode(data, scene->mRootNode);
 		LoadMaterials(data);
+		TraverseNode(data, scene->mRootNode);
 
 		OutModel.Meshes		= std::move(data.Meshes);
 		OutModel.Materials	= std::move(data.Materials);
+		OutModel.Textures	= std::move(data.ModelTextures);
 
 		OutModel.SetFilepath(Path);
 		importer.FreeScene();
@@ -118,26 +118,136 @@ namespace Luden
 		return true;
 	}
 
-	void AssetImporter::LoadTexture2D(Filepath Path)
+	void AssetImporter::LoadTexture(Filepath Path, TextureDesc& OutDesc)
 	{
-		//DirectX::LoadFromWICFile(Path.c_str(), DirectX::WIC_FLAGS_NONE, nullptr,)
+		if (File::GetExtension(Path) == ".dds")
+		{
+			LoadTextureDDS(Path);
+		}
+		else
+		{
+			LoadTexture2D(Path, OutDesc);
+		}
+	}
+	
+	void AssetImporter::LoadTexture2D(Filepath Path, TextureDesc& OutDesc)
+	{
+		DirectX::ScratchImage scratchImage{};
+
+		HRESULT result = DirectX::LoadFromWICFile(Path.wstring().c_str(), DirectX::WIC_FLAGS_FORCE_RGB, nullptr, scratchImage);
+	
+		if (FAILED(result))
+		{
+			LOG_WARNING("Failed to load texture: {}", Path.string());
+		}
+
+		DirectX::TexMetadata metadata = scratchImage.GetMetadata();
+
+		OutDesc.Data			= scratchImage.GetImages()->pixels;
+		OutDesc.Width			= static_cast<uint32>(scratchImage.GetImages()->width);
+		OutDesc.Height			= static_cast<uint32>(scratchImage.GetImages()->height);
+		OutDesc.DepthOrArray	= static_cast<uint16>(metadata.depth);
+		OutDesc.NumMips			= static_cast<uint16>(metadata.mipLevels);
+		OutDesc.Format			= metadata.format;
 
 	}
 
 	void AssetImporter::LoadTextureDDS(Filepath Path)
 	{	
 		DirectX::ScratchImage scratchImage{};
-
-		if (FAILED(DirectX::LoadFromDDSFile(Path.c_str(), DirectX::DDS_FLAGS_ALLOW_LARGE_FILES, nullptr, scratchImage)))
+		HRESULT result = DirectX::LoadFromDDSFile(Path.c_str(), DirectX::DDS_FLAGS_FORCE_RGB, nullptr, scratchImage);
+		if (FAILED(result))
 		{
-
+			LOG_WARNING("Failed to load texture: {}", result);
 		}
 
-		DirectX::TexMetadata metadata = scratchImage.GetMetadata();
+		//DirectX::TexMetadata metadata = scratchImage.GetMetadata();
 		
 	}
 
 	void AssetImporter::LoadMaterials(FAssimpLoadingData& SceneData)
+	{
+		for (uint32 materialIdx = 0; materialIdx < SceneData.Scene->mNumMaterials; ++materialIdx)
+		{
+			auto* material = SceneData.Scene->mMaterials[materialIdx];
+
+			//SceneData.UniqueAssimpMaterials.insert(std::make_pair(materialIdx, material));
+			SceneData.UniqueAssimpMaterials.push_back(material);
+
+			Material newMaterial{};
+
+			aiString path{};
+			auto filename = SceneData.Path.filename().stem();
+
+			const std::string pathToParent = std::filesystem::absolute(SceneData.Path).parent_path().string();
+			// Some of glTF models use place their textures inside *textures/* directory, but some just don't.
+			const std::string pathToTexture = (std::filesystem::exists("textures/") ? "textures/" : "");
+
+			if (material->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS)
+			{
+				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+
+				TextureDesc desc{};
+				LoadTexture(texturePath, desc);
+
+				SceneData.ModelTextures.push_back(new D3D12Texture(Device, desc));
+			}
+
+			if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == aiReturn_SUCCESS)
+			{
+				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+
+				TextureDesc desc{};
+				LoadTexture(texturePath, desc);
+
+				SceneData.ModelTextures.push_back(new D3D12Texture(Device, desc));
+			}
+
+			if (material->GetTexture(aiTextureType_METALNESS, 0, &path) == aiReturn_SUCCESS)
+			{
+				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+
+				TextureDesc desc{};
+				LoadTexture(texturePath, desc);
+
+				SceneData.ModelTextures.push_back(new D3D12Texture(Device, desc));
+			}
+
+			if (material->GetTexture(aiTextureType_EMISSIVE, 0, &path) == aiReturn_SUCCESS)
+			{
+				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+				TextureDesc desc{};
+				LoadTexture(texturePath, desc);
+
+				SceneData.ModelTextures.push_back(new D3D12Texture(Device, desc));
+			}
+
+			aiGetMaterialFloat(material, AI_MATKEY_METALLIC_FACTOR, &newMaterial.Metallic);
+			aiGetMaterialFloat(material, AI_MATKEY_ROUGHNESS_FACTOR, &newMaterial.Roughness);
+			aiGetMaterialFloat(material, AI_MATKEY_GLTF_ALPHACUTOFF, &newMaterial.AlphaCutoff);
+			aiGetMaterialFloat(material, AI_MATKEY_SPECULAR_FACTOR, &newMaterial.Specular);
+			aiGetMaterialFloat(material, AI_MATKEY_GLOSSINESS_FACTOR, &newMaterial.Glossiness);
+			aiGetMaterialFloat(material, AI_MATKEY_TRANSMISSION_FACTOR, &newMaterial.Transparency);
+			aiGetMaterialFloat(material, AI_MATKEY_REFRACTI, &newMaterial.IndexOfRefraction);
+			aiGetMaterialFloat(material, AI_MATKEY_ANISOTROPY_FACTOR, &newMaterial.Anisotropy);
+
+			aiColor4D baseColorFactor{};
+			aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &baseColorFactor);
+			newMaterial.BaseColorFactor = *(DirectX::XMFLOAT4*)(&baseColorFactor);
+
+			aiColor4D emissiveColorFactor{};
+			aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &emissiveColorFactor);
+			newMaterial.EmissiveFactor = *(DirectX::XMFLOAT4*)(&emissiveColorFactor);
+
+			//SceneData.Materials.push_back(newMaterial);
+			SceneData.UniqueMaterials.insert(std::make_pair(materialIdx, newMaterial));
+			SceneData.UniqueAssimpMaterials.insert(std::make_pair(materialIdx, material));
+
+		}
+	}
+
+	/*
+	void AssetImporter::LoadMaterials(FAssimpLoadingData& SceneData, D3D12Device* pDevice)
 	{
 		for (auto& mesh : SceneData.Meshes)
 		{
@@ -146,47 +256,134 @@ namespace Luden
 			Material newMaterial{};
 
 			aiString path{};
+			auto filename = SceneData.Path.filename().stem();
 
-			if (material->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS || 
-				material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == aiReturn_SUCCESS)
+			const std::string pathToParent  = std::filesystem::absolute(SceneData.Path).parent_path().string();
+			// Some of glTF models use place their textures inside *textures/* directory, but some just don't.
+			const std::string pathToTexture = (std::filesystem::exists("textures/") ? "textures/" : "");
+
+			if (material->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS)
 			{
-				aiColor4D colorFactor{};
-				aiGetMaterialColor(material, AI_MATKEY_BASE_COLOR, &colorFactor);
-				newMaterial.BaseColorFactor = *(DirectX::XMFLOAT4*)(&colorFactor);
+				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+
+				TextureDesc desc{};
+				LoadTexture2D(texturePath, desc);
 
 			}
 
 			if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == aiReturn_SUCCESS)
 			{
-
+				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+				TextureDesc desc{};
+				LoadTexture2D(texturePath, desc);
 			}
 
 			if (material->GetTexture(aiTextureType_METALNESS, 0, &path) == aiReturn_SUCCESS)
 			{
-
+				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+				TextureDesc desc{};
+				LoadTexture2D(texturePath, desc);
 			}
 
 			if (material->GetTexture(aiTextureType_EMISSIVE, 0, &path) == aiReturn_SUCCESS)
 			{
-				aiColor4D colorFactor{};
-				aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &colorFactor);
-				newMaterial.EmissiveFactor = *(DirectX::XMFLOAT4*)(&colorFactor);
-
+				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+				TextureDesc desc{};
+				LoadTexture2D(texturePath, desc);
 			}
-
-			if (material->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &path) == aiReturn_SUCCESS)
-			{
-
-			}
-
+			
 			aiGetMaterialFloat(material, AI_MATKEY_METALLIC_FACTOR,		&newMaterial.Metallic);
 			aiGetMaterialFloat(material, AI_MATKEY_ROUGHNESS_FACTOR,	&newMaterial.Roughness);
 			aiGetMaterialFloat(material, AI_MATKEY_GLTF_ALPHACUTOFF,	&newMaterial.AlphaCutoff);
 			aiGetMaterialFloat(material, AI_MATKEY_SPECULAR_FACTOR,		&newMaterial.Specular);
+			aiGetMaterialFloat(material, AI_MATKEY_GLOSSINESS_FACTOR,	&newMaterial.Glossiness);
+			aiGetMaterialFloat(material, AI_MATKEY_TRANSMISSION_FACTOR, &newMaterial.Transparency);
+			aiGetMaterialFloat(material, AI_MATKEY_REFRACTI,			&newMaterial.IndexOfRefraction);
+			aiGetMaterialFloat(material, AI_MATKEY_ANISOTROPY_FACTOR,	&newMaterial.Anisotropy);
 
-			SceneData.Materials.emplace_back(newMaterial);
+			aiColor4D baseColorFactor{};
+			aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &baseColorFactor);
+			newMaterial.BaseColorFactor = *(DirectX::XMFLOAT4*)(&baseColorFactor);
+
+			aiColor4D emissiveColorFactor{};
+			aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &emissiveColorFactor);
+			newMaterial.EmissiveFactor = *(DirectX::XMFLOAT4*)(&emissiveColorFactor);
+
+			SceneData.Materials.push_back(newMaterial);
+		}
+	}
+	*/
+
+	void AssetImporter::LoadMaterial(FAssimpLoadingData& SceneData, const aiMesh* pMesh, StaticMesh& Mesh)
+	{
+		if (pMesh->mMaterialIndex == 0)
+		{
+			return;
 		}
 
+		aiMaterial* material = SceneData.Scene->mMaterials[pMesh->mMaterialIndex];
+
+		Material newMaterial{};
+
+		aiString path{};
+		auto filename = SceneData.Path.filename().stem();
+
+		//std::filesystem::direc
+
+		const std::string pathToParent = std::filesystem::absolute(SceneData.Path).parent_path().string();
+		// Some of glTF models use place their textures inside *textures/* directory, but some just don't.
+		const std::string pathToTexture = (std::filesystem::exists("textures/") ? "textures\\" : "");
+
+		if (material->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS)
+		{
+			Filepath texturePath = std::format("{0}\\{1}{2}", pathToParent, pathToTexture, path.C_Str());
+
+			TextureDesc desc{};
+			LoadTexture(texturePath, desc);
+
+		}
+
+		if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == aiReturn_SUCCESS)
+		{
+
+			Filepath texturePath = std::format("{0}\\{1}{2}", pathToParent, pathToTexture, path.C_Str());
+			TextureDesc desc{};
+			LoadTexture(texturePath, desc);
+		}
+
+		if (material->GetTexture(aiTextureType_METALNESS, 0, &path) == aiReturn_SUCCESS)
+		{
+			Filepath texturePath = std::format("{0}\\{1}{2}", pathToParent, pathToTexture, path.C_Str());
+			TextureDesc desc{};
+			LoadTexture(texturePath, desc);
+		}
+
+		if (material->GetTexture(aiTextureType_EMISSIVE, 0, &path) == aiReturn_SUCCESS)
+		{
+			Filepath texturePath = std::format("{0}\\{1}{2}", pathToParent, pathToTexture, path.C_Str());
+			TextureDesc desc{};
+			LoadTexture(texturePath, desc);
+
+		}
+
+		aiGetMaterialFloat(material, AI_MATKEY_METALLIC_FACTOR, &newMaterial.Metallic);
+		aiGetMaterialFloat(material, AI_MATKEY_ROUGHNESS_FACTOR, &newMaterial.Roughness);
+		aiGetMaterialFloat(material, AI_MATKEY_GLTF_ALPHACUTOFF, &newMaterial.AlphaCutoff);
+		aiGetMaterialFloat(material, AI_MATKEY_SPECULAR_FACTOR, &newMaterial.Specular);
+		aiGetMaterialFloat(material, AI_MATKEY_GLOSSINESS_FACTOR, &newMaterial.Glossiness);
+		aiGetMaterialFloat(material, AI_MATKEY_TRANSMISSION_FACTOR, &newMaterial.Transparency);
+		aiGetMaterialFloat(material, AI_MATKEY_REFRACTI, &newMaterial.IndexOfRefraction);
+		aiGetMaterialFloat(material, AI_MATKEY_ANISOTROPY_FACTOR, &newMaterial.Anisotropy);
+
+		aiColor4D baseColorFactor{};
+		aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &baseColorFactor);
+		newMaterial.BaseColorFactor = *(DirectX::XMFLOAT4*)(&baseColorFactor);
+
+		aiColor4D emissiveColorFactor{};
+		aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &emissiveColorFactor);
+		newMaterial.EmissiveFactor = *(DirectX::XMFLOAT4*)(&emissiveColorFactor);
+
+		SceneData.Materials.push_back(newMaterial);
 	}
 
 	void AssetImporter::TraverseNode(FAssimpLoadingData& SceneData, aiNode* pNode)
@@ -226,7 +423,7 @@ namespace Luden
 			meshData.Transform.WorldMatrix = transform;
 			meshData.Transform.Decompose(transform);
 
-			if (meshData.Transform.Scale.x < 1.0f || meshData.Transform.Scale.y < 1.0f || meshData.Transform.Scale.z < 1.0f)
+			if (meshData.Transform.Scale.x < 1.0f && meshData.Transform.Scale.y < 1.0f && meshData.Transform.Scale.z < 1.0f)
 			{
 				meshData.Transform.Scale.x *= 100.0f;
 				meshData.Transform.Scale.y *= 100.0f;
@@ -238,7 +435,7 @@ namespace Luden
 
 			meshData.Vertices.reserve(mesh->mNumVertices);
 			
-			std::vector<DirectX::XMFLOAT3> positions;
+			std::vector<DirectX::XMFLOAT4> positions;
 			positions.reserve(mesh->mNumVertices);
 			std::vector<DirectX::XMFLOAT2> texCoords;
 			texCoords.reserve(mesh->mNumVertices);
@@ -253,7 +450,7 @@ namespace Luden
 			{
 				Vertex vertex{};
 
-				positions.push_back(*(DirectX::XMFLOAT3*)(&mesh->mVertices[vertexId]));
+				positions.push_back(DirectX::XMFLOAT4(mesh->mVertices[vertexId].x, mesh->mVertices[vertexId].y, mesh->mVertices[vertexId].z, 1.0f));
 				
 				if (mesh->HasTextureCoords(0))
 				{
@@ -283,15 +480,21 @@ namespace Luden
 				}
 			}
 
-			std::vector<DirectX::XMFLOAT4> positionsTransformed(vertexCount);
-			DirectX::XMVector3TransformStream(positionsTransformed.data(), sizeof(DirectX::XMFLOAT4), positions.data(), sizeof(DirectX::XMFLOAT3), vertexCount, meshData.Transform.WorldMatrix);
-			DirectX::XMVector3TransformNormalStream(normals.data(), sizeof(DirectX::XMFLOAT3), normals.data(), sizeof(DirectX::XMFLOAT3), vertexCount, meshData.Transform.WorldMatrix);
+			DirectX::XMVector4TransformStream(
+				positions.data(), sizeof(DirectX::XMFLOAT4), 
+				positions.data(), sizeof(DirectX::XMFLOAT4), 
+				vertexCount, meshData.Transform.WorldMatrix);
 
-			for (uint32 vertId = 0; vertId < vertexCount; vertId++)
+			DirectX::XMVector3TransformNormalStream(
+				normals.data(), sizeof(DirectX::XMFLOAT3), 
+				normals.data(), sizeof(DirectX::XMFLOAT3), 
+				vertexCount, meshData.Transform.WorldMatrix);
+
+			for (uint32 vertId = 0; vertId < vertexCount; ++vertId)
 			{
 				Vertex vout{};
 
-				vout.Position	= *(DirectX::XMFLOAT3*)&positionsTransformed.at(vertId);
+				vout.Position	= *(DirectX::XMFLOAT3*)(&positions.at(vertId));
 				vout.TexCoord	= texCoords.at(vertId);
 				vout.Normal		= normals.at(vertId);
 				vout.Tangent	= tangents.at(vertId);
@@ -317,9 +520,13 @@ namespace Luden
 
 			BuildMesh(meshData);
 
-			meshData.NumVertices = static_cast<uint32>(meshData.Vertices.size());
-			meshData.NumIndices  = static_cast<uint32>(meshData.Indices.size());
-			meshData.NumMeshlets = static_cast<uint32>(meshData.Meshlets.size());
+			meshData.NumVertices		 = static_cast<uint32>(meshData.Vertices.size());
+			meshData.NumIndices			 = static_cast<uint32>(meshData.Indices.size());
+			meshData.NumMeshlets		 = static_cast<uint32>(meshData.Meshlets.size());
+			meshData.NumMeshletVertices  = static_cast<uint32>(meshData.MeshletVertices.size());
+			meshData.NumMeshletTriangles = static_cast<uint32>(meshData.MeshletTriangles.size());
+
+			//LoadMaterial(SceneData, mesh, meshData);
 
 			meshData.MaterialId = mesh->mMaterialIndex;
 
@@ -549,7 +756,7 @@ namespace Luden
 			meshopt_Meshlet& meshlet = Mesh.Meshlets.at(m);
 
 			// Experimental
-			//meshopt_optimizeMeshlet(&Mesh.MeshletVertices[meshlet.vertex_offset], &Mesh.MeshletTriangles[meshlet.triangle_offset], meshlet.triangle_count, meshlet.vertex_count);
+			meshopt_optimizeMeshlet(&Mesh.MeshletVertices[meshlet.vertex_offset], &Mesh.MeshletTriangles[meshlet.triangle_offset], meshlet.triangle_count, meshlet.vertex_count);
 
 			// Generate bounds
 			meshopt_Bounds bounds = meshopt_computeMeshletBounds(&Mesh.MeshletVertices[meshlet.vertex_offset], &Mesh.MeshletTriangles[meshlet.triangle_offset],
