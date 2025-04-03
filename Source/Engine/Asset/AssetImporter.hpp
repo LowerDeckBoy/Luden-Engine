@@ -35,7 +35,6 @@ namespace Luden
 		Filepath Path;
 
 		std::vector<StaticMesh> Meshes;
-		std::vector<Material>	Materials;
 		
 		// Test
 		// Not using maps should work just as fine.
@@ -55,18 +54,16 @@ namespace Luden
 
 		bool ImportAssimpModel(Filepath Path, Model& OutModel);
 
-		void LoadTexture(Filepath Path, TextureDesc& OutDesc);
+		D3D12Texture* LoadTexture(Filepath Path);
 
-		void LoadTexture2D(Filepath Path, TextureDesc& OutDesc);
-		void LoadTextureDDS(Filepath Path);
+		void LoadTexture2D(Filepath Path, D3D12Texture* pTexture);
+		void LoadTextureDDS(Filepath Path, D3D12Texture* pTexture);
 
 		D3D12Device* Device;
 
 	private:
 		// Load all materials from Assimp model and map them.
 		void LoadMaterials(FAssimpLoadingData& SceneData);
-
-		void LoadMaterial(FAssimpLoadingData& SceneData, const aiMesh* pMesh, StaticMesh& Mesh);
 
 		void TraverseNode(FAssimpLoadingData& SceneData, aiNode* pNode);
 
@@ -76,10 +73,6 @@ namespace Luden
 
 		// Use meshoptimizer to optimize mesh data and generate meshlets.
 		void BuildMesh(StaticMesh& Mesh);
-
-		void CreateTexture(D3D12Texture* pTexture);
-
-		
 
 	};
 } // namespace Luden

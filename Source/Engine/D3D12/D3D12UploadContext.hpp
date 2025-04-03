@@ -23,8 +23,8 @@ namespace Luden
 
 	struct UploadResourceRequest
 	{
-		D3D12Resource*	Resource;
-		D3D12Resource*	UploadResource;
+		D3D12Resource*	Resource{};
+		D3D12Resource*	UploadResource{};
 
 		EUploadType		UploadType;
 	};
@@ -39,8 +39,15 @@ namespace Luden
 		// Upload all pending requests.
 		static void Upload();
 
+		static void SingleUpload(UploadResourceRequest& Request);
+
+		static void UploadTexture(D3D12Texture* pTexture, D3D12Resource* pUploadBuffer);
+
 		static void UploadBuffer(D3D12Buffer* pBuffer, uint64 Size);
-		static void UploadTexture(D3D12Texture* pTexture, uint64 Size);
+		static void UploadTexture(D3D12Texture* pTexture);
+
+		static void PlaceRequest(D3D12Buffer* pBuffer, uint64 Size);
+		static void PlaceRequest(D3D12Texture* pTexture, D3D12Resource* pUploadBuffer);
 
 		static std::vector<UploadResourceRequest> PendingRequests;
 
