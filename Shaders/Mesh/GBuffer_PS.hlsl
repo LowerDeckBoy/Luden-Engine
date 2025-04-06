@@ -1,0 +1,4 @@
+#ifndef GBUFFER_PS_HLSL
+#define GBUFFER_PS_HLSL
+
+#endif // GBUFFER_PS_HLSL
