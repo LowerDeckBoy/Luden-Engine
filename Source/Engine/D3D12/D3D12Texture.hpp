@@ -19,7 +19,7 @@ namespace Luden
 	struct TextureDesc
 	{
 		TextureUsageFlag	Usage;
-		void*				Data;
+		void*				Data = nullptr;
 		uint32				Width;
 		uint32				Height;
 		DXGI_FORMAT			Format;
@@ -38,12 +38,17 @@ namespace Luden
 		~D3D12Texture();
 
 		void Create(D3D12Device* pDevice, TextureDesc Desc);
-		void CreateFromMemory(D3D12Device* pDevice, TextureDesc Desc);
-		void CreateFromFile(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
+		//void CreateFromMemory(D3D12Device* pDevice, TextureDesc Desc);
+		//void CreateFromFile(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
 
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor RenderTargetHandle;
 		D3D12Descriptor DepthStencilHandle;
+
+		TextureDesc& GetTextureDesc()
+		{
+			return m_TextureDesc;
+		}
 
 	private:
 		TextureDesc m_TextureDesc{};
@@ -54,18 +59,20 @@ namespace Luden
 	{
 	public:
 		D3D12RenderTexture() = default;
-		D3D12RenderTexture(D3D12Device* pDevice, TextureDesc Desc);
+		D3D12RenderTexture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name = "");
 		~D3D12RenderTexture();
 
-		void Create(D3D12Device* pDevice, TextureDesc Desc, std::string_view DebugName = "");
+		void Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name = "");
 
 		void Resize(uint32 Width, uint32 Height);
 
-		//void CreateShaderResource();
-		//void CreateRenderTarget(D3D12DescriptorHeap* pDescriptorHeap);
-
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor RenderTargetHandle;
+
+		DXGI_FORMAT& GetFormat()
+		{
+			return m_TextureDesc.Format;
+		}
 
 	private:
 		TextureDesc m_TextureDesc{};
