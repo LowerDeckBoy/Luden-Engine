@@ -1,26 +1,16 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <Core/Defines.hpp>
-#include "Config.hpp"
-#include "D3D12/D3D12Device.hpp"
-#include "Graphics/Model.hpp"
-#include "AssetImporter.hpp"
-#include <Core/Logger.hpp>
-#include <cmath>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
-
+//#include <Core/Defines.hpp>
 #include "D3D12/D3D12UploadContext.hpp"
+#include <assimp/GltfMaterial.h>
+#include "AssetImporter.hpp"
 #include "D3D12/D3D12Memory.hpp"
 #include "D3D12/D3D12Utility.hpp"
-
-#define CGLTF_IMPLEMENTATION
-#include <cgltf/cgltf.h>
-
-#include <meshoptimizer/meshoptimizer.h>
+#include "Graphics/Model.hpp"
+#include <Core/Logger.hpp>
 #include <DirectXTex.h>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <meshoptimizer/meshoptimizer.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
 
 namespace Luden
 {
@@ -37,51 +27,8 @@ namespace Luden
 		{
 			return false;
 		}
-
-		/*
-		if (File::GetExtension(Path) == ".gltf")
-		{
-			cgltf_options options{};
-			cgltf_data* data = nullptr;
-			cgltf_result result = cgltf_parse_file(&options, path.c_str(), &data);
-			if (result != cgltf_result_success)
-			{
-				cgltf_free(data);
-			}
-
-			result = cgltf_load_buffers(&options, data, path.c_str());
-			if (result != cgltf_result_success)
-			{
-				LOG_ERROR("cgltf_load_buffers");
-				cgltf_free(data);
-			}
-
-			result = cgltf_validate(data);
-			if (result != cgltf_result_success)
-			{
-				LOG_ERROR("cgltf_validate");
-				cgltf_free(data);
-			}
-
-			OutModel.Meshes.reserve(data->meshes_count);
-			//TraverseNode(data, &data->nodes[0], OutModel, nullptr, DirectX::XMMatrixIdentity());
-
-			for (uint32 nodeIdx = 0; nodeIdx < data->nodes_count; ++nodeIdx)
-			{
-				TraverseNode(data, &data->nodes[nodeIdx], OutModel, nullptr, DirectX::XMMatrixIdentity());
-			}
-			for (auto node : OutModel.Nodes)
-			{
-				node->UpdateTransform();
-			}
-			cgltf_free(data);
-
-		}
-		return true;
-		*/
 		
 		return true;
-		
 	}
 
 	bool AssetImporter::ImportAssimpModel(Filepath Path, Model& OutModel)
@@ -92,8 +39,9 @@ namespace Luden
 			aiProcess_JoinIdenticalVertices |
 			aiProcess_RemoveRedundantMaterials |
 			aiProcess_FindInstances |
+			aiProcess_GenSmoothNormals |
+			aiProcess_GlobalScale |
 			aiProcess_CalcTangentSpace |
-			//aiProcess_PreTransformVertices |
 			aiProcess_GenBoundingBoxes;
 
 		Assimp::Importer importer;
@@ -149,7 +97,7 @@ namespace Luden
 		DirectX::TexMetadata metadata{};
 
 		HRESULT result = DirectX::LoadFromWICFile(Path.wstring().c_str(), DirectX::WIC_FLAGS_NONE, &metadata, scratchImage);
-
+		
 		if (FAILED(result))
 		{
 			LOG_WARNING("Failed to load texture: {}", Path.string());
@@ -158,7 +106,7 @@ namespace Luden
 		}
 		
 		TextureDesc desc{};
-		desc.Data			= (void**)scratchImage.GetImages()->pixels;
+		desc.Data			= (void*)&scratchImage.GetImages()->pixels[0];
 		desc.Width			= static_cast<uint32>(metadata.width);
 		desc.Height			= static_cast<uint32>(metadata.height);
 		desc.DepthOrArray	= static_cast<uint16>(metadata.depth);
@@ -188,7 +136,7 @@ namespace Luden
 		
 		uploadResource->SetResourceState(D3D12_RESOURCE_STATE_GENERIC_READ);
 		uploadResource->SetDebugName("D3D12 Upload Texture Resource");
-
+		
 		D3D12UploadContext::UploadTexture(pTexture, uploadResource);
 
 	}
@@ -227,8 +175,7 @@ namespace Luden
 		for (uint32 materialIdx = 0; materialIdx < SceneData.Scene->mNumMaterials; ++materialIdx)
 		{
 			auto* assimpMaterial = SceneData.Scene->mMaterials[materialIdx];
-
-			//SceneData.UniqueAssimpMaterials.insert(std::make_pair(materialIdx, material));
+			
 			SceneData.UniqueAssimpMaterials.push_back(assimpMaterial);
 
 			Material material{};
@@ -275,29 +222,41 @@ namespace Luden
 				material.EmissiveIndex = emissiveTexture->ShaderResourceHandle.Index;
 				SceneData.ModelTextures.push_back(std::move(emissiveTexture));
 			}
-
-			aiGetMaterialFloat(assimpMaterial, AI_MATKEY_METALLIC_FACTOR,		&material.Metallic);
-			aiGetMaterialFloat(assimpMaterial, AI_MATKEY_ROUGHNESS_FACTOR,		&material.Roughness);
-			aiGetMaterialFloat(assimpMaterial, AI_MATKEY_GLTF_ALPHACUTOFF,		&material.AlphaCutoff);
-			aiGetMaterialFloat(assimpMaterial, AI_MATKEY_SPECULAR_FACTOR,		&material.Specular);
-			aiGetMaterialFloat(assimpMaterial, AI_MATKEY_GLOSSINESS_FACTOR,		&material.Glossiness);
-			aiGetMaterialFloat(assimpMaterial, AI_MATKEY_TRANSMISSION_FACTOR,	&material.Transparency);
-			aiGetMaterialFloat(assimpMaterial, AI_MATKEY_REFRACTI,				&material.IndexOfRefraction);
-			aiGetMaterialFloat(assimpMaterial, AI_MATKEY_ANISOTROPY_FACTOR,		&material.Anisotropy);
+			
+			assimpMaterial->Get(AI_MATKEY_METALLIC_FACTOR,		material.Metallic);
+			assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR,		material.Roughness);
+			assimpMaterial->Get(AI_MATKEY_GLTF_ALPHACUTOFF,		material.AlphaCutoff);
+			assimpMaterial->Get(AI_MATKEY_SPECULAR_FACTOR,		material.Specular);
+			assimpMaterial->Get(AI_MATKEY_OPACITY,				material.Transparency);
+			assimpMaterial->Get(AI_MATKEY_REFRACTI,				material.IndexOfRefraction);
+			assimpMaterial->Get(AI_MATKEY_ANISOTROPY_FACTOR,	material.Anisotropy);
 
 			aiColor4D baseColorFactor{};
-			aiGetMaterialColor(assimpMaterial, AI_MATKEY_COLOR_DIFFUSE, &baseColorFactor);
+			assimpMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, baseColorFactor);
 			material.BaseColorFactor = *(DirectX::XMFLOAT4*)(&baseColorFactor);
 
 			aiColor4D emissiveColorFactor{};
-			aiGetMaterialColor(assimpMaterial, AI_MATKEY_COLOR_EMISSIVE, &emissiveColorFactor);
+			assimpMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColorFactor);
 			material.EmissiveFactor = *(DirectX::XMFLOAT4*)(&emissiveColorFactor);
 
+			aiString blend;
+			assimpMaterial->Get(AI_MATKEY_GLTF_ALPHAMODE, blend);
+
+			if (std::strcmp(blend.C_Str(), "OPAQUE") == 0)
+			{
+				material.AlphaMode = EAlphaMode::Opaque;
+			}
+			else if (std::strcmp(blend.C_Str(), "BLEND") == 0)
+			{
+				material.AlphaMode = EAlphaMode::Blend;
+			}
+			else if (std::strcmp(blend.C_Str(), "MASK") == 0)
+			{
+				material.AlphaMode = EAlphaMode::Mask;
+			}
+			
 			SceneData.UniqueMaterials.push_back(material);
 			SceneData.UniqueAssimpMaterials.push_back(assimpMaterial);
-			//SceneData.UniqueMaterials.insert(std::make_pair(materialIdx, material));
-			//SceneData.UniqueAssimpMaterials.insert(std::make_pair(materialIdx, material));
-
 		}
 	}
 
@@ -308,42 +267,35 @@ namespace Luden
 			return;
 		}
 
+		aiMatrix4x4 matrix = pNode->mTransformation;
+
+		DirectX::XMMATRIX transform = *(DirectX::XMMATRIX*)(&matrix);
+		aiNode* currNode = pNode;
+
+		while (true)
+		{
+			if (currNode->mParent)
+			{
+				currNode = currNode->mParent;
+				aiMatrix4x4 pTransform = currNode->mTransformation;
+				transform = *(DirectX::XMMATRIX*)(&pTransform) * transform;
+			}
+			else
+			{
+				break;
+			}	
+		}
+			
+		transform = DirectX::XMMatrixTranspose(transform);
+
 		for (uint32 meshIdx = 0; meshIdx < pNode->mNumMeshes; meshIdx++)
 		{
 			const auto& mesh = SceneData.Scene->mMeshes[pNode->mMeshes[meshIdx]];
-
-			aiMatrix4x4 matrix = pNode->mTransformation;
-
-			DirectX::XMMATRIX transform = *(DirectX::XMMATRIX*)(&matrix);
-			aiNode* currNode = pNode;
-
-			while (true)
-			{
-				if (currNode->mParent)
-				{
-					currNode = currNode->mParent;
-					aiMatrix4x4 pTransform = currNode->mTransformation;
-					transform = *(DirectX::XMMATRIX*)(&pTransform) * transform;
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			transform = DirectX::XMMatrixTranspose(transform);
 
 			StaticMesh meshData{};
 			meshData.Name = mesh->mName.C_Str();
 			meshData.Transform.WorldMatrix = transform;
 			meshData.Transform.Decompose(transform);
-
-			if (meshData.Transform.Scale.x < 1.0f && meshData.Transform.Scale.y < 1.0f && meshData.Transform.Scale.z < 1.0f)
-			{
-				meshData.Transform.Scale.x *= 100.0f;
-				meshData.Transform.Scale.y *= 100.0f;
-				meshData.Transform.Scale.z *= 100.0f;
-			}
 
 			meshData.BoundingBox.Min = *(DirectX::XMFLOAT3*)(&mesh->mAABB.mMin);
 			meshData.BoundingBox.Max = *(DirectX::XMFLOAT3*)(&mesh->mAABB.mMax);
@@ -358,6 +310,8 @@ namespace Luden
 			normals.reserve(mesh->mNumVertices);
 			std::vector<DirectX::XMFLOAT4> tangents;
 			tangents.reserve(mesh->mNumVertices);
+			std::vector<DirectX::XMFLOAT4> bitangents;
+			bitangents.reserve(mesh->mNumVertices);
 
 			usize vertexCount = mesh->mNumVertices;
 
@@ -388,10 +342,12 @@ namespace Luden
 				if (mesh->HasTangentsAndBitangents())
 				{
 					tangents.push_back(DirectX::XMFLOAT4(mesh->mTangents[vertexId].x, mesh->mTangents[vertexId].y, mesh->mTangents[vertexId].z, 1.0f));
+					bitangents.push_back(DirectX::XMFLOAT4(mesh->mBitangents[vertexId].x, mesh->mBitangents[vertexId].y, mesh->mBitangents[vertexId].z, 1.0f));
 				}
 				else
 				{
 					tangents.push_back(DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+					bitangents.push_back(DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
 				}
 			}
 
@@ -409,6 +365,11 @@ namespace Luden
 				tangents.data(), sizeof(DirectX::XMFLOAT4),
 				tangents.data(), sizeof(DirectX::XMFLOAT4),
 				vertexCount, meshData.Transform.WorldMatrix);
+			
+			DirectX::XMVector4TransformStream(
+				bitangents.data(), sizeof(DirectX::XMFLOAT4),
+				bitangents.data(), sizeof(DirectX::XMFLOAT4),
+				vertexCount, meshData.Transform.WorldMatrix);
 
 			for (uint32 vertId = 0; vertId < vertexCount; ++vertId)
 			{
@@ -417,7 +378,8 @@ namespace Luden
 				vout.Position	= *(DirectX::XMFLOAT3*)(&positions.at(vertId));
 				vout.TexCoord	= texCoords.at(vertId);
 				vout.Normal		= normals.at(vertId);
-				vout.Tangent	= tangents.at(vertId);
+				vout.Tangent	= *(DirectX::XMFLOAT3*)(&tangents.at(vertId));
+				vout.Bitangent	= *(DirectX::XMFLOAT3*)(&bitangents.at(vertId));
 				
 				meshData.Vertices.push_back(vout);
 			}
@@ -439,13 +401,15 @@ namespace Luden
 
 			BuildMesh(meshData);
 
+			DirectX::XMStoreFloat3x4(&meshData.RaytracingInstanceDesc.Transform, meshData.Transform.WorldMatrix);
+			meshData.RaytracingInstanceDesc.InstanceID = 0;
+			meshData.RaytracingInstanceDesc.InstanceMask = 1;
+			
 			meshData.NumVertices		 = static_cast<uint32>(meshData.Vertices.size());
 			meshData.NumIndices			 = static_cast<uint32>(meshData.Indices.size());
 			meshData.NumMeshlets		 = static_cast<uint32>(meshData.Meshlets.size());
 			meshData.NumMeshletVertices  = static_cast<uint32>(meshData.MeshletVertices.size());
 			meshData.NumMeshletTriangles = static_cast<uint32>(meshData.MeshletTriangles.size());
-
-			//LoadMaterial(SceneData, mesh, meshData);
 
 			// Assign index to unique material to reuse already loaded materials without duplicates.
 			meshData.MaterialId = mesh->mMaterialIndex;

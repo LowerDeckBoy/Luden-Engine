@@ -4,20 +4,11 @@
 #include <Core/Types.hpp>
 #include <DirectXMath.h>
 #include <assimp/Importer.hpp>
-#include <assimp/GltfMaterial.h>
-#include <map>
 
 struct FNode;
 struct aiMesh;
 struct aiNode;
-struct cgltf_scene;
-struct cgltf_data;
-struct cgltf_node;
-
-//
-// TODO:
-// Need to resolve scaling issue.
-//
+struct aiMaterial;
 
 namespace Luden
 {
@@ -36,8 +27,6 @@ namespace Luden
 
 		std::vector<StaticMesh> Meshes;
 		
-		// Test
-		// Not using maps should work just as fine.
 		std::vector<aiMaterial*>	UniqueAssimpMaterials;
 		std::vector<Material>		UniqueMaterials;
 		std::vector<D3D12Texture*>	ModelTextures;
@@ -49,6 +38,8 @@ namespace Luden
 	class AssetImporter
 	{
 	public:
+		AssetImporter() = default;
+		~AssetImporter() = default;
 
 		bool ImportStaticMesh(Filepath Path, Model& OutModel);
 
@@ -62,14 +53,12 @@ namespace Luden
 		D3D12Device* Device;
 
 	private:
-		// Load all materials from Assimp model and map them.
+		// Load all materials from Assimp model.
 		void LoadMaterials(FAssimpLoadingData& SceneData);
 
+		// Process Assimp node recursively.
+		// Get information about it's meshes, matrix transformation and material.
 		void TraverseNode(FAssimpLoadingData& SceneData, aiNode* pNode);
-
-		// TODO:
-		// Requires rebuild
-		//void TraverseNode(const cgltf_data* pScene, const cgltf_node* pNode, Model& OutModel, FNode* pParentNode, DirectX::XMMATRIX ParentMatrix = DirectX::XMMatrixIdentity());
 
 		// Use meshoptimizer to optimize mesh data and generate meshlets.
 		void BuildMesh(StaticMesh& Mesh);
