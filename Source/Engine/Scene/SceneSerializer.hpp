@@ -26,7 +26,11 @@ namespace Luden
 		SceneSerializer() = default;
 		~SceneSerializer() = default;
 
-		static void Load(AssetImporter* pImporter, Scene* pScene, Filepath Path);
+		//
+		static bool Load(AssetImporter* pImporter, Scene* pScene, Filepath Path);
 		
+		// 
+		static bool Save(Scene* pScene, Filepath Path);
+
 	};
 } // namespace Luden

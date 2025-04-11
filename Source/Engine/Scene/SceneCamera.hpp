@@ -8,6 +8,7 @@
 #define DIRECTINPUT_VERSION 0x0800
 #endif
 #include <dinput.h>
+#include <array>
 
 #include <Core/Types.hpp>
 #include "ECS/Components/BoundingBoxComponent.hpp"
@@ -19,14 +20,16 @@ namespace Luden::Platform
 
 namespace Luden
 {
-	struct FFrustumPlane
+	struct FMeshletBounds;
+
+	enum EFrustumSide : usize
 	{
-
-	};
-
-	struct FFrustum
-	{
-
+		Left, 
+		Right,
+		Bottom,
+		Top,
+		Back, 
+		Front
 	};
 
 	class SceneCamera
@@ -41,7 +44,7 @@ namespace Luden
 		void Update();
 		
 		DirectX::XMFLOAT3 Position;
-		DirectX::XMFLOAT3 Target;
+		DirectX::XMFLOAT4 Target;
 		DirectX::XMFLOAT3 Up;
 		
 		DirectX::XMFLOAT4X4 View;
@@ -50,11 +53,18 @@ namespace Luden
 		DirectX::XMFLOAT4X4 InversedView;
 		DirectX::XMFLOAT4X4 InversedProjection;
 
-		DirectX::BoundingFrustum Frustum;
+		//DirectX::BoundingFrustum Frustum;
 
+		bool IsInsideFrustum(ecs::BoundingBoxComponent& AABB);
+		std::array<DirectX::XMFLOAT4, 6> FrustumPlanes;
+
+		void ConstructFrustum(const DirectX::XMMATRIX& Transformation);
+
+		DirectX::XMMATRIX GetView();
+		DirectX::XMMATRIX GetProjection();
 		DirectX::XMMATRIX GetViewProjection() const;
 
-		f32 zNear		= 1.0f;
+		f32 zNear		= 0.01f;
 		f32 zFar		= 10000.0f;
 
 		f32 AspectRatio = 1.0f;
@@ -69,6 +79,8 @@ namespace Luden
 		// Check whether BoundingBox is inside of Camera's frustrum.
 		bool IsInFrustrum(ecs::BoundingBoxComponent& BoundingBox, DirectX::XMFLOAT4X4 Transform);
 
+		bool IsInFrustrum(FMeshletBounds& BoundingBox, DirectX::XMFLOAT4X4 Transform);
+
 	private:
 		Platform::Window* m_ParentWindow;
 
@@ -79,7 +91,7 @@ namespace Luden
 		DirectX::XMFLOAT3 m_Upward					= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultPosition	= DirectX::XMFLOAT3(0.0f, 1.0f, -15.0f);
-		DirectX::XMFLOAT3 const m_DefaultTarget		= DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
+		DirectX::XMFLOAT4 const m_DefaultTarget		= DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 		DirectX::XMFLOAT3 const m_DefaultUp			= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultForward	= DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);

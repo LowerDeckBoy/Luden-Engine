@@ -15,6 +15,8 @@ namespace Luden
 	// Currently using hard-coded path to avoid copying Assets into project OutDir.
 	constexpr std::string_view ModelsRootFolder = "../../Assets/Models/";
 
+	class AssetImporter;
+
 	class Scene
 	{
 	public:
@@ -33,6 +35,8 @@ namespace Luden
 
 		void CreateEntity(Entity& Target);
 
+		void AddModel(AssetImporter* pAssetImporter, Filepath Path);
+
 		World* GetWorld()
 		{
 			return m_World;
@@ -47,9 +51,6 @@ namespace Luden
 		Filepath m_Filepath;
 
 		World* m_World = nullptr;
-
-		std::vector<StaticMesh> m_StaticMeshes;
-		std::vector<Material> m_Materials;
 
 	};
 } // namespace Luden
