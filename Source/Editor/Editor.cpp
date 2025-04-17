@@ -4,9 +4,11 @@
 #include <Core/Logger.hpp>
 #include <FontAwsome6/IconsFontAwesome6.h>
 #include <Platform/Utility.hpp>
-#include "Components/Helpers.hpp"
-#include "Components/Components.hpp"
-#include "Components/Model.hpp"
+#include <Engine/Scene/SceneSerializer.hpp>
+#include <Platform/FileDialog.hpp>
+
+#include "Components/GUI.hpp"
+
 
 namespace Luden
 {
@@ -58,7 +60,7 @@ namespace Luden
 		{
 			m_MainFont = IO.Fonts->AddFontFromFileTTF(FontPath, FontSize);
 
-			constexpr float iconsSize = 18 * 2.0f / 3.0f;
+			constexpr float iconsSize = 20 * 2.0f / 3.0f;
 			static const ImWchar iconsRanges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
 			ImFontConfig iconsConfig;
 			iconsConfig.MergeMode = true;
@@ -111,9 +113,9 @@ namespace Luden
 		}
 		
 		{
-			ImGui::Begin("Scene");
-
-			SetSceneImage(m_Renderer->SceneTextures.Scene.ShaderResourceHandle);
+			ImGui::Begin(ICON_FA_DESKTOP" Scene");
+			
+			SetSceneImage(*m_Renderer->SceneTextures.ImageToDisplay);
 
 			ImGui::End();
 		}
@@ -135,6 +137,7 @@ namespace Luden
 	void Editor::SetActiveScene(Scene* pScene)
 	{
 		m_CurrentScene = pScene;
+		
 	}
 
 	void Editor::SetSceneImage(D3D12Descriptor& TextureDescriptor)
@@ -154,7 +157,47 @@ namespace Luden
 
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Exit"))
+			gui::SeparatorText("Scene");
+
+			if (ImGui::MenuItem(ICON_FA_SD_CARD" Save"))
+			{
+				// TODO:
+			}
+			
+			if (ImGui::MenuItem(ICON_FA_FILE_CODE" Load scene"))
+			{	
+				auto selected = Platform::FileDialog::Open(Platform::FOpenDialogOptions{
+					.FilterExtensions = Platform::EExtensionFilter::Scene,
+					.OpenLocation = "D:\\Dev\\Engines\\Luden\\Source\\Editor\\Scenes",
+					.Title = "Select a scene file"
+					});
+					
+				if (!selected.empty())
+				{
+					m_SelectedEntity = {};
+					m_Renderer->bRequestSceneLoad = true;
+					m_Renderer->SceneToLoad = selected;
+				}
+			}
+			
+			if (ImGui::MenuItem(ICON_FA_FOLDER_CLOSED" Unload scene"))
+			{
+				m_Renderer->bRequestCleanup = true;
+				m_SelectedEntity = {};
+			}
+
+			if (ImGui::MenuItem(ICON_FA_CHESS_KNIGHT" Add model"))
+			{
+				//auto selected = Platform::FileDialog::Open("D:\\Dev\\Engines\\Luden\\Build\\Debug\\Assets\\");
+				auto selected = Platform::FileDialog::Open(Platform::FOpenDialogOptions{
+					.FilterExtensions = Platform::EExtensionFilter::Model,
+					.OpenLocation = "D:\\Dev\\Engines\\Luden\\Assets\\Models\\",
+					.Title = "Select a model file"
+					});
+			}
+
+			ImGui::Separator();
+			if (ImGui::MenuItem(ICON_FA_POWER_OFF" Exit"))
 			{
 				m_ParentWindow->bShouldClose = true;
 			}
@@ -169,7 +212,7 @@ namespace Luden
 
 	void Editor::DrawSceneControlPanel()
 	{
-		if (ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_FramePadding))
+		if (ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			ImGui::SeparatorText("Config");
 			auto& config = Config::Get();
@@ -192,10 +235,7 @@ namespace Luden
 				{
 					ImGui::AlignTextToFramePadding();
 					ImGui::Text("Set fixed frame rate:");
-					if (ImGui::IsItemHovered())
-					{
-						ImGui::SetTooltip("Allows to limit frame rate to value in range [24;240].");
-					}
+					gui::OnItemHover("Allows to limit frame rate to value in range [24;240].");
 					ImGui::TableNextColumn();
 					ImGui::Checkbox("##Limit frames", &config.bAllowFixedFrameRate);
 
@@ -216,10 +256,7 @@ namespace Luden
 
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Mesh shading: ");
-				if (ImGui::IsItemHovered())
-				{
-					ImGui::SetTooltip("Whether to use mesh shading pipeline instead of vertex shading.");
-				}
+				gui::OnItemHover("Whether to use mesh shading pipeline instead of vertex shading.");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##Mesh shading", &config.bMeshShading);
 
@@ -230,13 +267,10 @@ namespace Luden
 
 					ImGui::AlignTextToFramePadding();
 					ImGui::Text("Meshlets: ");
-					if (ImGui::IsItemHovered())
-					{
-						ImGui::SetTooltip("Check to draw debug meshlet instances.");
-					}
+					gui::OnItemHover("Check to draw debug meshlet instances.");
 					ImGui::TableNextColumn();
 					ImGui::Checkbox("##meshlets", &config.bDrawMeshlets);
-				}    
+				}
 
 				// Temporarly
 
@@ -246,12 +280,18 @@ namespace Luden
 
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Raytracing: ");
-				if (ImGui::IsItemHovered())
-				{
-					ImGui::SetTooltip("Check to dispatch ray tracing.");
-				}
+				gui::OnItemHover("Check to dispatch ray tracing.");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##raytracing", &config.bRaytracing);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Alpha mask: ");
+				gui::OnItemHover("Check to enable alpha mask cutoff in pixel shaders.");
+				ImGui::TableNextColumn();
+				ImGui::Checkbox("##bAlphaMask", &config.bAlphaMask);
 
 				ImGui::BeginDisabled();
 				// Row 3;
@@ -274,13 +314,44 @@ namespace Luden
 
 				ImGui::EndDisabled();
 
-				ImGui::EndTable();              
+				ImGui::EndTable();
+			}
+
+			// Set output image.
+			{
+				ImGui::Text("Image to display:");
+
+				static int32 selected = 0;
+				const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive" };
+
+				if (ImGui::Combo("##comb", &selected, items, IM_ARRAYSIZE(items)))
+				{
+					switch (selected)
+					{
+					case 0:
+						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->SceneTextures.Scene.ShaderResourceHandle;
+						break;
+					case 1:
+						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->GBuffer->BaseColor.ShaderResourceHandle;
+						break;
+					case 2:
+						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->GBuffer->Normal.ShaderResourceHandle;
+						break;
+					case 3:
+						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle;
+						break;
+					case 4:
+						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->GBuffer->Emissive.ShaderResourceHandle;
+						break;
+					}
+
+				}
 			}
 
 			ImGui::SeparatorText("Camera");
-			if (ImGui::BeginTable("##cameraPanel", 2))
+			if (ImGui::BeginTable("##cameraPanel", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame))
 			{
-				ImGui::TableSetupColumn("Property",  ImGuiTableColumnFlags_WidthFixed, 60.0f);
+				ImGui::TableSetupColumn("Property",  ImGuiTableColumnFlags_WidthStretch, 100.0f);
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 
@@ -296,9 +367,41 @@ namespace Luden
 				ImGui::TableNextColumn();
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Speed");
+				gui::OnItemHover("Speed is controlable when mouse scroll is used when RBM is hold.");
+		
 				ImGui::TableNextColumn();
-				ImGui::DragFloat("##Speed", &m_Renderer->Camera->CameraSpeed, 1.0f, 1.0f, 100.0f);
+				ImGui::DragFloat("##Speed", &m_Renderer->Camera->CameraSpeed, 1.0f, 1.0f, 250.0f);
 				
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Field of View");
+				ImGui::TableNextColumn();
+				if (ImGui::DragFloat("##fov", &m_Renderer->Camera->FieldOfView, 1.0f, 1.0f, 90.0f))
+				{
+					m_Renderer->Camera->Resize();
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Near Z");
+				ImGui::TableNextColumn();
+				if (ImGui::DragFloat("##zNear", &m_Renderer->Camera->zNear, 0.1f, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
+				{
+					m_Renderer->Camera->Resize();
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Far Z");
+				ImGui::TableNextColumn();
+				if (ImGui::DragFloat("##zFar", &m_Renderer->Camera->zFar, 1.0f, 1000.0f, 0.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
+				{
+					m_Renderer->Camera->Resize();
+				}
+
 				ImGui::EndTable();
 			}
 
@@ -312,9 +415,7 @@ namespace Luden
 
 		if (m_SelectedEntity.IsAlive())
 		{
-			//auto& nameComponent = m_SelectedEntity.GetComponent<ecs::NameComponent>();
-			//ImGui::Text("Name: %s", nameComponent.Name.c_str());
-			gui::DrawModelData(m_SelectedEntity);
+			gui::DrawModelData(*(Model*)&m_SelectedEntity);
 		}
 
 		ImGui::End();
@@ -337,7 +438,8 @@ namespace Luden
 		gui::SeparatorVertical();
 
 		ImGui::Text("Mem: %.3fMB", Platform::GetMemoryUsage());
-		ImGui::Text("VRAM: %dMB", m_Renderer->GetRHI()->QueryAdapterMemory());
+
+		ImGui::Text("VRAM: %dMB", m_Renderer->GetRHI()->Adapter->QueryAdapterMemory());
 
 	}
 
@@ -350,12 +452,12 @@ namespace Luden
 			return; 
 		}
 
-		if (ImGui::TreeNodeEx("Actors", ImGuiTreeNodeFlags_FramePadding))
+		if (ImGui::TreeNodeEx("Actors", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			if (m_CurrentScene->Models.empty())
 			{
 				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Empty scene...");
+				ImGui::Text(ICON_FA_GHOST ICON_FA_GHOST ICON_FA_GHOST" Empty here... " ICON_FA_GHOST ICON_FA_GHOST ICON_FA_GHOST);
 				ImGui::TreePop();
 
 				return;
@@ -366,7 +468,9 @@ namespace Luden
 				Entity entity(model);
 				const auto& nameComponent = model.GetComponent<ecs::NameComponent>();
 				
-				ImGuiTreeNodeFlags flags = ((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding;
+				ImGuiTreeNodeFlags flags = 
+					((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
+					ImGuiTreeNodeFlags_Leaf;
 
 				ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, nameComponent.Name.c_str());
 				if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
@@ -375,6 +479,7 @@ namespace Luden
 
 					//gui::DrawModelData(model);
 				}
+				ImGui::TreePop();
 				
 				//if (ImGui::TreeNodeEx(nameComponent.Name.c_str(), flags))
 				//{
@@ -390,7 +495,7 @@ namespace Luden
 
 	void Editor::DrawLightData()
 	{
-		if (ImGui::TreeNodeEx("Lighting", ImGuiTreeNodeFlags_FramePadding))
+		if (ImGui::TreeNodeEx("Lighting", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			// Draw all lights here
 

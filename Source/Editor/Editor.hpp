@@ -8,6 +8,7 @@
 #include <Core/Timer.hpp>
 
 #include <Scene/Scene.hpp>
+#include <Engine/Asset/AssetImporter.hpp>
 
 namespace Luden
 {
@@ -42,7 +43,6 @@ namespace Luden
 		// TODO:
 		void DrawLogsPanel();
 
-
 		// Display debug information about: 
 		// - Frames per second, 
 		// - Miliseconds taken to render frame, 
@@ -62,14 +62,17 @@ namespace Luden
 		// Indicates which Entity to display in Properties panel.
 		Entity m_SelectedEntity{};
 
+		AssetImporter Importer;
+
 	private:
 		Platform::Window* m_ParentWindow;
 		Renderer* m_Renderer = nullptr;
 
+		// Scene to display.
 		Scene* m_CurrentScene = nullptr;
 
 		ImFont* m_MainFont = nullptr;
-		f32 FontSize = 15.0f;
+		f32 FontSize = 16.0f;
 
 		Core::Timer* m_Timer;
 
@@ -78,7 +81,7 @@ namespace Luden
 		ImGuiStyle* m_Theme;
 		
 		// Temporarly hard coded paths.
-		const char* FontPath		= "..\\..\\Build\\Debug\\Assets\\Fonts\\CascadiaCode-SemiBold.ttf";
+		const char* FontPath		= "..\\..\\Build\\Debug\\Assets\\Fonts\\CascadiaCode.ttf";
 		const char* IconsFontPath	= "..\\..\\Build\\Debug\\Assets\\Fonts\\fa-solid-900.ttf";
 
 	};

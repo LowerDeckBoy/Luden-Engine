@@ -7,6 +7,7 @@
 #include <ImGui/imgui_impl_win32.h>
 #include <Core/Assert.hpp>
 
+
 extern "C"
 {
 	__declspec(dllexport) extern const UINT  D3D12SDKVersion	= RHI_D3D12AGILITYSDK_VERSION;
@@ -23,12 +24,12 @@ namespace Luden
 
 	Application::Application()
 	{
-		Initialize();
+
 	}
 
 	Application::~Application()
 	{
-		Shutdown();
+
 	}
 
 	void Application::Initialize()
@@ -44,21 +45,20 @@ namespace Luden
 		m_D3D12RHI = new D3D12RHI(&Window);
 		m_Renderer = new Renderer(&Window, m_D3D12RHI);
 
+		Importer.Device = m_D3D12RHI->Device;
+
 		m_Editor = std::make_unique<Editor>(&Window, m_Renderer, &m_Timer);
 
 		MainScene = new Scene();
 
-		//SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_test.json");
-		//SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_stanford.json");
-		SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_sponza.json");
-		//SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_bistro.json");
+		SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_test.json");
 
-		m_Editor->SetActiveScene(MainScene);
+		m_Renderer->BuildScene(MainScene);
 		m_Renderer->ActiveScene = MainScene;
-
-		m_Renderer->InitializeScene(MainScene);
+		m_Editor->SetActiveScene(MainScene);	
 
 		m_Renderer->Resize();
+		m_Renderer->InitializeRaytracingResources();
 
 		bIsResizing = false;
 		
@@ -72,6 +72,31 @@ namespace Luden
 		{
 			Window.ProcessMessages();
 
+			// Need to rework request handling.
+			// Gets the job done, but is ugly.
+			if (m_Renderer->bRequestCleanup)
+			{
+				m_Renderer->ReleaseActiveScene();
+				m_Renderer->bRequestCleanup = false;
+			}
+
+			if (m_Renderer->bRequestSceneLoad)
+			{
+				m_Renderer->bRequestSceneLoad = false;
+				if (MainScene)
+				{
+					m_Renderer->ReleaseActiveScene();
+					MainScene = nullptr;
+					MainScene = new Scene();
+				} 
+				
+				SceneSerializer::Load(&Importer, MainScene, m_Renderer->SceneToLoad);
+				m_Renderer->BuildScene(MainScene);
+				m_Renderer->ActiveScene = MainScene;
+				m_Renderer->SceneToLoad = "";
+				m_Editor->SetActiveScene(MainScene);
+			}
+
 			// If Window is minimized skip rendering.
 			if (Window.IsMinimized())
 			{
@@ -83,7 +108,7 @@ namespace Luden
 				m_Renderer->Resize();
 				bIsResizing = false;
 				LOG_DEBUG("Resized to {0}x{1}", Window.Width, Window.Height);
-				//continue;
+				
 			}
 
 			m_Timer.GetFrameTime();
@@ -115,9 +140,9 @@ namespace Luden
 	}
 
 	void Application::Shutdown()
-	{
-		
+	{	
 		m_Editor.reset();
+		delete MainScene;
 		delete m_Renderer;
 		delete m_D3D12RHI;
 

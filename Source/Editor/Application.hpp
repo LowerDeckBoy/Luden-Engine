@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Asset/ShaderCompiler.hpp>
 #include <Core/Timer.hpp>
 #include <Engine/Scene/Scene.hpp>
 #include <Engine/Scene/SceneCamera.hpp>
@@ -35,9 +34,7 @@ namespace Luden
 		Platform::Window Window;
 		std::unique_ptr<Editor> m_Editor;
 		
-		static LRESULT  EditorWindowProc(::HWND Handle, UINT32 Message, WPARAM wParam, LPARAM lParam);
-
-		ShaderCompiler* m_ShaderCompiler;
+		static LRESULT CALLBACK EditorWindowProc(::HWND Handle, UINT32 Message, WPARAM wParam, LPARAM lParam);
 
 		D3D12RHI* m_D3D12RHI;
 
