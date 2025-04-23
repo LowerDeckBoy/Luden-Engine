@@ -1,19 +1,33 @@
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
 #include <fastgltf/dxmath_element_traits.hpp>
-
+#include <unordered_map>
 #include "AssetImporter.hpp"
 #include <Core/Logger.hpp>
 
+namespace Luden::glTF
+{
+	struct FfastgltfLoadingData
+	{
+		fastgltf::Asset* Scene;
+		Filepath Path;
+
+		std::vector<StaticMesh> Meshes;
+		std::vector<Material>	Materials;
+		//std::vector<Material>	Materials;
+	};
+
+	static void TraverseHierarchy(FfastgltfLoadingData& SceneData);
+
+	static void LoadMaterials(FfastgltfLoadingData& SceneData);
+} // namespace Luden::glTF
 
 namespace Luden
 {
-	static void TraverseHierarchy(FfastgltfLoadingData& SceneData);
-
 	bool AssetImporter::ImportFastglftModel(Filepath Path, Model& OutModel)
 	{
 
-		 fastgltf::Options gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::LoadExternalBuffers;// | fastgltf::Options::DecomposeNodeMatrices;
+		fastgltf::Options gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::LoadExternalBuffers | fastgltf::Options::LoadExternalImages | fastgltf::Options::DecomposeNodeMatrices;
 
 		fastgltf::Parser parser{};
 		fastgltf::Asset gltf;
@@ -30,13 +44,14 @@ namespace Luden
 			DEBUGBREAK();
 		}
 
-		FfastgltfLoadingData loadData{};
+		glTF::FfastgltfLoadingData loadData{};
 		loadData.Scene = std::move(&scene.get());
 
 		// https://github.com/vblanco20-1/vulkan-guide/blob/all-chapters-2/chapter-6/vk_loader.cpp
 		// https://github.com/stripe2933/vk-gltf-viewer/blob/master/interface/gltf/algorithm/traversal.cppm
 
-		TraverseHierarchy(loadData);
+		glTF::TraverseHierarchy(loadData);
+		glTF::LoadMaterials(loadData);
 
 		for (auto& mesh : loadData.Meshes)
 		{
@@ -50,14 +65,12 @@ namespace Luden
 		return true;
 	}
 
-	void TraverseHierarchy(FfastgltfLoadingData& SceneData)
+	void glTF::TraverseHierarchy(FfastgltfLoadingData& SceneData)
 	{
 		const auto asset = SceneData.Scene;
 
 		for (usize sceneIdx = 0; sceneIdx < asset->scenes.size(); ++sceneIdx)
 		{
-			auto& scene = asset->scenes.at(sceneIdx);
-			
 			fastgltf::iterateSceneNodes(*asset, sceneIdx, fastgltf::math::fmat4x4(),
 				[&](fastgltf::Node& node, fastgltf::math::fmat4x4 matrix) {
 					
@@ -74,9 +87,10 @@ namespace Luden
 
 							if (primitive->indicesAccessor.has_value())
 							{
+								
 								fastgltf::Accessor& indexAccessor = asset->accessors.at(primitive->indicesAccessor.value());
 								meshData.Indices.reserve(indexAccessor.count);
-
+								
 								fastgltf::iterateAccessor<uint32>(*asset, indexAccessor,
 									[&](uint32 index) {
 										meshData.Indices.push_back(index);
@@ -86,17 +100,17 @@ namespace Luden
 							std::vector<DirectX::XMFLOAT4> positions;
 							std::vector<DirectX::XMFLOAT2> texCoords;
 							std::vector<DirectX::XMFLOAT3> normals;
+							// TODO:
 							//std::vector<DirectX::XMFLOAT4> tangents;
 							//std::vector<DirectX::XMFLOAT4> bitangents;
 
 							auto* positionIt = primitive->findAttribute("POSITION");
 							if (asset->accessors[positionIt->accessorIndex].bufferViewIndex.has_value())
 							{
-								//positions.reserve(positionAccessor.count);
 								fastgltf::iterateAccessor<DirectX::XMFLOAT3>(*asset, asset->accessors[positionIt->accessorIndex],
-									[&](DirectX::XMFLOAT3 vertex) {
-
-										positions.push_back(DirectX::XMFLOAT4(vertex.z, vertex.y, vertex.x, 1.0f));
+									[&](DirectX::XMFLOAT3 vertex)
+									{
+										positions.push_back(DirectX::XMFLOAT4(vertex.x, vertex.y, vertex.z, 1.0f));
 										//positions.push_back(*(DirectX::XMFLOAT4*)&vertex);
 									});
 							}
@@ -155,6 +169,47 @@ namespace Luden
 						}
 					}
 				});
+		}
+
+	}
+
+	void glTF::LoadMaterials(FfastgltfLoadingData& SceneData)
+	{
+		auto asset = SceneData.Scene;
+
+		for (auto& gltfMaterial : asset->materials)
+		{
+			Material material{};
+
+			material.BaseColorFactor.x	= gltfMaterial.pbrData.baseColorFactor.x();
+			material.BaseColorFactor.y	= gltfMaterial.pbrData.baseColorFactor.y();
+			material.BaseColorFactor.z	= gltfMaterial.pbrData.baseColorFactor.z();
+			material.BaseColorFactor.w	= gltfMaterial.pbrData.baseColorFactor.w();
+
+			material.EmissiveFactor.x	= gltfMaterial.emissiveFactor.x();
+			material.EmissiveFactor.y	= gltfMaterial.emissiveFactor.y();
+			material.EmissiveFactor.z	= gltfMaterial.emissiveFactor.z();
+			material.EmissiveFactor.w	= gltfMaterial.emissiveStrength;
+
+			material.AlphaCutoff		= gltfMaterial.alphaCutoff;
+			material.Metallic			= gltfMaterial.pbrData.metallicFactor;
+			material.Roughness			= gltfMaterial.pbrData.roughnessFactor;
+			//material.Specular			= gltfMaterial.specular->specularFactor;
+
+			//if (gltfMaterial.transmission->transmissionTexture.has_value())
+			//{
+			//	material.Transparency = gltfMaterial.transmission->transmissionFactor;
+			//}
+			
+			material.IndexOfRefraction	= gltfMaterial.ior;
+			//material.Anisotropy			= gltfMaterial.anisotropy->anisotropyStrength;
+			material.AlphaMode			= (EAlphaMode)gltfMaterial.alphaMode;
+
+
+
+			//material.BaseColorFactor = gltfMaterial.
+
+			SceneData.Materials.push_back(std::move(material));
 		}
 
 	}
