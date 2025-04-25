@@ -1,14 +1,8 @@
-//#include <Core/Defines.hpp>
-#include "D3D12/D3D12UploadContext.hpp"
-#include <assimp/GltfMaterial.h>
 #include "AssetImporter.hpp"
 #include "D3D12/D3D12Memory.hpp"
+#include "D3D12/D3D12UploadContext.hpp"
 #include "D3D12/D3D12Utility.hpp"
-#include "Graphics/Model.hpp"
-#include <Core/Logger.hpp>
 #include <DirectXTex.h>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
 #include <meshoptimizer/meshoptimizer.h>
 
 
@@ -22,57 +16,17 @@ namespace Luden
 
 			return false;
 		}
-
-		if (!ImportAssimpModel(Path, OutModel))
-		{
-			return false;
-		}
 		
-		return true;
-	}
-
-	bool AssetImporter::ImportAssimpModel(Filepath Path, Model& OutModel)
-	{
-		int32 loadFlags =
-			aiProcess_ConvertToLeftHanded |
-			aiProcess_Triangulate |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_RemoveRedundantMaterials |
-			aiProcess_FindInstances |
-			aiProcess_GenSmoothNormals |
-			aiProcess_GlobalScale |
-			aiProcess_CalcTangentSpace |
-			aiProcess_GenBoundingBoxes;
-
-		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(Path.string(), (uint32)loadFlags);
-		if (!scene || !scene->mRootNode || !scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
+		if (File::GetExtension(Path) == ".gltf")
 		{
-			LOG_WARNING("\n\tFailed to load model: {0}, reason: {1}", scene->GetShortFilename(Path.string().c_str()), importer.GetErrorString());
-
-			importer.FreeScene();
-
-			return false;
+			return ImportFastglftModel(Path, OutModel);
 		}
-		
-		OutModel.Meshes.reserve(scene->mNumMeshes);
-		OutModel.Materials.reserve(scene->mNumMaterials);
+		else
+		{
+			return ImportAssimpModel(Path, OutModel);
+		}
 
-		FAssimpLoadingData data{};
-		data.Scene = scene;
-		data.Path = Path;
-
-		LoadMaterials(data);
-		TraverseNode(data, scene->mRootNode);
-
-		OutModel.Meshes		= std::move(data.Meshes);
-		OutModel.Materials	= std::move(data.UniqueMaterials);
-		OutModel.Textures	= std::move(data.ModelTextures);
-
-		OutModel.SetFilepath(Path);
-		importer.FreeScene();
-
-		return true;
+		return false;
 	}
 
 	D3D12Texture* AssetImporter::LoadTexture(Filepath Path)
@@ -100,7 +54,9 @@ namespace Luden
 		
 		if (FAILED(result))
 		{
-			LOG_WARNING("Failed to load texture: {}", Path.string());
+			char hResultError[512]{};
+			::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, 0, hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
+			LOG_WARNING("Failed to load texture: {}\n{}", Path.string(), hResultError);
 			__debugbreak();
 			return;
 		}
@@ -148,7 +104,9 @@ namespace Luden
 		HRESULT result = DirectX::LoadFromDDSFile(Path.c_str(), DirectX::DDS_FLAGS_FORCE_RGB, &metadata, scratchImage);
 		if (FAILED(result))
 		{
-			LOG_WARNING("Failed to load texture: {}", result);
+			char hResultError[512]{};
+			::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, 0, hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
+			LOG_WARNING("Failed to load texture: {}", hResultError);
 		}
 
 		TextureDesc desc{};
@@ -170,262 +128,117 @@ namespace Luden
 
 	}
 
-	void AssetImporter::LoadMaterials(FAssimpLoadingData& SceneData)
+	// Pack 3 uint8 triangle indices into single uint32 element.
+	// Triangles are later unpacked in shader.
+	// Note:
+	// Currently not used here.
+	static std::vector<uint32> RepackMeshletTriangles(std::vector<meshopt_Meshlet>& Meshlets, std::vector<uint8>& Triangles)
 	{
-		for (uint32 materialIdx = 0; materialIdx < SceneData.Scene->mNumMaterials; ++materialIdx)
+		std::vector<uint32> meshletTrianglesRepacked;
+		for (auto& meshlet : Meshlets)
 		{
-			auto* assimpMaterial = SceneData.Scene->mMaterials[materialIdx];
-			
-			SceneData.UniqueAssimpMaterials.push_back(assimpMaterial);
+			uint32 triangleOffset = static_cast<uint32>(meshletTrianglesRepacked.size());
 
-			Material material{};
-
-			aiString path{};
-			auto filename = SceneData.Path.filename().stem();
-
-			const std::string pathToParent = std::filesystem::absolute(SceneData.Path).parent_path().string();
-			// Some of glTF models use place their textures inside *textures/* directory, but some just don't.
-			const std::string pathToTexture = (std::filesystem::exists("textures/") ? "textures/" : "");
-
-			if (assimpMaterial->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS)
+			for (uint32_t i = 0; i < meshlet.triangle_count; ++i)
 			{
-				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
+				uint32 i0 = 3 * i + 0 + meshlet.triangle_offset;
+				uint32 i1 = 3 * i + 1 + meshlet.triangle_offset;
+				uint32 i2 = 3 * i + 2 + meshlet.triangle_offset;
 
-				D3D12Texture* baseColorTexture = LoadTexture(texturePath);
-				material.BaseColorIndex = baseColorTexture->ShaderResourceHandle.Index;
-				SceneData.ModelTextures.push_back(std::move(baseColorTexture));
+				uint8  idx0 = Triangles[i0];
+				uint8  idx1 = Triangles[i1];
+				uint8  idx2 = Triangles[i2];
+				uint32 packed = 
+					((static_cast<uint32>(idx0) & 0xFF)		)  |
+					((static_cast<uint32>(idx1) & 0xFF) << 8)  |
+					((static_cast<uint32>(idx2) & 0xFF) << 16);
+				meshletTrianglesRepacked.push_back(packed);
 			}
 
-			if (assimpMaterial->GetTexture(aiTextureType_NORMALS, 0, &path) == aiReturn_SUCCESS)
-			{
-				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
-
-				D3D12Texture* normalTexture = LoadTexture(texturePath);
-				material.NormalIndex = normalTexture->ShaderResourceHandle.Index;
-				SceneData.ModelTextures.push_back(std::move(normalTexture));
-			}
-
-			if (assimpMaterial->GetTexture(aiTextureType_METALNESS, 0, &path) == aiReturn_SUCCESS)
-			{
-				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
-
-				D3D12Texture* metallicTexture = LoadTexture(texturePath);
-				material.MetallicRoughnessIndex = metallicTexture->ShaderResourceHandle.Index;
-				SceneData.ModelTextures.push_back(std::move(metallicTexture));
-			}
-
-			if (assimpMaterial->GetTexture(aiTextureType_EMISSIVE, 0, &path) == aiReturn_SUCCESS)
-			{
-				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
-				
-				D3D12Texture* emissiveTexture = LoadTexture(texturePath);
-				material.EmissiveIndex = emissiveTexture->ShaderResourceHandle.Index;
-				SceneData.ModelTextures.push_back(std::move(emissiveTexture));
-			}
-			
-			assimpMaterial->Get(AI_MATKEY_METALLIC_FACTOR,		material.Metallic);
-			assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR,		material.Roughness);
-			assimpMaterial->Get(AI_MATKEY_GLTF_ALPHACUTOFF,		material.AlphaCutoff);
-			assimpMaterial->Get(AI_MATKEY_SPECULAR_FACTOR,		material.Specular);
-			assimpMaterial->Get(AI_MATKEY_OPACITY,				material.Transparency);
-			assimpMaterial->Get(AI_MATKEY_REFRACTI,				material.IndexOfRefraction);
-			assimpMaterial->Get(AI_MATKEY_ANISOTROPY_FACTOR,	material.Anisotropy);
-
-			aiColor4D baseColorFactor{};
-			assimpMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, baseColorFactor);
-			material.BaseColorFactor = *(DirectX::XMFLOAT4*)(&baseColorFactor);
-
-			aiColor4D emissiveColorFactor{};
-			assimpMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColorFactor);
-			material.EmissiveFactor = *(DirectX::XMFLOAT4*)(&emissiveColorFactor);
-
-			aiString blend;
-			assimpMaterial->Get(AI_MATKEY_GLTF_ALPHAMODE, blend);
-
-			if (std::strcmp(blend.C_Str(), "OPAQUE") == 0)
-			{
-				material.AlphaMode = EAlphaMode::Opaque;
-			}
-			else if (std::strcmp(blend.C_Str(), "BLEND") == 0)
-			{
-				material.AlphaMode = EAlphaMode::Blend;
-			}
-			else if (std::strcmp(blend.C_Str(), "MASK") == 0)
-			{
-				material.AlphaMode = EAlphaMode::Mask;
-			}
-			
-			SceneData.UniqueMaterials.push_back(material);
-			SceneData.UniqueAssimpMaterials.push_back(assimpMaterial);
+			meshlet.triangle_offset = triangleOffset;
 		}
+
+		return meshletTrianglesRepacked;
 	}
 
-	void AssetImporter::TraverseNode(FAssimpLoadingData& SceneData, aiNode* pNode)
+	void AssetImporter::BuildMesh(StaticMesh& Mesh)
 	{
-		if (!pNode)
+		/* =============================== Mesh optimizations ===============================*/
+
+		std::vector<uint32> remap(Mesh.Indices.size());
+		usize vertexCount = meshopt_generateVertexRemap(remap.data(), Mesh.Indices.data(), Mesh.Indices.size(), Mesh.Vertices.data(), Mesh.Vertices.size(), sizeof(Vertex));
+
+		std::vector<uint32> remapIndices(Mesh.Indices.size());
+		std::vector<Vertex> remapVertices(vertexCount);
+
+		meshopt_remapIndexBuffer(remapIndices.data(), Mesh.Indices.data(), Mesh.Indices.size(), remap.data());
+		meshopt_remapVertexBuffer(remapVertices.data(), Mesh.Vertices.data(), Mesh.Vertices.size(), sizeof(Vertex), remap.data());
+
+		meshopt_optimizeVertexCache(remapIndices.data(), remapIndices.data(), remapIndices.size(), vertexCount);
+		meshopt_optimizeOverdraw(remapIndices.data(), remapIndices.data(), remapIndices.size(), &(remapVertices[0].Position.x), vertexCount, sizeof(Vertex), 1.05f);
+		meshopt_optimizeVertexFetch(remapVertices.data(), remapIndices.data(), remapIndices.size(), remapVertices.data(), remapVertices.size(), sizeof(Vertex));
+
+		Mesh.Indices = remapIndices;
+		Mesh.Vertices = remapVertices;
+
+		/* =============================== Meshlet generatation ===============================*/
+
+		size_t maxMeshlets = meshopt_buildMeshletsBound(Mesh.Indices.size(), MeshletMaxVertices, MeshletMaxTriangles);
+		Mesh.Meshlets.resize(maxMeshlets);
+		Mesh.MeshletVertices.resize(maxMeshlets * MeshletMaxVertices);
+		Mesh.MeshletTriangles.resize(maxMeshlets * MeshletMaxTriangles * 3);
+
+		const f32 coneWeight = 0.0f;
+
+		size_t meshletCount = meshopt_buildMeshlets(
+			Mesh.Meshlets.data(),
+			Mesh.MeshletVertices.data(),
+			Mesh.MeshletTriangles.data(),
+			Mesh.Indices.data(), Mesh.Indices.size(),
+			&Mesh.Vertices[0].Position.x, Mesh.Vertices.size(), sizeof(Vertex),
+			MeshletMaxVertices, MeshletMaxTriangles,
+			coneWeight);
+
+		const meshopt_Meshlet& last = Mesh.Meshlets[meshletCount - 1];
+		Mesh.MeshletVertices.resize(last.vertex_offset + (size_t)last.vertex_count);
+		Mesh.MeshletTriangles.resize(last.triangle_offset + (size_t)((last.triangle_count * 3 + 3) & ~3));
+		Mesh.Meshlets.resize(meshletCount);
+
+		/* =============================== Meshlet cull data generation =============================== */
+
+		Mesh.MeshletBounds.reserve(Mesh.Meshlets.size());
+
+		for (uint32 m = 0; m < Mesh.Meshlets.size(); ++m)
 		{
-			return;
+			meshopt_Meshlet& meshlet = Mesh.Meshlets.at(m);
+
+			// Experimental
+			meshopt_optimizeMeshlet(&Mesh.MeshletVertices[meshlet.vertex_offset], &Mesh.MeshletTriangles[meshlet.triangle_offset], meshlet.triangle_count, meshlet.vertex_count);
+
+			// Generate bounds
+			meshopt_Bounds bounds = meshopt_computeMeshletBounds(&Mesh.MeshletVertices[meshlet.vertex_offset], &Mesh.MeshletTriangles[meshlet.triangle_offset],
+				meshlet.triangle_count, &Mesh.Vertices[0].Position.x, Mesh.Vertices.size(), sizeof(Vertex));
+
+			FMeshletBounds output{
+				.Center = *(DirectX::XMFLOAT3*)(&bounds.center),
+				.Radius = bounds.radius,
+				.ConeApex = *(DirectX::XMFLOAT3*)(&bounds.cone_apex),
+				.ConeAxis = *(DirectX::XMFLOAT3*)(&bounds.cone_axis),
+				.ConeCutoff = bounds.cone_cutoff
+			};
+
+			Mesh.MeshletBounds.emplace_back(output);
 		}
 
-		aiMatrix4x4 matrix = pNode->mTransformation;
+		//Mesh.MeshletTriangles = RepackMeshletTriangles()
 
-		DirectX::XMMATRIX transform = *(DirectX::XMMATRIX*)(&matrix);
-		aiNode* currNode = pNode;
-
-		while (true)
-		{
-			if (currNode->mParent)
-			{
-				currNode = currNode->mParent;
-				aiMatrix4x4 pTransform = currNode->mTransformation;
-				transform = *(DirectX::XMMATRIX*)(&pTransform) * transform;
-			}
-			else
-			{
-				break;
-			}	
-		}
-			
-		transform = DirectX::XMMatrixTranspose(transform);
-
-		for (uint32 meshIdx = 0; meshIdx < pNode->mNumMeshes; meshIdx++)
-		{
-			const auto& mesh = SceneData.Scene->mMeshes[pNode->mMeshes[meshIdx]];
-
-			StaticMesh meshData{};
-			meshData.Name = mesh->mName.C_Str();
-			meshData.Transform.WorldMatrix = transform;
-			meshData.Transform.Decompose(transform);
-
-			meshData.BoundingBox.Min = *(DirectX::XMFLOAT3*)(&mesh->mAABB.mMin);
-			meshData.BoundingBox.Max = *(DirectX::XMFLOAT3*)(&mesh->mAABB.mMax);
-
-			meshData.Vertices.reserve(mesh->mNumVertices);
-			
-			std::vector<DirectX::XMFLOAT4> positions;
-			positions.reserve(mesh->mNumVertices);
-			std::vector<DirectX::XMFLOAT2> texCoords;
-			texCoords.reserve(mesh->mNumVertices);
-			std::vector<DirectX::XMFLOAT3> normals;
-			normals.reserve(mesh->mNumVertices);
-			std::vector<DirectX::XMFLOAT4> tangents;
-			tangents.reserve(mesh->mNumVertices);
-			std::vector<DirectX::XMFLOAT4> bitangents;
-			bitangents.reserve(mesh->mNumVertices);
-
-			usize vertexCount = mesh->mNumVertices;
-
-			for (uint32_t vertexId = 0; vertexId < mesh->mNumVertices; ++vertexId)
-			{
-				Vertex vertex{};
-
-				positions.push_back(DirectX::XMFLOAT4(mesh->mVertices[vertexId].x, mesh->mVertices[vertexId].y, mesh->mVertices[vertexId].z, 1.0f));
-				
-				if (mesh->HasTextureCoords(0))
-				{
-					texCoords.push_back(*(DirectX::XMFLOAT2*)(&mesh->mTextureCoords[0][vertexId]));
-				}
-				else
-				{
-					texCoords.push_back(DirectX::XMFLOAT2(0.0f, 0.0f));
-				}
-
-				if (mesh->HasNormals())
-				{
-					normals.push_back(*(DirectX::XMFLOAT3*)(&mesh->mNormals[vertexId]));
-				}
-				else
-				{
-					normals.push_back(DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
-				}
-
-				if (mesh->HasTangentsAndBitangents())
-				{
-					tangents.push_back(DirectX::XMFLOAT4(mesh->mTangents[vertexId].x, mesh->mTangents[vertexId].y, mesh->mTangents[vertexId].z, 1.0f));
-					bitangents.push_back(DirectX::XMFLOAT4(mesh->mBitangents[vertexId].x, mesh->mBitangents[vertexId].y, mesh->mBitangents[vertexId].z, 1.0f));
-				}
-				else
-				{
-					tangents.push_back(DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-					bitangents.push_back(DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-				}
-			}
-
-			DirectX::XMVector4TransformStream(
-				positions.data(), sizeof(DirectX::XMFLOAT4), 
-				positions.data(), sizeof(DirectX::XMFLOAT4), 
-				vertexCount, meshData.Transform.WorldMatrix);
-
-			DirectX::XMVector3TransformNormalStream(
-				normals.data(), sizeof(DirectX::XMFLOAT3), 
-				normals.data(), sizeof(DirectX::XMFLOAT3), 
-				vertexCount, meshData.Transform.WorldMatrix);
-			
-			DirectX::XMVector4TransformStream(
-				tangents.data(), sizeof(DirectX::XMFLOAT4),
-				tangents.data(), sizeof(DirectX::XMFLOAT4),
-				vertexCount, meshData.Transform.WorldMatrix);
-			
-			DirectX::XMVector4TransformStream(
-				bitangents.data(), sizeof(DirectX::XMFLOAT4),
-				bitangents.data(), sizeof(DirectX::XMFLOAT4),
-				vertexCount, meshData.Transform.WorldMatrix);
-
-			for (uint32 vertId = 0; vertId < vertexCount; ++vertId)
-			{
-				Vertex vout{};
-
-				vout.Position	= *(DirectX::XMFLOAT3*)(&positions.at(vertId));
-				vout.TexCoord	= texCoords.at(vertId);
-				vout.Normal		= normals.at(vertId);
-				vout.Tangent	= *(DirectX::XMFLOAT3*)(&tangents.at(vertId));
-				vout.Bitangent	= *(DirectX::XMFLOAT3*)(&bitangents.at(vertId));
-				
-				meshData.Vertices.push_back(vout);
-			}
-
-			if (mesh->HasFaces())
-			{
-				meshData.Indices.reserve(static_cast<usize>(mesh->mNumFaces * 3));
-
-				for (uint32_t faceIdx = 0; faceIdx < mesh->mNumFaces; ++faceIdx)
-				{
-					aiFace& face = mesh->mFaces[faceIdx];
-
-					for (uint32_t idx = 0; idx < face.mNumIndices; ++idx)
-					{
-						meshData.Indices.push_back(face.mIndices[idx]);
-					}
-				}
-			}
-
-			BuildMesh(meshData);
-
-			DirectX::XMStoreFloat3x4(&meshData.RaytracingInstanceDesc.Transform, meshData.Transform.WorldMatrix);
-			meshData.RaytracingInstanceDesc.InstanceID = 0;
-			meshData.RaytracingInstanceDesc.InstanceMask = 1;
-			
-			meshData.NumVertices		 = static_cast<uint32>(meshData.Vertices.size());
-			meshData.NumIndices			 = static_cast<uint32>(meshData.Indices.size());
-			meshData.NumMeshlets		 = static_cast<uint32>(meshData.Meshlets.size());
-			meshData.NumMeshletVertices  = static_cast<uint32>(meshData.MeshletVertices.size());
-			meshData.NumMeshletTriangles = static_cast<uint32>(meshData.MeshletTriangles.size());
-
-			// Assign index to unique material to reuse already loaded materials without duplicates.
-			meshData.MaterialId = mesh->mMaterialIndex;
-
-			SceneData.Meshes.push_back(meshData);
-		}
-	
-		if (pNode->mNumChildren > 0)
-		{
-			for (uint32 childIdx = 0; childIdx < pNode->mNumChildren; ++childIdx)
-			{
-				TraverseNode(SceneData, pNode->mChildren[childIdx]);
-			}
-		}
+		Mesh.NumVertices = static_cast<uint32>(Mesh.Vertices.size());
+		Mesh.NumIndices = static_cast<uint32>(Mesh.Indices.size());
+		Mesh.NumMeshlets = static_cast<uint32>(Mesh.Meshlets.size());
+		Mesh.NumMeshletVertices = static_cast<uint32>(Mesh.MeshletVertices.size());
+		Mesh.NumMeshletTriangles = static_cast<uint32>(Mesh.MeshletTriangles.size());
 	}
-	
+
 	/*
 	void AssetImporter::TraverseNode(const cgltf_data* pScene, const cgltf_node* pNode, Model& OutModel, FNode* pParentNode, DirectX::XMMATRIX ParentMatrix)
 	{
@@ -435,21 +248,21 @@ namespace Luden
 		{
 			newNode->Name = pNode->name;
 		}
-		
+
 		if (pNode->has_matrix)
 		{
-			
+
 			cgltf_node_transform_world(pNode, &*(float*)&newNode->LocalTransform.WorldMatrix);
 			DirectX::XMMatrixTranspose(newNode->LocalTransform.WorldMatrix);
 			//newNode->LocalTransform.WorldMatrix = *(DirectX::XMMATRIX*)(localm);
 			//newNode->LocalTransform.WorldMatrix = *(DirectX::XMMATRIX*)(pNode->matrix);
 			newNode->LocalTransform.Decompose(newNode->LocalTransform.WorldMatrix);
-			newNode->LocalTransform.Rotation.x -= 90.0f; 
+			newNode->LocalTransform.Rotation.x -= 90.0f;
 		}
 		else
 		{
 
-			
+
 		}
 
 		DirectX::XMFLOAT3 translation = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -483,7 +296,7 @@ namespace Luden
 				TraverseNode(pScene, child, OutModel, newNode, newNode->Transform.WorldMatrix);
 			}
 		}
-		
+
 		if (pNode->mesh)
 		{
 			for (uint32 primitiveIdx = 0; primitiveIdx < pNode->mesh->primitives_count; ++primitiveIdx)
@@ -575,7 +388,7 @@ namespace Luden
 				newNode->Meshes.push_back(new StaticMesh(meshData));
 			#endif
 			}
-		}	
+		}
 
 		if (pParentNode)
 		{
@@ -587,112 +400,5 @@ namespace Luden
 		}
 	}
 	*/
-
-	void AssetImporter::BuildMesh(StaticMesh& Mesh)
-	{
-		/* =============================== Mesh optimizations ===============================*/
-
-		std::vector<uint32> remap(Mesh.Indices.size());
-		usize vertexCount = meshopt_generateVertexRemap(remap.data(), Mesh.Indices.data(), Mesh.Indices.size(), Mesh.Vertices.data(), Mesh.Vertices.size(), sizeof(Vertex));
-
-		std::vector<uint32> remapIndices(Mesh.Indices.size());
-		std::vector<Vertex> remapVertices(vertexCount);
-
-		meshopt_remapIndexBuffer(remapIndices.data(), Mesh.Indices.data(), Mesh.Indices.size(), remap.data());
-		meshopt_remapVertexBuffer(remapVertices.data(), Mesh.Vertices.data(), Mesh.Vertices.size(), sizeof(Vertex), remap.data());
-
-		meshopt_optimizeVertexCache(remapIndices.data(), remapIndices.data(), remapIndices.size(), vertexCount);
-		meshopt_optimizeOverdraw(remapIndices.data(), remapIndices.data(), remapIndices.size(), &(remapVertices[0].Position.x), vertexCount, sizeof(Vertex), 1.05f);
-		meshopt_optimizeVertexFetch(remapVertices.data(), remapIndices.data(), remapIndices.size(), remapVertices.data(), remapVertices.size(), sizeof(Vertex));
-		
-		Mesh.Indices = remapIndices;
-		Mesh.Vertices = remapVertices;
-		
-		/* =============================== Meshlet generatation ===============================*/
-
-		size_t maxMeshlets = meshopt_buildMeshletsBound(Mesh.Indices.size(), MeshletMaxVertices, MeshletMaxTriangles);
-		Mesh.Meshlets.resize(maxMeshlets);
-		Mesh.MeshletVertices.resize(maxMeshlets * MeshletMaxVertices);
-		Mesh.MeshletTriangles.resize(maxMeshlets * MeshletMaxTriangles * 3);
-
-		const f32 coneWeight = 0.0f;
-
-		size_t meshletCount = meshopt_buildMeshlets(
-			Mesh.Meshlets.data(), 
-			Mesh.MeshletVertices.data(), 
-			Mesh.MeshletTriangles.data(),
-			Mesh.Indices.data(), Mesh.Indices.size(),
-			&Mesh.Vertices[0].Position.x, Mesh.Vertices.size(), sizeof(Vertex),
-			MeshletMaxVertices, MeshletMaxTriangles,
-			coneWeight);
-
-		const meshopt_Meshlet& last = Mesh.Meshlets[meshletCount - 1];
-		Mesh.MeshletVertices.resize(last.vertex_offset + (size_t)last.vertex_count);
-		Mesh.MeshletTriangles.resize(last.triangle_offset + (size_t)((last.triangle_count * 3 + 3) & ~3));
-		Mesh.Meshlets.resize(meshletCount);
-
-		/* =============================== Meshlet cull data generation =============================== */
-
-		Mesh.MeshletBounds.reserve(Mesh.Meshlets.size());
-
-		for (uint32 m = 0; m < Mesh.Meshlets.size(); ++m)
-		{
-			meshopt_Meshlet& meshlet = Mesh.Meshlets.at(m);
-
-			// Experimental
-			meshopt_optimizeMeshlet(&Mesh.MeshletVertices[meshlet.vertex_offset], &Mesh.MeshletTriangles[meshlet.triangle_offset], meshlet.triangle_count, meshlet.vertex_count);
-
-			// Generate bounds
-			meshopt_Bounds bounds = meshopt_computeMeshletBounds(&Mesh.MeshletVertices[meshlet.vertex_offset], &Mesh.MeshletTriangles[meshlet.triangle_offset],
-				meshlet.triangle_count, &Mesh.Vertices[0].Position.x, Mesh.Vertices.size(), sizeof(Vertex));
-
-			FMeshletBounds output{
-				.Center = *(DirectX::XMFLOAT3*)(&bounds.center),
-				.Radius = bounds.radius,
-				.ConeApex = *(DirectX::XMFLOAT3*)(&bounds.cone_apex),
-				.ConeAxis = *(DirectX::XMFLOAT3*)(&bounds.cone_axis),
-				.ConeCutoff = bounds.cone_cutoff
-			};	
-
-			Mesh.MeshletBounds.emplace_back(output);
-		}
-
-		//Mesh.MeshletTriangles = RepackMeshletTriangles()
-
-
-	}
-
-	// Pack 3 uint8 triangle indices into single uint32 element.
-	// Triangles are later unpacked in shader.
-	// Note:
-	// Currently not used here.
-	static std::vector<uint32> RepackMeshletTriangles(std::vector<meshopt_Meshlet>& Meshlets, std::vector<uint8>& Triangles)
-	{
-		std::vector<uint32> meshletTrianglesRepacked;
-		for (auto& meshlet : Meshlets)
-		{
-			uint32 triangleOffset = static_cast<uint32>(meshletTrianglesRepacked.size());
-
-			for (uint32_t i = 0; i < meshlet.triangle_count; ++i)
-			{
-				uint32 i0 = 3 * i + 0 + meshlet.triangle_offset;
-				uint32 i1 = 3 * i + 1 + meshlet.triangle_offset;
-				uint32 i2 = 3 * i + 2 + meshlet.triangle_offset;
-
-				uint8  idx0 = Triangles[i0];
-				uint8  idx1 = Triangles[i1];
-				uint8  idx2 = Triangles[i2];
-				uint32 packed = 
-					((static_cast<uint32>(idx0) & 0xFF)		)  |
-					((static_cast<uint32>(idx1) & 0xFF) << 8)  |
-					((static_cast<uint32>(idx2) & 0xFF) << 16);
-				meshletTrianglesRepacked.push_back(packed);
-			}
-
-			meshlet.triangle_offset = triangleOffset;
-		}
-
-		return meshletTrianglesRepacked;
-	}
 
 } // namespace Luden
