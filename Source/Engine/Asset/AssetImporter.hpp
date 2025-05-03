@@ -5,32 +5,6 @@
 #include <Core/Logger.hpp>
 #include <Core/Types.hpp>
 
-
-
-struct FNode;
-
-struct aiScene;
-struct aiMesh;
-struct aiNode;
-struct aiMaterial;
-
-namespace fastgltf 
-{ 
-	class Asset;
-	class GltfDataBuffer; 
-	struct Node;
-
-	namespace math
-	{
-		template <typename T, std::size_t N, std::size_t M>
-		class mat;
-
-		//using fmat<4, 4> = mat<float, 4, 4>;
-		//using fmat4x4 = fmat<4, 4>;
-		//using fmat4x4 = mat<float, 4, 4>;
-	}
-}
-
 namespace Luden
 {
 	class D3D12Device;
@@ -41,31 +15,14 @@ namespace Luden
 	struct Material;
 	struct TextureDesc;
 
-	struct FAssimpLoadingData
+	enum class ETextureType
 	{
-		const aiScene* Scene;
-		Filepath Path;
-
-		std::vector<StaticMesh> Meshes;
-		
-		//std::vector<aiMaterial*>	UniqueAssimpMaterials;
-		std::vector<Material>		UniqueMaterials;
-		std::vector<D3D12Texture*>	ModelTextures;
-
-		// Temp
-		std::vector<std::string> LoadedPaths;
-
-		// Currently not using any animation, thus nodes aren't needed at all.
-		//std::vector<FNode*>	Nodes;
+		BaseColor,
+		Normal,
+		MetallicRoughness,
+		Emissive
 	};
-
-
-
-	//
-	// TODO:
-	// - Add temporal cache for already loaded textures to avoid duplicates.
-	// - Add fastgltf based loader for glTF 2.0 assets and keep Assimp for fbx/obj.
-	// - Clean-up material loading.
+	
 	class AssetImporter
 	{
 	public:
@@ -88,15 +45,6 @@ namespace Luden
 		bool ImportAssimpModel(Filepath Path, Model& OutModel);
 
 		bool ImportFastglftModel(Filepath Path, Model& OutModel);
-
-		// Load all materials from Assimp model.
-		void LoadMaterials(FAssimpLoadingData& SceneData);
-
-		// Process Assimp node recursively.
-		// Get information about it's meshes, matrix transformation and material.
-		void TraverseNode(FAssimpLoadingData& SceneData, aiNode* pNode);
-		
-		bool IsTextureLoaded(FAssimpLoadingData& SceneData, Filepath Path);
 
 	};
 } // namespace Luden
