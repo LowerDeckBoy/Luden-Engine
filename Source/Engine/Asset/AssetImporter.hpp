@@ -42,9 +42,20 @@ namespace Luden
 		// Use meshoptimizer to optimize mesh data and generate meshlets.
 		void BuildMesh(StaticMesh& Mesh);
 
+		//void GenerateTangents();
+
+		// For non glTF models.
 		bool ImportAssimpModel(Filepath Path, Model& OutModel);
 
+		// for glTF 2.0 models only.
 		bool ImportFastglftModel(Filepath Path, Model& OutModel);
+
+		// Check if texture with given path has already been loaded.
+		// If so, find that texture instead.
+		bool IsTexturePathLoaded(const std::vector<std::string>& TexturePaths, Filepath Path);
+
+		// Looks if texture has already been loaded, if so, returned index is from that texture.
+		uint32 FindTextureWithPath(const std::vector<D3D12Texture*>& Textures, Filepath Path);
 
 	};
 } // namespace Luden

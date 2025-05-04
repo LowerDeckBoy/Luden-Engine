@@ -66,8 +66,8 @@ namespace Luden
 		desc.Width			= static_cast<uint32>(metadata.width);
 		desc.Height			= static_cast<uint32>(metadata.height);
 		desc.DepthOrArray	= static_cast<uint16>(metadata.depth);
-		desc.NumMips		= std::min((uint16)5, static_cast<uint16>(metadata.mipLevels));
-		//desc.NumMips		= 1;
+		//desc.NumMips		= std::min((uint16)5, static_cast<uint16>(metadata.mipLevels));
+		desc.NumMips		= 1;
 		desc.Format			= metadata.format;
 
 		pTexture->Create(Device, desc);
@@ -232,173 +232,31 @@ namespace Luden
 
 		//Mesh.MeshletTriangles = RepackMeshletTriangles()
 
-		Mesh.NumVertices = static_cast<uint32>(Mesh.Vertices.size());
-		Mesh.NumIndices = static_cast<uint32>(Mesh.Indices.size());
-		Mesh.NumMeshlets = static_cast<uint32>(Mesh.Meshlets.size());
-		Mesh.NumMeshletVertices = static_cast<uint32>(Mesh.MeshletVertices.size());
-		Mesh.NumMeshletTriangles = static_cast<uint32>(Mesh.MeshletTriangles.size());
+		Mesh.NumVertices			= static_cast<uint32>(Mesh.Vertices.size());
+		Mesh.NumIndices				= static_cast<uint32>(Mesh.Indices.size());
+		Mesh.NumMeshlets			= static_cast<uint32>(Mesh.Meshlets.size());
+		Mesh.NumMeshletVertices		= static_cast<uint32>(Mesh.MeshletVertices.size());
+		Mesh.NumMeshletTriangles	= static_cast<uint32>(Mesh.MeshletTriangles.size());
 	}
 
-	/*
-	void AssetImporter::TraverseNode(const cgltf_data* pScene, const cgltf_node* pNode, Model& OutModel, FNode* pParentNode, DirectX::XMMATRIX ParentMatrix)
+	bool AssetImporter::IsTexturePathLoaded(const std::vector<std::string>& TexturePaths, Filepath Path)
 	{
-		FNode* newNode = new FNode();
-		newNode->Parent = pParentNode;
-		if (pNode->name)
-		{
-			newNode->Name = pNode->name;
-		}
-
-		if (pNode->has_matrix)
-		{
-
-			cgltf_node_transform_world(pNode, &*(float*)&newNode->LocalTransform.WorldMatrix);
-			DirectX::XMMatrixTranspose(newNode->LocalTransform.WorldMatrix);
-			//newNode->LocalTransform.WorldMatrix = *(DirectX::XMMATRIX*)(localm);
-			//newNode->LocalTransform.WorldMatrix = *(DirectX::XMMATRIX*)(pNode->matrix);
-			newNode->LocalTransform.Decompose(newNode->LocalTransform.WorldMatrix);
-			newNode->LocalTransform.Rotation.x -= 90.0f;
-		}
-		else
-		{
-
-
-		}
-
-		DirectX::XMFLOAT3 translation = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-		DirectX::XMFLOAT4 rotation = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-		DirectX::XMFLOAT3 scale = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
-
-		if (pNode->has_scale)
-		{
-			scale = *(DirectX::XMFLOAT3*)(&pNode->scale);
-			newNode->LocalTransform.Scale = scale;
-		}
-
-		if (pNode->has_rotation)
-		{
-			rotation = *(DirectX::XMFLOAT4*)(&pNode->rotation);
-			//rotation.x -= 90.0f;
-			newNode->LocalTransform.Rotation = rotation;
-		}
-
-		if (pNode->has_translation)
-		{
-			translation = *(DirectX::XMFLOAT3*)(&pNode->translation);
-			newNode->LocalTransform.Translation = translation;
-		}
-
-		if (pNode->children_count > 0)
-		{
-			for (uint32 childIdx = 0; childIdx < pNode->children_count; ++childIdx)
-			{
-				cgltf_node* child = pNode->children[childIdx];
-				TraverseNode(pScene, child, OutModel, newNode, newNode->Transform.WorldMatrix);
-			}
-		}
-
-		if (pNode->mesh)
-		{
-			for (uint32 primitiveIdx = 0; primitiveIdx < pNode->mesh->primitives_count; ++primitiveIdx)
-			{
-				const cgltf_primitive& primitive = pNode->mesh->primitives[primitiveIdx];
-
-				StaticMesh meshData{};
-
-				meshData.Transform.WorldMatrix = newNode->Transform.WorldMatrix;
-				//meshData.Transform.WorldMatrix = newNode->LocalTransform * OutModel.GetComponent<ecs::TransformComponent>().WorldMatrix;
-				//meshData.Transform.WorldMatrix = OutModel.GetComponent<ecs::TransformComponent>().WorldMatrix * newNode->LocalTransform;
-				//meshData.Transform.WorldMatrix = newNode->Transform;
-				//meshData.Transform.WorldMatrix = newNode->Transform;
-
-				std::vector<DirectX::XMFLOAT3> positions;
-				std::vector<DirectX::XMFLOAT2> texCoords;
-				std::vector<DirectX::XMFLOAT3> normals;
-				std::vector<DirectX::XMFLOAT4> tangents;
-
-				const cgltf_accessor* indexAccessor = primitive.indices;
-				meshData.Indices.reserve(indexAccessor->count);
-
-				for (uint64 idx = 0; idx < indexAccessor->count; idx += 3)
-				{
-					meshData.Indices.push_back((uint32)cgltf_accessor_read_index(indexAccessor, idx + 0));
-					meshData.Indices.push_back((uint32)cgltf_accessor_read_index(indexAccessor, idx + 1));
-					meshData.Indices.push_back((uint32)cgltf_accessor_read_index(indexAccessor, idx + 2));
-				}
-
-				for (uint32 attribIdx = 0; attribIdx < primitive.attributes_count; ++attribIdx)
-				{
-					const cgltf_attribute& attribute = primitive.attributes[attribIdx];
-
-					for (uint32 vertexIdx = 0; vertexIdx < attribute.data->count; ++vertexIdx)
-					{
-						if (attribute.type == cgltf_attribute_type_position)
-						{
-							DirectX::XMFLOAT3 position{};
-							cgltf_accessor_read_float(attribute.data, vertexIdx, (cgltf_float*)&position, 3);
-							//positions.emplace_back(position);
-							positions.emplace_back(DirectX::XMFLOAT3{ position.x, position.y, -position.z });
-						}
-						else if (attribute.type == cgltf_attribute_type_texcoord)
-						{
-							DirectX::XMFLOAT2 texCoord{};
-							cgltf_accessor_read_float(attribute.data, vertexIdx, (cgltf_float*)&texCoord, 2);
-							texCoords.emplace_back(DirectX::XMFLOAT2{texCoord.x, -texCoord.y});
-						}
-						else if (attribute.type == cgltf_attribute_type_normal)
-						{
-							DirectX::XMFLOAT3 normal{};
-							cgltf_accessor_read_float(attribute.data, vertexIdx, (cgltf_float*)&normal, 3);
-							normals.emplace_back(normal);
-						}
-						else if (attribute.type == cgltf_attribute_type_tangent)
-						{
-							DirectX::XMFLOAT4 tangent{};
-							cgltf_accessor_read_float(attribute.data, vertexIdx, (cgltf_float*)&tangent, 4);
-							tangents.emplace_back(tangent);
-						}
-					}
-				}
-
-				usize vertexCount = positions.size();
-
-				if (texCoords.size() != vertexCount)	texCoords.resize(vertexCount);
-				if (normals.size() != vertexCount)		normals.resize(vertexCount);
-				if (tangents.size() != vertexCount)		tangents.resize(vertexCount);
-
-				for (uint32 vertexIdx = 0; vertexIdx < positions.size(); ++vertexIdx)
-				{
-					Vertex vertex{};
-					vertex.Position = positions.at(vertexIdx);
-					vertex.TexCoord = texCoords.at(vertexIdx);
-					vertex.Normal = normals.at(vertexIdx);
-					vertex.Tangent = tangents.at(vertexIdx);
-
-					meshData.Vertices.emplace_back(vertex);
-				}
-
-				BuildMesh(meshData);
-
-				meshData.NumVertices = static_cast<uint32>(meshData.Vertices.size());
-				meshData.NumIndices  = static_cast<uint32>(meshData.Indices.size());
-				meshData.NumMeshlets = static_cast<uint32>(meshData.Meshlets.size());
-			#if not BUILD_NODES
-				OutModel.Meshes.emplace_back(meshData);
-			#else
-				newNode->Meshes.push_back(new StaticMesh(meshData));
-			#endif
-			}
-		}
-
-		if (pParentNode)
-		{
-			pParentNode->Children.push_back(newNode);
-		}
-		else
-		{
-			OutModel.Nodes.push_back(newNode);
-		}
+		return std::find(TexturePaths.begin(), TexturePaths.end(), Path.string()) != TexturePaths.end();
 	}
-	*/
+
+	uint32 AssetImporter::FindTextureWithPath(const std::vector<D3D12Texture*>& Textures, Filepath Path)
+	{
+		for (uint32 textureIdx = 0; textureIdx < Textures.size(); ++textureIdx)
+		{
+			auto& texture = Textures.at(textureIdx);
+
+			if (texture->GetFilepath() == Path)
+			{
+				return textureIdx;
+			}
+		}
+
+		return 0xFFFFFFFF;
+	}
 
 } // namespace Luden

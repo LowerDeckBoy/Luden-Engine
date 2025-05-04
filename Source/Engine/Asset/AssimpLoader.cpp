@@ -36,10 +36,6 @@ namespace Luden
 	// Get information about it's meshes, matrix transformation and material.
 	static void TraverseNode(assimp::FAssimpLoadingData& SceneData, aiNode* pNode);
 
-	// Load Texture from given path, push it into loaded scene data and return it's SRV index.
-	// It looks if texture has already been loaded, if so, returned index is from that texture.
-	static uint32 FindTextureWithPath(const std::vector<D3D12Texture*>& Textures, Filepath Path);
-
 	bool AssetImporter::ImportAssimpModel(Filepath Path, Model& OutModel)
 	{
 		constexpr int32 loadFlags =

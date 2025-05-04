@@ -7,14 +7,6 @@
 
 namespace Luden::glTF
 {
-	enum class ETextureType
-	{
-		BaseColor,
-		Normal,
-		MetallicRoughness,
-		Emissive
-	};
-
 	struct FfastgltfLoadingData
 	{
 		fastgltf::Asset* Scene;
@@ -22,16 +14,11 @@ namespace Luden::glTF
 
 		std::vector<StaticMesh> Meshes;
 		std::vector<Material>	Materials;
-		//std::vector<Material>	Materials;
 
-		std::vector<std::pair<usize, ETextureType>> UniqueTextures;
+		std::vector<std::string> LoadedTextures;
 
-		std::map<std::string, std::pair<usize, ETextureType>> MaterialToTexture;
-
-		// Texture to material id?
-		// Since there are no duplicated texture files it should work.
-		// std::pair<Texture index, Type of texture>, uint32 - material index.
-		std::map<std::pair<usize, ETextureType>, uint32> TextureToMaterial;
+		// Index of material, pair of <texture index, texture type>
+		std::vector<std::pair<usize, std::pair<usize, ETextureType>>> TexturesToLoad;
 	};
 
 	static void TraverseHierarchy(FfastgltfLoadingData& SceneData);
@@ -42,6 +29,8 @@ namespace Luden::glTF
 
 namespace Luden
 {
+	static uint32 FindTextureWithPath(const std::vector<D3D12Texture*>& Textures, Filepath Path);
+
 	bool AssetImporter::ImportFastglftModel(Filepath Path, Model& OutModel)
 	{
 
@@ -66,9 +55,6 @@ namespace Luden
 		glTF::FfastgltfLoadingData loadData{};
 		loadData.Scene = std::move(&scene.get());
 
-		// https://github.com/vblanco20-1/vulkan-guide/blob/all-chapters-2/chapter-6/vk_loader.cpp
-		// https://github.com/stripe2933/vk-gltf-viewer/blob/master/interface/gltf/algorithm/traversal.cppm
-
 		glTF::TraverseHierarchy(loadData);
 		glTF::LoadMaterials(loadData);
 
@@ -81,31 +67,61 @@ namespace Luden
 		// Some of glTF models use place their textures inside *textures/* directory, but some just don't.
 		const std::string pathToTexture = (std::filesystem::exists("textures/") ? "textures/" : "");
 
-		for (auto& [texture, material] : loadData.TextureToMaterial)
+		for (const auto& texture : loadData.TexturesToLoad)
 		{
-			auto& gltfTexture = loadData.Scene->textures.at(texture.first);
+			const auto& materialId	= texture.first;
+			const auto& textureId	= texture.second.first;
+			const auto& textureType	= texture.second.second;
+
+			auto& gltfTexture = loadData.Scene->textures.at(textureId);
 			auto& image = loadData.Scene->images.at(gltfTexture.imageIndex.value());
 
 			auto& uri = std::get<fastgltf::sources::URI>(image.data);
-			D3D12Texture* tex2D = LoadTexture(std::format("{}/{}{}", pathToParent, pathToTexture, uri.uri.c_str()));
 
-			switch (texture.second)
+			if (!IsTexturePathLoaded(loadData.LoadedTextures, Filepath(uri.uri.c_str())))
 			{
-			case glTF::ETextureType::BaseColor:
-				loadData.Materials.at(material).BaseColorIndex = tex2D->ShaderResourceHandle.Index;
-				break;
-			case glTF::ETextureType::Normal:
-				loadData.Materials.at(material).NormalIndex = tex2D->ShaderResourceHandle.Index;
-				break;
-			case glTF::ETextureType::MetallicRoughness:
-				loadData.Materials.at(material).MetallicRoughnessIndex = tex2D->ShaderResourceHandle.Index;
-				break;
-			case glTF::ETextureType::Emissive:
-				loadData.Materials.at(material).EmissiveIndex = tex2D->ShaderResourceHandle.Index;
-				break;
-			}
+				D3D12Texture* tex2D = LoadTexture(std::format("{}/{}{}", pathToParent, pathToTexture, uri.uri.c_str()));
 
-			OutModel.Textures.push_back(tex2D);			
+				switch (textureType)
+				{
+				case ETextureType::BaseColor:
+					loadData.Materials.at(materialId).BaseColorIndex = tex2D->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::Normal:
+					loadData.Materials.at(materialId).NormalIndex = tex2D->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::MetallicRoughness:
+					loadData.Materials.at(materialId).MetallicRoughnessIndex = tex2D->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::Emissive:
+					loadData.Materials.at(materialId).EmissiveIndex = tex2D->ShaderResourceHandle.Index;
+					break;
+				}
+
+				tex2D->SetFilepath(uri.uri.c_str());
+				loadData.LoadedTextures.push_back(uri.uri.c_str());
+				OutModel.Textures.push_back(tex2D);
+			}
+			else
+			{
+				auto index = FindTextureWithPath(OutModel.Textures, Filepath(uri.uri.c_str()));
+
+				switch (textureType)
+				{
+				case ETextureType::BaseColor:
+					loadData.Materials.at(materialId).BaseColorIndex = OutModel.Textures.at(index)->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::Normal:
+					loadData.Materials.at(materialId).NormalIndex = OutModel.Textures.at(index)->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::MetallicRoughness:
+					loadData.Materials.at(materialId).MetallicRoughnessIndex = OutModel.Textures.at(index)->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::Emissive:
+					loadData.Materials.at(materialId).EmissiveIndex = OutModel.Textures.at(index)->ShaderResourceHandle.Index;
+					break;
+				}
+			}
 		}
 
 		OutModel.SetFilepath(Path);
@@ -259,27 +275,22 @@ namespace Luden
 
 			if (gltfMaterial.pbrData.baseColorTexture.has_value())
 			{
-
-				SceneData.UniqueTextures.push_back({ gltfMaterial.pbrData.baseColorTexture->textureIndex, ETextureType::BaseColor });
-				SceneData.TextureToMaterial[{gltfMaterial.pbrData.baseColorTexture->textureIndex, ETextureType::BaseColor}] = index;
+				SceneData.TexturesToLoad.push_back({ index, { gltfMaterial.pbrData.baseColorTexture->textureIndex, ETextureType::BaseColor } });
 			}
 
 			if (gltfMaterial.pbrData.metallicRoughnessTexture.has_value())
 			{
-				SceneData.UniqueTextures.push_back({ gltfMaterial.pbrData.metallicRoughnessTexture->textureIndex, ETextureType::MetallicRoughness });
-				SceneData.TextureToMaterial[{ gltfMaterial.pbrData.metallicRoughnessTexture->textureIndex, ETextureType::MetallicRoughness }] = index;
+				SceneData.TexturesToLoad.push_back({ index, { gltfMaterial.pbrData.metallicRoughnessTexture->textureIndex, ETextureType::MetallicRoughness } });
 			}
-
+			
 			if (gltfMaterial.normalTexture.has_value())
 			{
-				SceneData.UniqueTextures.push_back({ gltfMaterial.normalTexture->textureIndex, ETextureType::Normal });
-				SceneData.TextureToMaterial[{ gltfMaterial.normalTexture->textureIndex, ETextureType::Normal }] = index;
+				SceneData.TexturesToLoad.push_back({ index, { gltfMaterial.normalTexture->textureIndex, ETextureType::Normal } });
 			}
 
 			if (gltfMaterial.emissiveTexture.has_value())
 			{
-				SceneData.UniqueTextures.push_back({ gltfMaterial.emissiveTexture->textureIndex, ETextureType::Emissive });
-				SceneData.TextureToMaterial[{ gltfMaterial.emissiveTexture->textureIndex, ETextureType::Emissive }] = index;
+				SceneData.TexturesToLoad.push_back({ index, { gltfMaterial.emissiveTexture->textureIndex, ETextureType::Emissive } });
 			}
 
 			++index;
