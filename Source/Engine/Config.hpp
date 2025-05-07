@@ -1,7 +1,7 @@
 #pragma once
 
 /*=================================================================================
-	Config.hpp
+	Engine/Config.hpp
 
 	Static struct of helper options used across Engine and Editor.
 =================================================================================*/
@@ -49,6 +49,10 @@ namespace Luden
 		// True, to dispatch Raytracing.
 		// Else, use raster mode.
 		bool bRaytracing = false;
+
+		// Debug only.
+		// Whether to enable alpha masking cutoff in pixel shaders.
+		bool bAlphaMask = true;
 
 		bool bDrawSky = false;
 

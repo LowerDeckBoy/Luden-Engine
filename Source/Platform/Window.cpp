@@ -30,13 +30,12 @@ namespace Luden::Platform
 		::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 		::WNDCLASSEXA wcex{};
-		wcex.cbSize = sizeof(wcex);
-		wcex.hInstance = Instance;
-		//wcex.style = CS_HREDRAW | CS_VREDRAW;
-		wcex.style = CS_OWNDC;
-		wcex.lpszClassName = WindowClassName;
-		wcex.hbrBackground = ::CreateSolidBrush(DarkThemeBackground);
-		wcex.lpfnWndProc = Desc.WindowProc;
+		wcex.cbSize			= sizeof(wcex);
+		wcex.hInstance		= Instance;
+		wcex.style			= CS_HREDRAW | CS_VREDRAW;
+		wcex.lpszClassName	= WindowClassName;
+		wcex.hbrBackground	= ::CreateSolidBrush(DarkThemeBackground);
+		wcex.lpfnWndProc	= Desc.WindowProc;
 
 		if (!::RegisterClassExA(&wcex))
 		{
@@ -50,13 +49,13 @@ namespace Luden::Platform
 		::RECT windowRect = { 0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height) };
 		::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
 
-		Width = static_cast<uint32_t>(windowRect.right - windowRect.left);
+		Width  = static_cast<uint32_t>(windowRect.right  - windowRect.left);
 		Height = static_cast<uint32_t>(windowRect.bottom - windowRect.top);
 
 		Handle = ::CreateWindowExA(WS_EX_OVERLAPPEDWINDOW,
 			wcex.lpszClassName, Desc.Title,
 			WS_OVERLAPPEDWINDOW,
-			0, 0,
+			CW_USEDEFAULT, CW_USEDEFAULT,
 			Width, Height,
 			nullptr,
 			nullptr,
@@ -96,8 +95,7 @@ namespace Luden::Platform
 		::RECT windowRect{};
 		::GetClientRect(Handle, &windowRect);
 
-		::RECT out(0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top);
-		Width	= static_cast<uint32_t>(windowRect.right - windowRect.left);
+		Width	= static_cast<uint32_t>(windowRect.right  - windowRect.left);
 		Height	= static_cast<uint32_t>(windowRect.bottom - windowRect.top);
 	}
 

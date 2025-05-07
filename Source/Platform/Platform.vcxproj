@@ -98,12 +98,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Export.hpp" />
+    <ClInclude Include="FileDialog.hpp" />
     <ClInclude Include="Platform.hpp" />
     <ClInclude Include="Types.hpp" />
     <ClInclude Include="Utility.hpp" />
     <ClInclude Include="Window.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FileDialog.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -8,12 +8,21 @@
 
 #if PLATFORM_WIN64
 
-	#ifndef WIN32_LEAN_AND_MEAN
-	#define WIN32_LEAN_AND_MEAN
+	#ifndef NOCOMM
+	#define NOCOMM
 	#endif
-
 	#ifndef NOMINMAX
 	#define NOMINMAX
+	#endif
+	#ifndef NOCRYPT
+	#define NOCRYPT
+	#endif
+	#define NOTAPE
+	#define NOIMAGE
+	#define NOPROXYSTUB
+	#define NORPC
+	#ifndef WIN32_LEAN_AND_MEAN
+	#define WIN32_LEAN_AND_MEAN
 	#endif
 
 	#include <Windows.h>

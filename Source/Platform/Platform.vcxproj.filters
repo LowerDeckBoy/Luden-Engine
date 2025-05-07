@@ -30,9 +30,15 @@
     <ClInclude Include="Types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FileDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

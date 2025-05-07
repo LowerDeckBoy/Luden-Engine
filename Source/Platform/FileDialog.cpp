@@ -30,7 +30,7 @@ namespace Luden::Platform
 		case Luden::Platform::EExtensionFilter::Model:
 		{
 			return std::vector<COMDLG_FILTERSPEC>{
-				{ Filters::Primary,	L"*.gltf;*.glb;*.fbx;*.obj"	},
+				{ L"3D",			L"*.gltf;*.glb;*.fbx;*.obj"	},
 				{ Filters::GLTF,	L"*.gltf;*.glb"				},
 				{ Filters::FBX,		L"*.fbx"					},
 				{ Filters::OBJ,		L"*.obj"					},
@@ -40,7 +40,7 @@ namespace Luden::Platform
 		case Luden::Platform::EExtensionFilter::Image:
 		{
 			return std::vector<COMDLG_FILTERSPEC>{
-				{ Filters::Primary,		L"*.jpg;*.jpeg;*.png;*.dds" },
+				{ L"Image",				L"*.jpg;*.jpeg;*.png;*.dds" },
 				{ Filters::JPG,			L"*.jpg;*.jpeg"				},
 				{ Filters::PNG,			L"*.png"					},
 				{ Filters::DDS,			L"*.dds"					},

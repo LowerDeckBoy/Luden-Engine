@@ -23,9 +23,9 @@ namespace Luden::Platform
 		constexpr LPCWSTR PNG	= L"PNG";
 		constexpr LPCWSTR DDS	= L"DDS";
 
-		// Used as last filter.
 		// Accepts all extensions.
-		constexpr LPCWSTR Any	= L"All";
+		// Used as last filter.
+		constexpr LPCWSTR Any	= L"Any";
 		
 	}
 

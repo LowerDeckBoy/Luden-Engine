@@ -60,11 +60,11 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;ENGINE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;ENGINE_DEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(ProjectDir);$(SolutionDir)Dependencies;$(ProjectDir)Dependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(ProjectDir);$(SolutionDir)Dependencies;$(ProjectDir)Dependencies;$(ProjectDir)Dependencies/fastgltf</AdditionalIncludeDirectories>
       <CallingConvention>StdCall</CallingConvention>
       <CompileAs>CompileAsCpp</CompileAs>
       <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
@@ -84,7 +84,7 @@
     <PostBuildEvent>
       <Command>IF EXIST "$(SolutionDir)Binaries\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Binaries" "$(OutDir)\" &gt; nul)
 
-IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(OutDir)\Assets\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Assets\" "$(OutDir)\" &gt; nul)</Command>
+IF EXIST "$(SolutionDir)Assets\Fonts\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\Fonts\" "$(OutDir)\Assets\Fonts\" &gt; nul) ELSE (xcopy /Q /Y /I "$(SolutionDir)Assets\Fonts" "$(OutDir)\" &gt; nul)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -117,6 +117,8 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Asset\AssetImporter.hpp" />
     <ClInclude Include="Asset\ShaderCache.hpp" />
     <ClInclude Include="Config.hpp" />
+    <ClInclude Include="D3D12\D3D12CommandSignature.hpp" />
+    <ClInclude Include="D3D12\D3D12StateObject.hpp" />
     <ClInclude Include="D3D12\D3D12UploadContext.hpp" />
     <ClInclude Include="D3D12\D3D12Raytracing.hpp" />
     <ClInclude Include="D3D12\D3D12Memory.hpp" />
@@ -134,26 +136,42 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="D3D12\D3D12DescriptorHeap.hpp" />
     <ClInclude Include="D3D12\D3D12Device.hpp" />
     <ClInclude Include="D3D12\D3D12Utility.hpp" />
+    <ClInclude Include="Dependencies\D3D12MemoryAllocator\D3D12MemAlloc.h" />
+    <ClInclude Include="Dependencies\fastgltf\base64.hpp" />
+    <ClInclude Include="Dependencies\fastgltf\core.hpp" />
+    <ClInclude Include="Dependencies\fastgltf\dxmath_element_traits.hpp" />
+    <ClInclude Include="Dependencies\fastgltf\glm_element_traits.hpp" />
+    <ClInclude Include="Dependencies\fastgltf\math.hpp" />
+    <ClInclude Include="Dependencies\fastgltf\simdjson.h" />
+    <ClInclude Include="Dependencies\fastgltf\tools.hpp" />
+    <ClInclude Include="Dependencies\fastgltf\types.hpp" />
+    <ClInclude Include="Dependencies\fastgltf\util.hpp" />
     <ClInclude Include="Dependencies\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="ECS\Components\BoundingBoxComponent.hpp" />
     <ClInclude Include="ECS\Components\CameraComponent.hpp" />
     <ClInclude Include="ECS\Components\DirectionalLightComponent.hpp" />
+    <ClInclude Include="ECS\Components\Graphics\MaterialComponent.hpp" />
+    <ClInclude Include="ECS\Components\Graphics\SkeletalMeshComponent.hpp" />
     <ClInclude Include="ECS\Components\PointLightComponent.hpp" />
+    <ClInclude Include="ECS\Components\RootComponent.hpp" />
     <ClInclude Include="ECS\Components\StaticMeshComponent.hpp" />
     <ClInclude Include="ECS\Components\NameComponent.hpp" />
     <ClInclude Include="ECS\Components\TransformComponent.hpp" />
     <ClInclude Include="ECS\Entity.hpp" />
     <ClInclude Include="ECS\World.hpp" />
-    <ClInclude Include="Graphics\Animation.hpp" />
+    <ClInclude Include="Graphics\Light.hpp" />
     <ClInclude Include="Graphics\Material.hpp" />
     <ClInclude Include="Graphics\Mesh.hpp" />
     <ClInclude Include="Graphics\Model.hpp" />
-    <ClInclude Include="Renderer\Techniques\GBuffer.hpp" />
+    <ClInclude Include="Graphics\Primitive.hpp" />
+    <ClInclude Include="Renderer\Techniques\GeometryPass.hpp" />
     <ClInclude Include="Renderer\Renderer.hpp" />
     <ClInclude Include="Renderer\RenderPass.hpp" />
+    <ClInclude Include="Renderer\Techniques\LightPass.hpp" />
     <ClInclude Include="RHI\Common.hpp" />
     <ClInclude Include="RHI\Constants.hpp" />
     <ClInclude Include="RHI\Defines.hpp" />
+    <ClInclude Include="RHI\PipelineState.hpp" />
     <ClInclude Include="RHI\State.hpp" />
     <ClInclude Include="RHI\Types.hpp" />
     <ClInclude Include="Scene\Actor.hpp" />
@@ -164,6 +182,11 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Asset\AssetImporter.cpp" />
+    <ClCompile Include="Asset\AssimpLoader.cpp" />
+    <ClCompile Include="Asset\fastgltfLoader.cpp" />
+    <ClCompile Include="D3D12\D3D12CommandSignature.cpp" />
+    <ClCompile Include="D3D12\D3D12StateObject.cpp" />
+    <ClCompile Include="D3D12\D3D12Memory.cpp" />
     <ClCompile Include="D3D12\D3D12UploadContext.cpp" />
     <ClCompile Include="D3D12\D3D12Raytracing.cpp" />
     <ClCompile Include="D3D12\D3D12Texture.cpp" />
@@ -179,6 +202,21 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="D3D12\D3D12DescriptorHeap.cpp" />
     <ClCompile Include="D3D12\D3D12Device.cpp" />
     <ClCompile Include="D3D12\D3D12Utility.cpp" />
+    <ClCompile Include="Dependencies\D3D12MemoryAllocator\D3D12MemAlloc.cpp">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Dependencies\fastgltf\src\base64.cpp">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Dependencies\fastgltf\src\fastgltf.cpp">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Dependencies\fastgltf\src\io.cpp">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="Dependencies\fastgltf\simdjson.cpp">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
     <ClCompile Include="Dependencies\meshoptimizer\allocator.cpp" />
     <ClCompile Include="Dependencies\meshoptimizer\clusterizer.cpp" />
     <ClCompile Include="Dependencies\meshoptimizer\indexcodec.cpp" />
@@ -198,9 +236,10 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="ECS\Entity.cpp" />
     <ClCompile Include="ECS\World.cpp" />
     <ClCompile Include="Graphics\Model.cpp" />
-    <ClCompile Include="Renderer\Techniques\GBuffer.cpp" />
+    <ClCompile Include="Renderer\Techniques\GeometryPass.cpp" />
     <ClCompile Include="Renderer\Renderer.cpp" />
     <ClCompile Include="Renderer\RenderPass.cpp" />
+    <ClCompile Include="Renderer\Techniques\LightPass.cpp" />
     <ClCompile Include="RHI\Types.cpp" />
     <ClCompile Include="Scene\SceneSerializer.cpp" />
     <ClCompile Include="Scene\SceneCamera.cpp" />
