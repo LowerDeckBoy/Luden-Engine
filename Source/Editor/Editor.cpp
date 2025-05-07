@@ -1,11 +1,10 @@
+#include "Editor.hpp"
 #include "Theme.hpp"
 #include <Engine/Renderer/Renderer.hpp>
-#include "Editor.hpp"
-#include <Core/Logger.hpp>
-#include <FontAwsome6/IconsFontAwesome6.h>
-#include <Platform/Utility.hpp>
 #include <Engine/Scene/SceneSerializer.hpp>
+#include <FontAwsome6/IconsFontAwesome6.h>
 #include <Platform/FileDialog.hpp>
+#include <Platform/Utility.hpp>
 
 #include "Components/GUI.hpp"
 
@@ -80,6 +79,8 @@ namespace Luden
 			LOG_WARNING("Failed to call ImGui_ImplDX12_CreateDeviceObjects()");
 		}
 	   
+		SetSceneImage(m_Renderer->GBuffer->BaseColor.ShaderResourceHandle);
+
 	}
 
 	void Editor::Begin()
@@ -98,27 +99,7 @@ namespace Luden
 
 	void Editor::End()
 	{
-		DrawMainMenuBar();
-
-		{
-			ImGui::Begin("Hierarchy");
-			
-			DrawSceneControlPanel();
-			DrawActorsData();
-			DrawLightData();
-
-			DrawPropertyPanel();
-			
-			ImGui::End();
-		}
-		
-		{
-			ImGui::Begin(ICON_FA_DESKTOP" Scene");
-			
-			SetSceneImage(*m_Renderer->SceneTextures.ImageToDisplay);
-
-			ImGui::End();
-		}
+		DrawEditorLayer();
 
 		ImGui::PopFont();
 
@@ -138,6 +119,8 @@ namespace Luden
 	{
 		m_CurrentScene = pScene;
 		
+		m_HierarchyPanel.SetActiveScene(pScene);
+
 	}
 
 	void Editor::SetSceneImage(D3D12Descriptor& TextureDescriptor)
@@ -147,8 +130,25 @@ namespace Luden
 			return;
 		}
 
-		const auto& viewportSize = ImGui::GetContentRegionAvail();
-		ImGui::Image((ImTextureID)TextureDescriptor.GpuHandle.ptr, viewportSize);
+		m_DrawImageAddress = (ImTextureID)TextureDescriptor.GpuHandle.ptr;
+
+		//const auto& viewportSize = ImGui::GetContentRegionAvail();
+		//ImGui::Image((ImTextureID)TextureDescriptor.GpuHandle.ptr, viewportSize);
+	}
+
+	void Editor::DrawEditorLayer()
+	{
+		DrawMainMenuBar();
+
+		ImGui::Begin("Hierarchy");
+
+		//DrawSceneControlPanel();
+		m_HierarchyPanel.DrawPanel();
+		DrawPropertyPanel();
+
+		ImGui::End();
+
+		DrawSceneImage();
 	}
 
 	void Editor::DrawMainMenuBar()
@@ -174,7 +174,7 @@ namespace Luden
 					
 				if (!selected.empty())
 				{
-					m_SelectedEntity = {};
+					m_HierarchyPanel.ResetSelection();
 					m_Renderer->bRequestSceneLoad = true;
 					m_Renderer->SceneToLoad = selected;
 				}
@@ -183,7 +183,7 @@ namespace Luden
 			if (ImGui::MenuItem(ICON_FA_FOLDER_CLOSED" Unload scene"))
 			{
 				m_Renderer->bRequestCleanup = true;
-				m_SelectedEntity = {};
+				m_HierarchyPanel.ResetSelection();
 			}
 
 			if (ImGui::MenuItem(ICON_FA_CHESS_KNIGHT" Add model"))
@@ -194,6 +194,11 @@ namespace Luden
 					.OpenLocation = "D:\\Dev\\Engines\\Luden\\Assets\\Models\\",
 					.Title = "Select a model file"
 					});
+
+				if (!selected.empty())
+				{
+					m_Renderer->ActiveScene->AddModel(selected);
+				}
 			}
 
 			ImGui::Separator();
@@ -321,34 +326,36 @@ namespace Luden
 			{
 				ImGui::Text("Image to display:");
 
-				static int32 selected = 0;
-				const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive" };
+				const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive", "LightPass" };
 
-				if (ImGui::Combo("##comb", &selected, items, IM_ARRAYSIZE(items)))
+				if (ImGui::Combo("##comb", &DisplayImageIndex, items, IM_ARRAYSIZE(items)))
 				{
-					switch (selected)
+					switch (DisplayImageIndex)
 					{
 					case 0:
-						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->SceneTextures.Scene.ShaderResourceHandle;
+						SetSceneImage(m_Renderer->SceneTextures.Scene.ShaderResourceHandle);
 						break;
 					case 1:
-						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->GBuffer->BaseColor.ShaderResourceHandle;
+						SetSceneImage(m_Renderer->GBuffer->BaseColor.ShaderResourceHandle);
 						break;
 					case 2:
-						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->GBuffer->Normal.ShaderResourceHandle;
+						SetSceneImage(m_Renderer->GBuffer->Normal.ShaderResourceHandle);
 						break;
 					case 3:
-						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle;
+						SetSceneImage(m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle);
 						break;
 					case 4:
-						m_Renderer->SceneTextures.ImageToDisplay = &m_Renderer->GBuffer->Emissive.ShaderResourceHandle;
+						SetSceneImage(m_Renderer->GBuffer->Emissive.ShaderResourceHandle);
+						break;
+					case 5:
+						SetSceneImage(m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle);
 						break;
 					}
 
 				}
 			}
 
-			ImGui::SeparatorText("Camera");
+			ImGui::SeparatorText(ICON_FA_VIDEO" Camera");
 			if (ImGui::BeginTable("##cameraPanel", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame))
 			{
 				ImGui::TableSetupColumn("Property",  ImGuiTableColumnFlags_WidthStretch, 100.0f);
@@ -358,7 +365,7 @@ namespace Luden
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Position");
 				ImGui::TableNextColumn();
-				if (gui::Math::Float3("Position", m_Renderer->Camera->Position))
+				if (gui::Math::DrawFloat3("Position", m_Renderer->Camera->Position))
 				{
 					m_Renderer->Camera->Update();
 				}
@@ -409,13 +416,30 @@ namespace Luden
 		}
 	}
 
+	void Editor::DrawSceneImage() const
+	{
+		ImGui::Begin(ICON_FA_DESKTOP" Scene");
+		const auto& viewportSize = ImGui::GetContentRegionAvail();
+		ImGui::Image(m_DrawImageAddress, viewportSize);
+		if (ImGui::IsItemHovered())
+		{
+			m_Renderer->Camera->IsInViewport = true;
+		}
+		else
+		{
+			m_Renderer->Camera->IsInViewport = false;
+		}
+
+		ImGui::End();
+	}
+
 	void Editor::DrawPropertyPanel()
 	{
 		ImGui::Begin("Properties");
 
-		if (m_SelectedEntity.IsAlive())
+		if (m_HierarchyPanel.GetSelectedEntity().IsAlive())
 		{
-			gui::DrawModelData(*(Model*)&m_SelectedEntity);
+			m_PropertyPanel.DrawEntity(m_HierarchyPanel.GetSelectedEntity());
 		}
 
 		ImGui::End();
@@ -440,56 +464,6 @@ namespace Luden
 		ImGui::Text("Mem: %.3fMB", Platform::GetMemoryUsage());
 
 		ImGui::Text("VRAM: %dMB", m_Renderer->GetRHI()->Adapter->QueryAdapterMemory());
-
-	}
-
-	void Editor::DrawActorsData()
-	{
-		// Sanity check
-		// For now, it's possible that no scene can be active at run-time.
-		if (!m_CurrentScene)
-		{
-			return; 
-		}
-
-		if (ImGui::TreeNodeEx("Actors", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
-		{
-			if (m_CurrentScene->Models.empty())
-			{
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text(ICON_FA_GHOST ICON_FA_GHOST ICON_FA_GHOST" Empty here... " ICON_FA_GHOST ICON_FA_GHOST ICON_FA_GHOST);
-				ImGui::TreePop();
-
-				return;
-			}
-
-			for (auto& model : m_CurrentScene->Models)
-			{
-				Entity entity(model);
-				const auto& nameComponent = model.GetComponent<ecs::NameComponent>();
-				
-				ImGuiTreeNodeFlags flags = 
-					((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
-					ImGuiTreeNodeFlags_Leaf;
-
-				ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, nameComponent.Name.c_str());
-				if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-				{
-					m_SelectedEntity = (Entity)entity;
-
-					//gui::DrawModelData(model);
-				}
-				ImGui::TreePop();
-				
-				//if (ImGui::TreeNodeEx(nameComponent.Name.c_str(), flags))
-				//{
-				//	gui::DrawModelData(model);
-				//	ImGui::TreePop();
-				//}
-			}
-
-			ImGui::TreePop();
-		}
 
 	}
 

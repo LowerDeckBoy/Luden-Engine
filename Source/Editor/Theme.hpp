@@ -11,12 +11,19 @@ namespace Luden::gui
 		InStyle.WindowRounding		= 1.0f;
 		InStyle.WindowBorderSize	= 0.0f;
 		InStyle.FrameRounding		= 1.0f;
+		InStyle.FrameBorderSize		= 0.0f;
+		InStyle.ChildBorderSize		= 0.0f;
+
+		// Tooltip
+		InStyle.PopupBorderSize		= 0.15f;
+		InStyle.PopupRounding		= 1.0f;
+
 		InStyle.Colors[ImGuiCol_Text]				= Color::White;
 		InStyle.Colors[ImGuiCol_WindowBg]			= Color::BackgroundDark;
 		InStyle.Colors[ImGuiCol_MenuBarBg]			= Color::BackgroundDark;
 		InStyle.Colors[ImGuiCol_DockingEmptyBg]		= Color::BackgroundDark;
-		InStyle.Colors[ImGuiCol_Border]				= Color::BackgroundDarkActive;
-		InStyle.Colors[ImGuiCol_BorderShadow]		= Color::BorderShadow;
+		InStyle.Colors[ImGuiCol_Border]				= Color::BackgroundDark;
+		InStyle.Colors[ImGuiCol_BorderShadow]		= Color::BackgroundDark;
 		InStyle.Colors[ImGuiCol_PopupBg]			= Color::BackgroundDark;
 
 		InStyle.Colors[ImGuiCol_TitleBg]			= Color::BackgroundDark;

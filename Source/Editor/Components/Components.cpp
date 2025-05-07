@@ -1,10 +1,10 @@
-#include "Components.hpp"
 #include "../Colors.hpp"
-#include <ImGui/imgui_internal.h>
+#include "Components.hpp"
+#include <ImGui/imgui_stdlib.h>
 
-namespace Luden::gui::Math
+namespace Luden::gui
 {
-	bool Float3(std::string_view Label, DirectX::XMFLOAT3& Float3)
+	bool Math::DrawFloat3(std::string_view Label, DirectX::XMFLOAT3& Float3)
 	{
 		// Either when slider has been dragged or it's correnspoding button has been clicked.
 		bool bActive = false;
@@ -63,7 +63,7 @@ namespace Luden::gui::Math
 		return bActive;
 	}
 
-	void Float4(std::string_view Label, DirectX::XMFLOAT4& Float4)
+	void Math::DrawFloat4(std::string_view Label, DirectX::XMFLOAT4& Float4)
 	{
 		if (ImGui::BeginTable(Label.data(), 2, ImGuiTableFlags_BordersInner | ImGuiTableFlags_Resizable))
 		{
@@ -107,6 +107,57 @@ namespace Luden::gui::Math
 
 			ImGui::EndTable();
 
+		}
+	}
+
+	void DrawTransformComponent(ecs::TransformComponent& Component)
+	{
+		if (ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			if (ImGui::BeginTable("##model", 2))
+			{
+				ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Position");
+				ImGui::TableNextColumn();
+				Math::DrawFloat3("Position", Component.Translation);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Rotation");
+				ImGui::TableNextColumn();
+				Math::DrawFloat3("Rotation", *(DirectX::XMFLOAT3*)&Component.Rotation);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Scale");
+				ImGui::TableNextColumn();
+				Math::DrawFloat3("Scale", Component.Scale);
+
+				ImGui::EndTable();
+			}	
+
+			ImGui::TreePop();
+		}
+	}
+
+	void DrawNameComponent(ecs::NameComponent& Component)
+	{
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text("Name:");
+		ImGui::SameLine();
+		std::string last = Component.Name;
+		if (ImGui::InputText("##name", &Component.Name, ImGuiInputTextFlags_None))
+		{
+			if (Component.Name.empty())
+			{
+				Component.Name = last;
+			}
 		}
 	}
 

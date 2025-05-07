@@ -1,12 +1,11 @@
 #pragma once
 
-#include <Core/Timer.hpp>
-#include <Engine/Scene/Scene.hpp>
-#include <Engine/Scene/SceneCamera.hpp>
-#include <Platform/Window.hpp>
-#include <Engine/RHI/Defines.hpp>
-#include <Renderer/Renderer.hpp>
 #include <Asset/AssetImporter.hpp>
+#include <Core/Timer.hpp>
+#include <Engine/RHI/Defines.hpp>
+#include <Engine/Scene/Scene.hpp>
+#include <Platform/Window.hpp>
+#include <Renderer/Renderer.hpp>
 
 #include "Editor.hpp"
 
@@ -36,9 +35,8 @@ namespace Luden
 		
 		static LRESULT CALLBACK EditorWindowProc(::HWND Handle, UINT32 Message, WPARAM wParam, LPARAM lParam);
 
-		D3D12RHI* m_D3D12RHI;
-
-		Renderer* m_Renderer;
+		D3D12RHI* m_D3D12RHI = nullptr;
+		Renderer* m_Renderer = nullptr;
 
 		Core::Timer m_Timer;
 

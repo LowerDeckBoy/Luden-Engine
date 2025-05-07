@@ -116,26 +116,34 @@
     <ClCompile Include="Dependencies\ImGui\imgui_draw.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_impl_dx12.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_impl_win32.cpp" />
+    <ClCompile Include="Dependencies\ImGui\imgui_stdlib.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_tables.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Editor.cpp" />
+    <ClCompile Include="Panels\PropertyPanel.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Panels\SceneHierarchyPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.hpp" />
     <ClInclude Include="Colors.hpp" />
     <ClInclude Include="Components\Components.hpp" />
+    <ClInclude Include="Components\GUI.hpp" />
     <ClInclude Include="Components\Helpers.hpp" />
     <ClInclude Include="Components\Model.hpp" />
+    <ClInclude Include="Components\Tooltip.hpp" />
     <ClInclude Include="Dependencies\ImGui\imconfig.h" />
     <ClInclude Include="Dependencies\ImGui\imgui.h" />
     <ClInclude Include="Dependencies\ImGui\imgui_impl_dx12.h" />
     <ClInclude Include="Dependencies\ImGui\imgui_impl_win32.h" />
     <ClInclude Include="Dependencies\ImGui\imgui_internal.h" />
+    <ClInclude Include="Dependencies\ImGui\imgui_stdlib.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_rectpack.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_textedit.h" />
     <ClInclude Include="Dependencies\ImGui\imstb_truetype.h" />
     <ClInclude Include="Editor.hpp" />
+    <ClInclude Include="Panels\PropertyPanel.hpp" />
+    <ClInclude Include="Panels\SceneHierarchyPanel.hpp" />
     <ClInclude Include="Theme.hpp" />
   </ItemGroup>
   <ItemGroup>

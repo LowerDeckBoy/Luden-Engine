@@ -19,6 +19,8 @@ namespace Luden::Panel
 		void DrawPanel();
 
 		Entity& GetSelectedEntity() { return m_SelectedEntity; }
+		
+		void ResetSelection() { m_SelectedEntity = {}; }
 
 	private:
 		Scene* m_ActiveScene = nullptr;

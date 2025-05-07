@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/String.hpp>
-#include <ImGui/imgui_internal.h>
+//#include <ImGui/imgui_internal.h>
 
 namespace Luden::gui
 {

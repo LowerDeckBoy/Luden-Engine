@@ -2,6 +2,11 @@
 
 #include <ImGui/imgui_internal.h>
 
+// Check if Win32 macro is defined.
+#ifdef RGB
+#undef RGB
+#endif //RGB
+
 namespace Luden::gui::Color
 {
 	constexpr ImVec4 RGB(float R, float G, float B)

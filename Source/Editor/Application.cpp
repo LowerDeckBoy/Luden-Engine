@@ -1,12 +1,8 @@
 #include "Application.hpp"
 #include "Platform/Utility.hpp"
 #include "Scene/SceneSerializer.hpp"
-#include <Core/Logger.hpp>
-#include <ImGui/imgui.h>
-#include <ImGui/imgui_impl_dx12.h>
-#include <ImGui/imgui_impl_win32.h>
 #include <Core/Assert.hpp>
-
+#include <Core/Logger.hpp>
 
 extern "C"
 {
@@ -47,18 +43,18 @@ namespace Luden
 
 		Importer.Device = m_D3D12RHI->Device;
 
-		m_Editor = std::make_unique<Editor>(&Window, m_Renderer, &m_Timer);
-
-		MainScene = new Scene();
+		MainScene = new Scene(&Importer);
 
 		SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_test.json");
 
-		m_Renderer->BuildScene(MainScene);
+		//m_Renderer->BuildScene(MainScene);
+		MainScene->Build(m_D3D12RHI->Device);
 		m_Renderer->ActiveScene = MainScene;
-		m_Editor->SetActiveScene(MainScene);	
+
+		m_Editor = std::make_unique<Editor>(&Window, m_Renderer, &m_Timer);
+		m_Editor->SetActiveScene(MainScene);
 
 		m_Renderer->Resize();
-		m_Renderer->InitializeRaytracingResources();
 
 		bIsResizing = false;
 		
@@ -87,11 +83,12 @@ namespace Luden
 				{
 					m_Renderer->ReleaseActiveScene();
 					MainScene = nullptr;
-					MainScene = new Scene();
+					MainScene = new Scene(&Importer);
 				} 
 				
 				SceneSerializer::Load(&Importer, MainScene, m_Renderer->SceneToLoad);
-				m_Renderer->BuildScene(MainScene);
+				MainScene->Build(m_D3D12RHI->Device);
+				//m_Renderer->BuildScene(MainScene);
 				m_Renderer->ActiveScene = MainScene;
 				m_Renderer->SceneToLoad = "";
 				m_Editor->SetActiveScene(MainScene);

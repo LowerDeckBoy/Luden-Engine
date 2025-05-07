@@ -7,8 +7,11 @@
 #include <Core/Core.hpp>
 #include <Core/Timer.hpp>
 
-#include <Scene/Scene.hpp>
 #include <Engine/Asset/AssetImporter.hpp>
+#include <Scene/Scene.hpp>
+
+#include "Panels/PropertyPanel.hpp"
+#include "Panels/SceneHierarchyPanel.hpp"
 
 namespace Luden
 {
@@ -34,9 +37,13 @@ namespace Luden
 		void SetSceneImage(D3D12Descriptor& TextureDescriptor);
 
 	private:
+		void DrawEditorLayer();
+
 		void DrawMainMenuBar();
 
 		void DrawSceneControlPanel();
+
+		void DrawSceneImage() const;
 
 		// TODO:
 		void DrawPropertyPanel();
@@ -51,16 +58,9 @@ namespace Luden
 		// Draws into MainMenuBar panel.
 		void DisplayDebugInfo();
 
-		void DrawActorsData();
-
-		// All lights are gathered into single TreeNode
-		// just for readability sake.
 		void DrawLightData();
 
 		void DrawEntityComponents(Entity& Entity);
-
-		// Indicates which Entity to display in Properties panel.
-		Entity m_SelectedEntity{};
 
 		AssetImporter Importer;
 
@@ -78,11 +78,18 @@ namespace Luden
 
 		ImGuiViewport* m_MainViewport;
 
+		ImTextureID m_DrawImageAddress;
+
 		ImGuiStyle* m_Theme;
 		
 		// Temporarly hard coded paths.
 		const char* FontPath		= "..\\..\\Build\\Debug\\Assets\\Fonts\\CascadiaCode.ttf";
 		const char* IconsFontPath	= "..\\..\\Build\\Debug\\Assets\\Fonts\\fa-solid-900.ttf";
+
+		static inline int32 DisplayImageIndex = 1;
+
+		Panel::SceneHierarchyPanel	m_HierarchyPanel;
+		Panel::PropertyPanel		m_PropertyPanel;
 
 	};
 } // namespace Luden

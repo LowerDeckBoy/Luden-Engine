@@ -3,10 +3,21 @@
 #include <Core/String.hpp>
 #include <DirectXMath.h>
 
-namespace Luden::gui::Math
-{
-	extern bool Float3(std::string_view Label, DirectX::XMFLOAT3& Float3);
+#include <Engine/ECS/Components/NameComponent.hpp>
+#include <Engine/ECS/Components/TransformComponent.hpp>
 
-	extern void Float4(std::string_view Label, DirectX::XMFLOAT4& Float4);
+namespace Luden::gui
+{
+	namespace Math
+	{
+		extern bool DrawFloat3(std::string_view Label, DirectX::XMFLOAT3& Float3);
+
+		extern void DrawFloat4(std::string_view Label, DirectX::XMFLOAT4& Float4);
+
+	} // namespace Math
 		
-} // namespace Luden::gui::Math
+	extern void DrawTransformComponent(ecs::TransformComponent& Component);
+
+	extern void DrawNameComponent(ecs::NameComponent& Component);
+
+} // namespace Luden::gui

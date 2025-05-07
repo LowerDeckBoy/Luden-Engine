@@ -6,8 +6,8 @@
 				"path": "../../Assets/Models/DragonAttenuation/DragonAttenuation.gltf",
 				"transform": {
 					"position": [ 5.0, 0.5, 0.0 ],
-					"rotation": [ 0.0, 0.0, 0.0 ],
-					"scale": [ 3.0, 3.0, 3.0 ]
+					"rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+					"scale": [ 1.0, 1.0, 1.0 ]
 				}
 			},
 			{
@@ -15,7 +15,7 @@
 				"path": "../../Assets/Models/Bunny/Bunny.obj",
 				"transform": {
 					"position": [ 0.0, 0.0, 0.0 ],
-					"rotation": [ 0.0, -25.0, 0.0 ],
+					"rotation": [ 0.0, -25.0, 0.0, 1.0 ],
 					"scale": [ 1.0, 1.0, 1.0 ]
 				}
 			},
@@ -24,7 +24,7 @@
 				"path": "../../Assets/Models/Dragon/Dragon.obj",
 				"transform": {
 					"position": [ -3.0, 0.5, 0.0 ],
-					"rotation": [ 0.0, 200.0, 0.0 ],
+					"rotation": [ 0.0, 200.0, 0.0, 1.0 ],
 					"scale": [ 3.0, 3.0, 3.0 ]
 				}
 			}
