@@ -149,6 +149,7 @@ namespace Luden
 		
 		output.As(m_DisplayOutput);
 		VERIFY_D3D12_RESULT(m_DisplayOutput->GetDesc1(&m_DisplayOutputDesc));
+		
 	}
 
 } // namespace Luden

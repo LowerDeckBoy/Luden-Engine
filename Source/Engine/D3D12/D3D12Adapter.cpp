@@ -1,7 +1,7 @@
 #include "Config.hpp"
 #include "D3D12Adapter.hpp"
-#include "D3D12Utility.hpp"
 #include "D3D12Memory.hpp"
+#include "D3D12Utility.hpp"
 #include <Core/Logger.hpp>
 #include <iostream>
 
@@ -16,6 +16,7 @@ namespace Luden
 			m_DebugDevice->EnableDebugLayer();
 
 			dxgiFactoryFlag |= DXGI_CREATE_FACTORY_DEBUG;
+			LOG_DEBUG("D3D12 Debug Layer is enabled.");
 		}
 		else
 		{

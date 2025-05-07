@@ -19,6 +19,12 @@ namespace Luden
 			m_InfoQueue->RegisterMessageCallback(&DebugCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &m_DebugCallbackCookie);
 		}
 
+		D3D12MA::ALLOCATOR_DESC allocatorDesc{};
+		allocatorDesc.pAdapter = ParentAdapter->Adapter.Get();
+		allocatorDesc.pDevice = LogicalDevice.Get();
+		allocatorDesc.PreferredBlockSize = 0;
+		VERIFY_D3D12_RESULT(D3D12MA::CreateAllocator(&allocatorDesc, &D3D12MemoryAllocator));
+
 		QueryDeviceFeatures();
 		
 		ShaderResourceHeap	= new D3D12DescriptorHeap(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 65536);
@@ -33,15 +39,17 @@ namespace Luden
 		delete RenderTargetHeap;
 		delete ShaderResourceHeap;
 
+		SAFE_RELEASE(D3D12MemoryAllocator);
 		SAFE_RELEASE(LogicalDevice);
 		SAFE_RELEASE(m_InfoQueue);
 
 		if (Config::Get().bEnableDebugLayer)
-		{
-			if (FAILED(m_DXGIDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_IGNORE_INTERNAL))))
+		{	
+			if (FAILED(m_DXGIDebug->ReportLiveObjects(DXGI_DEBUG_DX, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL))))
 			{
 				LOG_WARNING("Failed to ReportLiveObjects!");
 			}
+			
 			SAFE_RELEASE(m_DXGIDebug);
 		}
 	}
@@ -52,9 +60,9 @@ namespace Luden
 		features.Init(LogicalDevice.Get());
 
 		auto shaderModel = features.HighestShaderModel();
-		const auto string = ShaderModelToString(shaderModel);
-		LOG_INFO("Highest HLSL Shader Model: {0}.", string);
 		
+		LOG_INFO("Highest HLSL Shader Model: {0}.", ShaderModelToString(shaderModel));
+
 	}
 
 	uint32 D3D12Device::CreateBuffer(BufferDesc Desc)
@@ -83,10 +91,17 @@ namespace Luden
 		desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		desc.Format = resourceDesc.Format;
 
-		desc.ViewDimension				= D3D12_SRV_DIMENSION_TEXTURE2D;
-		desc.Texture2D.MipLevels		= NumMips;
-		desc.Texture2D.MostDetailedMip	= 0;
-		desc.Texture2D.PlaneSlice		= 0;
+		if (resourceDesc.SampleDesc.Count == 1)
+		{
+			desc.ViewDimension				= D3D12_SRV_DIMENSION_TEXTURE2D;
+			desc.Texture2D.MipLevels		= NumMips;
+			desc.Texture2D.MostDetailedMip	= 0;
+			desc.Texture2D.PlaneSlice		= 0;
+		}
+		else
+		{
+			desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
+		}
 
 		ShaderResourceHeap->Allocate(Descriptor, Count);
 
@@ -117,8 +132,18 @@ namespace Luden
 
 		D3D12_RENDER_TARGET_VIEW_DESC desc{};
 		desc.Format = resourceDesc.Format;
-		desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-		desc.Texture2D.MipSlice = 0;
+
+		if (resourceDesc.SampleDesc.Count == 1)
+		{
+			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+			desc.Texture2D.MipSlice = 0;
+		}
+		else
+		{
+			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+			//desc.Texture2DMS.MipSlice = 0;
+		}
+
 
 		RenderTargetHeap->Allocate(Descriptor, Count);
 
@@ -129,10 +154,18 @@ namespace Luden
 	void D3D12Device::CreateDepthStencilView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, DXGI_FORMAT Format)
 	{
 		D3D12_DEPTH_STENCIL_VIEW_DESC desc{};
-		desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		desc.Texture2D.MipSlice = 0;
-		desc.Flags = D3D12_DSV_FLAG_NONE;
 		desc.Format = Format;
+		desc.Flags = D3D12_DSV_FLAG_NONE;
+
+		if (pResource->GetDesc().SampleDesc.Count == 1)
+		{
+			desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+			desc.Texture2D.MipSlice = 0;
+		}
+		else
+		{
+			desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+		}
 
 		DepthStencilHeap->Allocate(Descriptor);
 

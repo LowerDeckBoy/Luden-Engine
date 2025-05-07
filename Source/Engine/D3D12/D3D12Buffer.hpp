@@ -16,8 +16,10 @@ namespace Luden
 		Index,
 		Structured,
 		Constant,
-		Copy,
-		AccelerationStructure
+		CopySrc,
+		CopyDest,
+		IndirectArgument,
+		AccelerationStructure,
 	};
 
 	struct BufferDesc
@@ -27,9 +29,8 @@ namespace Luden
 		uint32	NumElements;
 		uint32	Stride;
 
-		// Size = NumElements * Stride
-		// Not need to set manually.
-		uint64	Size;
+		// If Size is not specified, then Size = NumElements * Stride.
+		uint64	Size = 0;
 		
 		// By default all buffers are considered for bindless usage.
 		bool	bBindless = true;
@@ -53,6 +54,8 @@ namespace Luden
 		{
 			return m_BufferDesc;
 		}
+
+		static D3D12_RESOURCE_DESC1 CreateBufferDesc(uint64 Size, D3D12_RESOURCE_FLAGS Flags);
 
 	private:
 		BufferDesc m_BufferDesc{};

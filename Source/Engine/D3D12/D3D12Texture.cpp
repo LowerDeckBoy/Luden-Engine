@@ -112,9 +112,9 @@ namespace Luden
 
 	}
 
-	D3D12RenderTexture::D3D12RenderTexture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name)
+	D3D12RenderTexture::D3D12RenderTexture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::array<float, 4> ClearColor, std::string_view Name)
 	{
-		Create(pDevice, Width, Height, Format, Name);
+		Create(pDevice, Width, Height, Format, ClearColor, Name);
 	}
 
 	D3D12RenderTexture::~D3D12RenderTexture()
@@ -122,7 +122,7 @@ namespace Luden
 		Release();
 	}
 
-	void D3D12RenderTexture::Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name)
+	void D3D12RenderTexture::Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::array<float, 4> ClearColor, std::string_view Name)
 	{
 		if (IsValid())
 		{
@@ -130,20 +130,17 @@ namespace Luden
 		}
 
 		m_Device = pDevice;
+		m_ClearColor = ClearColor;
 		m_TextureDesc.Width = Width;
 		m_TextureDesc.Height = Height;
 		m_TextureDesc.Format = Format;
 
 		D3D12_CLEAR_VALUE clearValue{};
-		clearValue.Color[0] = DefaultClearColor.at(0);
-		clearValue.Color[1] = DefaultClearColor.at(1);
-		clearValue.Color[2] = DefaultClearColor.at(2);
-		clearValue.Color[3] = DefaultClearColor.at(3);
+		clearValue.Color[0] = ClearColor.at(0);
+		clearValue.Color[1] = ClearColor.at(1);
+		clearValue.Color[2] = ClearColor.at(2);
+		clearValue.Color[3] = ClearColor.at(3);
 		clearValue.Format	= m_TextureDesc.Format;
-		//clearValue.Color[0] = 0.5f;
-		//clearValue.Color[1] = 0.2f;
-		//clearValue.Color[2] = 0.7f;
-		//clearValue.Color[3] = 1.0f;
 
 		D3D12_RESOURCE_DESC1 desc{};
 		desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -156,6 +153,8 @@ namespace Luden
 		desc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 		desc.SampleDesc = { 1, 0 };
 		desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+		m_Desc = desc;
 
 		const auto& heapProperties = D3D::HeapPropertiesDefault();
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommittedResource2(
@@ -184,7 +183,7 @@ namespace Luden
 		m_TextureDesc.Width = Width;
 		m_TextureDesc.Height = Height;
 
-		Create(m_Device, Width, Height, m_TextureDesc.Format, DebugName);
+		Create(m_Device, Width, Height, m_TextureDesc.Format, m_ClearColor, DebugName);
 	}
 
 } // namespace Luden

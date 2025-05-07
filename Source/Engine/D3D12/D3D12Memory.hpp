@@ -9,6 +9,8 @@
 #define BYTES_TO_MEGABYTES(Bytes) (Bytes / 1024 / 1024)
 #define BYTES_TO_GIGABYTES(Bytes) (BYTES_TO_MEGABYTES(Bytes) / 1024)
 
+enum DXGI_FORMAT;
+
 namespace Luden::D3D
 {
 	inline D3D12_HEAP_PROPERTIES HeapPropertiesDefault()
@@ -25,4 +27,7 @@ namespace Luden::D3D
 	{
 		return CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
 	}
+
+	extern uint32 GetPixelSizePerFormat(DXGI_FORMAT Format);
+
 } // namespace Luden::D3D

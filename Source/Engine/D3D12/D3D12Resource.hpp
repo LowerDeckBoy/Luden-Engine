@@ -51,11 +51,16 @@ namespace Luden
 
 		void SetResourceState(D3D12_RESOURCE_STATES State);
 
-		void SetDebugName(std::string_view DebugName);
+		void SetDebugName(std::string_view Name);
 
 		bool IsValid() const
 		{
 			return m_Resource.Get() != nullptr;
+		}
+
+		D3D12_RESOURCE_DESC1& GetDesc() 
+		{ 
+			return m_Desc; 
 		}
 
 		ResourceUsageFlag GetResourceUsageFlag() const
@@ -63,15 +68,19 @@ namespace Luden
 			return m_UsageFlag;
 		}
 
+		D3D12_SUBRESOURCE_DATA Subresource{};
+
 	protected:
 		Ref<ID3D12Resource2>		m_Resource;
-		Ref<ID3D12Resource2>		m_UploadResource;
-		Ref<D3D12MA::Allocation>	m_ResourceAllocation;
+		//Ref<ID3D12Resource2>		m_UploadResource;
+		//Ref<D3D12MA::Allocation>	m_ResourceAllocation;
 
 		D3D12_RESOURCE_STATES		m_CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
 		D3D12_RESOURCE_DESC1		m_Desc{};
 
 		ResourceUsageFlag m_UsageFlag = ResourceUsageFlag::Uninitialized;
+
+		std::string DebugName = "";
 
 		D3D12Device* m_ParentDevice = nullptr;
 

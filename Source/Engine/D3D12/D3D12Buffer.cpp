@@ -17,12 +17,15 @@ namespace Luden
 
     D3D12Buffer::~D3D12Buffer()
     {
-        
+        Release();
     }
     
     void D3D12Buffer::Create(D3D12Device* pDevice, BufferDesc Desc)
     {
-        Desc.Size = static_cast<uint64>(Desc.NumElements * Desc.Stride);
+        if (Desc.Size == 0)
+        {
+            Desc.Size = static_cast<uint64>(Desc.NumElements * Desc.Stride);
+        }
 
         D3D12_RESOURCE_DESC1 desc{};
         desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -36,13 +39,21 @@ namespace Luden
         desc.SampleDesc         = { 1, 0 };
         desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
 
+        if (Desc.BufferUsage == BufferUsageFlag::AccelerationStructure)
+        {
+            desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE;
+        }
+
         auto heapProperties = D3D::HeapPropertiesDefault();
+
+        auto resourceFlag = (Desc.BufferUsage == BufferUsageFlag::AccelerationStructure) ?
+            D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE : D3D12_RESOURCE_STATE_COMMON;
 
         VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommittedResource2(
             &heapProperties,
-            D3D12_HEAP_FLAGS::D3D12_HEAP_FLAG_NONE,
+            D3D12_HEAP_FLAG_NONE,
             &desc,
-            D3D12_RESOURCE_STATE_COMMON,
+            resourceFlag,
             nullptr,
             nullptr,
             IID_PPV_ARGS(&m_Resource)));
@@ -56,8 +67,28 @@ namespace Luden
 
         if (!Desc.Name.empty())
         {
-            NAME_D3D12_OBJECT(m_Resource.Get(), Desc.Name);
+            SetDebugName(Desc.Name);
         }
+    }
+
+    D3D12_RESOURCE_DESC1 D3D12Buffer::CreateBufferDesc(uint64 Size, D3D12_RESOURCE_FLAGS Flags)
+    {
+        D3D12_RESOURCE_DESC1 desc{};
+        desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        desc.Format = DXGI_FORMAT_UNKNOWN;
+        desc.Width = static_cast<uint64>(Size);
+        desc.Height = 1;
+        desc.DepthOrArraySize = 1;
+        desc.MipLevels = 1;
+        // Note:
+        // Setting D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT cause issue 
+        // when building Acceleration Structures for Raytracing
+        desc.Alignment = 0;
+        desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        desc.SampleDesc = { 1, 0 };
+        desc.Flags = Flags;
+
+        return desc;
     }
 
     D3D12DepthBuffer::D3D12DepthBuffer() = default;
@@ -100,6 +131,8 @@ namespace Luden
         //desc.Alignment          = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
         desc.SampleDesc         = { 1, 0 };
         desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+        m_Desc = desc;
 
         const auto& heapProperties = D3D::HeapPropertiesDefault();
 

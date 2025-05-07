@@ -12,25 +12,7 @@
 
 namespace Luden
 {
-	class D3D12Device;
-
-	class D3D12Pipeline
-	{
-	public:
-		D3D12Pipeline();
-
-		D3D12RootSignature* RootSignature;
-
-		D3D12Shader* Amplification;
-		D3D12Shader* Mesh;
-		D3D12Shader* Pixel;
-
-		Ref<ID3D12PipelineState> PipelineState;
-
-	private:
-		PipelineType m_PipelineType;
-
-	};
+	class D3D12Device;	
 
 	class D3D12PipelineState
 	{
@@ -63,8 +45,24 @@ namespace Luden
 
 	};
 
-	class D3D12MeshPipelineState
+	class D3D12Pipeline
 	{
+	public:
+		D3D12Pipeline();
+
+		//void Bind(D3D12CommandList* pCommandList);
+
+		D3D12RootSignature RootSignature;
+
+		D3D12Shader Amplification;
+		D3D12Shader Mesh;
+		D3D12Shader Pixel;
+		D3D12Shader Vertex;
+
+		D3D12PipelineState PipelineState;
+
+	private:
+		PipelineType m_PipelineType;
 
 	};
 
@@ -139,6 +137,11 @@ namespace Luden
 
 		void SetRenderTargetFormats(const std::vector<DXGI_FORMAT>& Formats);
 
+		// Default
+		void SetAlphaOpaqueMode(usize RenderTargetIndex);
+		// Transparent objects
+		void SetAlphaBlendMode(usize RenderTargetIndex);
+
 	private:
 		D3D12Device* m_Device = nullptr;
 
@@ -149,6 +152,11 @@ namespace Luden
 		CD3DX12_BLEND_DESC				m_BlendDesc{};
 
 		DXGI_FORMAT m_DepthFormat = DXGI_FORMAT_D32_FLOAT;
+
+	};
+
+	class D3D12ComputePipelineStateBuilder
+	{
 
 	};
 

@@ -5,11 +5,7 @@
 namespace Luden
 {
 	D3D12Pipeline::D3D12Pipeline()
-		: RootSignature(nullptr),
-		Amplification(nullptr),
-		Mesh(nullptr),
-		Pixel(nullptr),
-		m_PipelineType(PipelineType::Graphics)
+		: m_PipelineType(PipelineType::Graphics)
 	{
 	}
 
@@ -46,7 +42,7 @@ namespace Luden
 		m_Desc.RasterizerState = m_RasterizerDesc;
 		m_Desc.RasterizerState.CullMode = m_CullMode;
 		m_Desc.RasterizerState.FillMode = m_FillMode;
-
+		
 		m_Desc.DepthStencilState = m_DepthDesc;
 		m_Desc.BlendState = m_BlendDesc;
 		m_Desc.SampleMask = UINT_MAX;
@@ -132,6 +128,7 @@ namespace Luden
 		m_Desc.DepthStencilState = m_DepthDesc;
 		
 		m_Desc.BlendState = m_BlendDesc;
+		
 
 		m_Desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
@@ -205,5 +202,39 @@ namespace Luden
 			m_Desc.RTVFormats[i] = Formats.at(i);
 		}
 	}
+
+	void D3D12MeshPipelineStateBuilder::SetAlphaOpaqueMode(usize RenderTargetIndex)
+	{
+		//m_BlendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		m_BlendDesc.AlphaToCoverageEnable = false;
+		m_BlendDesc.IndependentBlendEnable = false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendEnable		= false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].LogicOpEnable	= false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].SrcBlend		= D3D12_BLEND_ONE;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].DestBlend		= D3D12_BLEND_ZERO;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendOp			= D3D12_BLEND_OP_ADD;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].SrcBlendAlpha	= D3D12_BLEND_ONE;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].DestBlendAlpha	= D3D12_BLEND_ZERO;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendOpAlpha	= D3D12_BLEND_OP_ADD;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].LogicOp			= D3D12_LOGIC_OP_NOOP;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetAlphaBlendMode(usize RenderTargetIndex)
+	{
+		m_BlendDesc.AlphaToCoverageEnable = false;
+		m_BlendDesc.IndependentBlendEnable = false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendEnable		= true;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].LogicOpEnable	= false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].SrcBlend		= D3D12_BLEND_SRC_ALPHA;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].DestBlend		= D3D12_BLEND_INV_SRC_ALPHA;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].SrcBlendAlpha	= D3D12_BLEND_SRC_ALPHA;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].DestBlendAlpha	= D3D12_BLEND_INV_SRC_ALPHA;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendOp			= D3D12_BLEND_OP_ADD;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendOpAlpha	= D3D12_BLEND_OP_ADD;
+		m_BlendDesc.RenderTarget[RenderTargetIndex].LogicOp			= D3D12_LOGIC_OP_NOOP;
+
+	}
+
 
 } // namespace Luden

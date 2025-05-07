@@ -5,6 +5,8 @@
 #include "D3D12Adapter.hpp"
 #include "D3D12DescriptorHeap.hpp"
 #include "D3D12Buffer.hpp"
+#include "D3D12Texture.hpp"
+#include "D3D12Raytracing.hpp"
 
 namespace Luden
 {
@@ -22,12 +24,16 @@ namespace Luden
 
 		uint32 NodeMask = 0;
 
-		Ref<ID3D12Device14> GetDevice();
+		//Ref<ID3D12Device14> GetDevice();
 
 		void QueryDeviceFeatures();
 		
 		uint32 CreateBuffer(BufferDesc Desc);
 		uint32 CreateConstantBuffer(void* pData, usize Size);
+
+		uint32 CreateBLAS(uint32 VertexBuffer, uint32 IndexBuffer);
+
+		uint32 CreateTexture(TextureDesc Desc);
 
 		std::vector<D3D12Buffer*> Buffers;
 		std::vector<D3D12ConstantBuffer*> ConstantBuffers;
@@ -45,7 +51,7 @@ namespace Luden
 
 	private:
 		Ref<IDXGIDebug1>		m_DXGIDebug;
-
+		Ref<ID3D12DebugDevice2> m_Debug;
 		Ref<ID3D12InfoQueue1>	m_InfoQueue;
 		DWORD					m_DebugCallbackCookie = 0;
 		

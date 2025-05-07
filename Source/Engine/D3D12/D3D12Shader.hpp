@@ -9,6 +9,7 @@ namespace Luden
 	enum class ShaderStageFlag
 	{
 		None,
+		Compute,
 		Vertex,
 		Pixel,
 		Amplification,

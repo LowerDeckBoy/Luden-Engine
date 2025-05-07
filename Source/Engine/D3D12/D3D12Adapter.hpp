@@ -42,7 +42,7 @@ namespace Luden
 
 	private:
 		Ref<ID3D12Debug6> m_DebugDevice;
-
+		
 	};
 
 } // namespace Luden

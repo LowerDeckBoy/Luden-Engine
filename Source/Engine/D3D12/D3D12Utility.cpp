@@ -25,7 +25,7 @@ namespace Luden
 		}
 
 		char hResultError[512]{};
-		::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hResult, 0, hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
+		::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hResult, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
 
 		std::string message = std::format("{0}\n{1}\n\n{2}", 
 			hResultError, 
@@ -39,12 +39,6 @@ namespace Luden
 
 		::MessageBoxA(nullptr, message.data(), "D3D12 Error", MB_OK);
 
-	#if CORE_DEBUG
-		__debugbreak();
-	#else
-		// Temporal
-		throw std::expection("");
-	#endif
 	}
 
 	void Util::NameD3D12Object(ID3D12Object* pD3D12Object, std::string_view DebugName)

@@ -3,6 +3,7 @@
 #include "D3D12DescriptorHeap.hpp"
 #include "D3D12Resource.hpp"
 #include <Core/File.hpp>
+#include <array>
 
 namespace Luden
 {
@@ -50,8 +51,19 @@ namespace Luden
 			return m_TextureDesc;
 		}
 
+		Filepath& GetFilepath()
+		{
+			return m_Filepath;
+		}
+
+		void SetFilepath(Filepath Path)
+		{
+			m_Filepath = Path;
+		}
+		
 	private:
 		TextureDesc m_TextureDesc{};
+		Filepath m_Filepath;
 
 	}; // class D3D12Texture
 
@@ -60,9 +72,10 @@ namespace Luden
 	public:
 		D3D12RenderTexture() = default;
 		D3D12RenderTexture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name = "");
+		D3D12RenderTexture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::array<float, 4> ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f }, std::string_view Name = "");
 		~D3D12RenderTexture();
 
-		void Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name = "");
+		void Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::array<float, 4> ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f }, std::string_view Name = "");
 
 		void Resize(uint32 Width, uint32 Height);
 
@@ -78,6 +91,8 @@ namespace Luden
 		TextureDesc m_TextureDesc{};
 
 		D3D12Device* m_Device;
+
+		std::array<float, 4> m_ClearColor;
 
 	}; // class D3D12RenderTexture
 } // namespace Luden

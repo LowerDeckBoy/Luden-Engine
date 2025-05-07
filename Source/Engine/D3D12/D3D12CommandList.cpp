@@ -17,7 +17,7 @@ namespace Luden
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandAllocator(CommandListType, IID_PPV_ARGS(&m_CommandAllocator)));
 		
 		m_CommandListType = CommandListType;
-
+		
 		// Set debug names for given type of commands.
 		switch (CommandListType)
 		{
@@ -142,6 +142,11 @@ namespace Luden
 		::UpdateSubresources(GetHandleRaw(), pDestination->GetHandleRaw(), pSource->GetHandleRaw(), 0, 0, 1, &subresource);
 	}
 
+	void D3D12CommandList::CopyTextureToTexture(D3D12Resource* pSource, D3D12Resource* pDestination, D3D12_SUBRESOURCE_DATA* Subresource)
+	{
+		::UpdateSubresources(GetHandleRaw(), pDestination->GetHandleRaw(), pSource->GetHandleRaw(), 0, 0, 1, Subresource);
+	}
+
 	void D3D12CommandList::SetRootSignature(D3D12RootSignature* pRootSignature)
 	{
 		if (pRootSignature->GetPipelineType() == PipelineType::Graphics)
@@ -154,9 +159,24 @@ namespace Luden
 		}
 	}
 
+	void D3D12CommandList::SetGraphicsRootSignature(D3D12RootSignature* pRootSignature)
+	{
+		m_GraphicsCommandList->SetGraphicsRootSignature(pRootSignature->GetHandleRaw());
+	}
+
+	void D3D12CommandList::SetComputeRootSignature(D3D12RootSignature* pRootSignature)
+	{
+		m_GraphicsCommandList->SetComputeRootSignature(pRootSignature->GetHandleRaw());
+	}
+
 	void D3D12CommandList::SetPipelineState(D3D12PipelineState* pPipelineState)
 	{
 		m_GraphicsCommandList->SetPipelineState(pPipelineState->GetHandleRaw());
+	}
+
+	void D3D12CommandList::ResolveSubresource(D3D12Resource* DestResource, uint32 DestSubresource, D3D12Resource* SourceResource, uint32 SourceSubresource, DXGI_FORMAT Format)
+	{
+		m_GraphicsCommandList->ResolveSubresource(DestResource->GetHandle(), DestSubresource, SourceResource->GetHandle(), SourceSubresource, Format);
 	}
 
 	void D3D12CommandList::ClearDepthStencilView(D3D12Descriptor& DepthStencilView)
@@ -174,9 +194,29 @@ namespace Luden
 		m_GraphicsCommandList->OMSetRenderTargets(1, &RenderTargetView.CpuHandle, false, &DepthStencilView.CpuHandle);
 	}
 
+	void D3D12CommandList::SetRenderTargets(const std::vector<D3D12Descriptor*>& RenderTargetViews, D3D12Descriptor& DepthStencilView)
+	{
+		std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> handles;
+		for (auto view : RenderTargetViews)
+		{
+			//handles.push_back((D3D12_CPU_DESCRIPTOR_HANDLE&)view.CpuHandle);
+			handles.push_back(view->CpuHandle);
+		}
+
+		m_GraphicsCommandList->OMSetRenderTargets(static_cast<uint32>(handles.size()), handles.data(), false, &DepthStencilView.CpuHandle);
+	}
+
 	void D3D12CommandList::ClearRenderTarget(D3D12Descriptor& RenderTargetView, std::array<float, 4> ClearColor)
 	{
 		m_GraphicsCommandList->ClearRenderTargetView(RenderTargetView.CpuHandle, ClearColor.data(), 0, nullptr);
+	}
+
+	void D3D12CommandList::ClearRenderTargets(const std::vector<D3D12Descriptor*>& RenderTargetViews, std::array<float, 4> ClearColor)
+	{
+		for (auto& view : RenderTargetViews)
+		{
+			m_GraphicsCommandList->ClearRenderTargetView(view->CpuHandle, ClearColor.data(), 0, nullptr);
+		}
 	}
 
 	void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY PrimitiveTopology)
@@ -204,6 +244,11 @@ namespace Luden
 	void D3D12CommandList::DispatchMesh(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ)
 	{
 		m_GraphicsCommandList->DispatchMesh(DispatchThreadX, DispatchThreadY, DispatchThreadZ);
+	}
+
+	void D3D12CommandList::Draw(uint32 VertexCount)
+	{
+		m_GraphicsCommandList->DrawInstanced(VertexCount, 1, 0, 0);
 	}
 
 	void D3D12CommandList::DrawIndexed(uint32 IndexCount, uint32 BaseIndex, uint32 BaseVertex)

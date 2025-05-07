@@ -6,6 +6,7 @@
 #include "D3D12CommandQueue.hpp"
 #include "D3D12SwapChain.hpp"
 #include "D3D12CommandList.hpp"
+#include "D3D12CommandSignature.hpp"
 #include "D3D12Texture.hpp"
 #include "D3D12Shader.hpp"
 #include "D3D12PipelineState.hpp"
@@ -91,6 +92,8 @@ namespace Luden
 		void CreateDepthStencilView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
 
 		D3D12DepthBuffer CreateDepthBuffer(DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
+
+		D3D12CommandSignature* MeshCommandSignature;
 
 	private:
 		Platform::Window* m_ParentWindow;
