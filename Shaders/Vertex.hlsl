@@ -64,7 +64,7 @@ VertexOutput VSMain(uint VertexId : SV_VertexID)
 	output.Position			= mul(Mesh.WVP, float4(vertex.Position, 1.0f));
 	output.WorldPosition	= mul(Mesh.World, float4(vertex.Position, 1.0f));
 	output.TexCoord			= vertex.TexCoord;
-	output.Normal			= mul((float3x3)Mesh.World, vertex.Normal);
+	output.Normal			= normalize(mul((float3x3) Mesh.World, vertex.Normal));
 	output.Tangent			= mul((float3x3)Mesh.World, vertex.Tangent.xyz);
 	output.Bitangent		= vertex.Tangent.xyz;
 	

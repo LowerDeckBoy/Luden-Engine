@@ -6,7 +6,11 @@
     <FxCompile Include="$(MSBuildThisFileDirectory)Base.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Vertex.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)MeshBasic.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)MSStreamed.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)MSCulled.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)TempMS.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_MS.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_PS.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
@@ -14,6 +18,10 @@
     <None Include="$(MSBuildThisFileDirectory)Common\Camera.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Transform.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Meshlet.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Vertex.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PBR.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Deferred\Deferred_RS.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="NewFilter1">

@@ -19,19 +19,38 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="$(MSBuildThisFileDirectory)Common\Common.hlsli" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)MeshBasic.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_MS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="$(MSBuildThisFileDirectory)MS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="$(MSBuildThisFileDirectory)MSStreamed.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)MSCulled.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)TempMS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="$(MSBuildThisFileDirectory)Vertex.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)Common\Camera.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Meshlet.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Deferred\Deferred_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Mesh.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Transform.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PBR.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Vertex.hlsli" />
   </ItemGroup>
 </Project>

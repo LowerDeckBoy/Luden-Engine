@@ -8,7 +8,7 @@
 	"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
 	"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
 	"CBV(b0, space=0), "\
-	"RootConstants(num32BitConstants=5, b1), "\
+	"RootConstants(num32BitConstants=6, b1), "\
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_WRAP, "\
 		"filter = FILTER_MAXIMUM_ANISOTROPIC )"
@@ -18,12 +18,13 @@
 
 struct Frustum
 {
-
+	float4 Planes[6];
 };
 
 struct SceneConstants
 {
-
+	float4x4 View;
+	float4x4 Projection;
 };
 
 struct Transform
@@ -39,6 +40,7 @@ struct PushConstants
 	uint MeshletIndex;
 	uint MeshletVerticesIndex;
 	uint MeshletTrianglesIndex;
+	uint MeshletBoundsIndex;
 	uint bDrawMeshlets;
 };
 
@@ -52,16 +54,16 @@ struct Vertex
 
 struct VertexOut
 {
-	float4	Position		: SV_POSITION;
-	float4	WorldPosition	: WORLD_POSITION;
-	float2	TexCoord		: TEXCOORD;
-	float3	Normal			: NORMAL;
-	float4	Tangent			: TANGENT;
-	uint	MeshletIndex	: COLOR0;
+	float4 Position			: SV_POSITION;
+	float4 WorldPosition	: WORLD_POSITION;
+	float2 TexCoord			: TEXCOORD;
+	float3 Normal			: NORMAL;
+	float4 Tangent			: TANGENT;
+	uint MeshletIndex		: COLOR0;
 };
 
-ConstantBuffer<Transform>		Transforms	: register(b0);
-ConstantBuffer<PushConstants>	Constants	: register(b1);
+ConstantBuffer<Transform> Transforms : register(b0);
+ConstantBuffer<PushConstants> Constants : register(b1);
 
 float SignedPointPlaneDistance(float3 P, float3 planeN, float3 planeP)
 {
@@ -121,9 +123,9 @@ groupshared Payload sPayload;
 
 [NumThreads(AS_GROUP_SIZE, 1, 1)]
 void ASMain(
-	uint GroupThreadID		: SV_GroupThreadID,
-	uint DispatchThreadID	: SV_DispatchThreadID,
-	uint GroupID			: SV_GroupID)
+	uint GroupThreadID : SV_GroupThreadID,
+	uint DispatchThreadID : SV_DispatchThreadID,
+	uint GroupID : SV_GroupID)
 {
 	sPayload.MeshletIndices[GroupThreadID] = DispatchThreadID;
 	
@@ -140,10 +142,10 @@ void MSMain(
 	out indices uint3 Triangles[MAX_TRIANGLES],
 	out vertices VertexOut Vertices[MAX_VERTICES])
 {
-	StructuredBuffer<Meshlet>	Meshlets			= ResourceDescriptorHeap[Constants.MeshletIndex];
-	StructuredBuffer<Vertex>	VertexBuffer		= ResourceDescriptorHeap[Constants.VertexIndex];
-	StructuredBuffer<uint>		MeshletVertices		= ResourceDescriptorHeap[Constants.MeshletVerticesIndex];
-	StructuredBuffer<uint>		MeshletTriangles	= ResourceDescriptorHeap[Constants.MeshletTrianglesIndex];
+	StructuredBuffer<Meshlet> Meshlets = ResourceDescriptorHeap[Constants.MeshletIndex];
+	StructuredBuffer<Vertex> VertexBuffer = ResourceDescriptorHeap[Constants.VertexIndex];
+	StructuredBuffer<uint> MeshletVertices = ResourceDescriptorHeap[Constants.MeshletVerticesIndex];
+	StructuredBuffer<uint> MeshletTriangles = ResourceDescriptorHeap[Constants.MeshletTrianglesIndex];
 	
 	uint meshletIndex = payload.MeshletIndices[GroupID];
 	Meshlet meshlet = Meshlets[meshletIndex];
@@ -151,7 +153,7 @@ void MSMain(
 	SetMeshOutputCounts(meshlet.VertexCount, meshlet.TriangleCount);
 
 	if (GroupThreadID < meshlet.TriangleCount)
-	{ 
+	{
 		uint packed = MeshletTriangles.Load(meshlet.TriangleOffset + GroupThreadID);
 
 		Triangles[GroupThreadID] = UnpackTriangle(packed);

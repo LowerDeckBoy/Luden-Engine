@@ -2,31 +2,10 @@
 #define GBUFFER_MS_HLSL
 
 #include "GBuffer_RS.hlsli"
+#include "../Material.hlsli"
 #include "../Mesh.hlsli"
 		
 #define AS_GROUP_SIZE 32
-
-struct FMaterial
-{
-	float4 BaseColorFactor;
-	float4 EmissiveFactor;
-
-	float AlphaCutoff;
-	float Metallic;
-	float Roughness;
-	float Specular;
-
-	float Transparency;
-	float IndexOfRefraction;
-	float Anisotropy;
-	uint AlphaMode;
-
-	uint BaseColorIndex;
-	uint NormalIndex;
-	uint MetallicRoughnessIndex;
-	uint EmissiveIndex;
-
-};
 
 struct SceneConstants
 {
@@ -63,37 +42,29 @@ struct Vertex
 
 struct VertexOut
 {
-	float4 Position : SV_POSITION;
-	float4 WorldPosition : WORLD_POSITION;
-	float2 TexCoord : TEXCOORD;
-	float3x3 TBN : TBN;
-	
-	/*
-	float3 Normal : NORMAL;
-	float4 Tangent : TANGENT;
-	float3 Bitangent : BITANGENT;
-	*/
-	
-	uint MeshletIndex : COLOR0;
+	float4 Position			: SV_POSITION;
+	float4 WorldPosition	: WORLD_POSITION;
+	float2 TexCoord			: TEXCOORD;
+	float3x3 TBN			: TBN;
+	uint MeshletIndex		: COLOR0;
 };
 
-ConstantBuffer<Transform> Transforms : register(b0);
+ConstantBuffer<Transform> Transforms	: register(b0);
 ConstantBuffer<PushConstants> Constants : register(b1);
-ConstantBuffer<FMaterial> Material : register(b2);
+ConstantBuffer<FMaterial> Material		: register(b2);
 
 VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 {
 	VertexOut vout;
 	
-	vout.Position = mul(Transforms.WVP, float4(InVertex.Position, 1.0f));
-	vout.WorldPosition = mul(Transforms.World, float4(InVertex.Position, 1.0f));
-	vout.TexCoord = InVertex.TexCoord;
+	vout.Position		= mul(Transforms.WVP, float4(InVertex.Position, 1.0f));
+	vout.WorldPosition	= mul(Transforms.World, float4(InVertex.Position, 1.0f));
+	vout.TexCoord		= InVertex.TexCoord;
+	
 	float3 N = normalize(mul((float3x3)Transforms.World, InVertex.Normal));
 	float3 T = normalize(mul((float3x3)Transforms.World, InVertex.Tangent));
 	float3 B = normalize(mul((float3x3)Transforms.World, InVertex.Bitangent));
-	//float3 Bitangent = cross(Normal, Tangent.rgb);
-	//Bitangent = normalize(mul((float3x3)Transforms.World, Bitangent));
-	
+
 	vout.TBN = float3x3(T, B, N);
 	vout.TBN = mul((float3x3)Transforms.World, transpose(vout.TBN));
 	//vout.Bitangent = normalize(mul(Transforms.World, InVertex.Tangent));
@@ -130,9 +101,9 @@ void MSMain(
 	out indices uint3 Triangles[MAX_TRIANGLES],
 	out vertices VertexOut Vertices[MAX_VERTICES])
 {
-	StructuredBuffer<Meshlet> Meshlets = ResourceDescriptorHeap[Constants.MeshletIndex];
-	StructuredBuffer<Vertex> VertexBuffer = ResourceDescriptorHeap[Constants.VertexIndex];
-	StructuredBuffer<uint> MeshletVertices = ResourceDescriptorHeap[Constants.MeshletVerticesIndex];
+	StructuredBuffer<Meshlet> Meshlets		= ResourceDescriptorHeap[Constants.MeshletIndex];
+	StructuredBuffer<Vertex> VertexBuffer	= ResourceDescriptorHeap[Constants.VertexIndex];
+	StructuredBuffer<uint> MeshletVertices	= ResourceDescriptorHeap[Constants.MeshletVerticesIndex];
 	StructuredBuffer<uint> MeshletTriangles = ResourceDescriptorHeap[Constants.MeshletTrianglesIndex];
 	
 	uint meshletIndex = payload.MeshletIndices[GroupID];
@@ -183,8 +154,6 @@ Texture2D GetTexture(in uint Index)
 	return output;
 }
 
-
-
 [RootSignature(GBUFFER_ROOT_SIG)]
 GBuffers PSMain(VertexOut pin) : SV_TARGET
 {
@@ -195,18 +164,13 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 		Texture2D baseColorTexture = GetTexture(Material.BaseColorIndex);
 		
 		float4 baseColor = baseColorTexture.Sample(AnisotropicSampler, pin.TexCoord);
-	
+		
 		if (Constants.bAlphaMask)
 		{
-			if (Material.AlphaMode == 2 && baseColor.a < Material.AlphaCutoff)
+			if (Material.AlphaMode == ALPHA_MODE_MASK && baseColor.a < Material.AlphaCutoff)
 			{
 				discard;
 			}
-		
-			//if (Material.Transparency > 0.0f && baseColor.a < Material.AlphaCutoff)
-			//{
-			//	
-			//}
 		}
 		
 		output.BaseColor = baseColor;
@@ -216,6 +180,8 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 		output.BaseColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	}
+	//float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
+	//output.BaseColor = float4(meshletColor, 1.0f);
 	
 	//if (Constants.bDrawMeshlets)
 	//{
@@ -235,7 +201,9 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 	{
 		Texture2D mrTexture = ResourceDescriptorHeap[Material.MetallicRoughnessIndex];
 		float4 mr = mrTexture.Sample(AnisotropicSampler, pin.TexCoord);
-		output.MetallicRoughness = float4(0.0f, mr.g * Material.Roughness, mr.b * Material.Metallic, 1.0f);
+		//output.MetallicRoughness = float4(0.0f, mr.g * Material.Roughness, mr.b * Material.Metallic, 1.0f);
+		output.MetallicRoughness = float4(mr.r, mr.g, mr.b, 1.0f);
+		//output.MetallicRoughness = float4(0.0f, mr.g, mr.b, 1.0f);
 	}
 	else
 	{

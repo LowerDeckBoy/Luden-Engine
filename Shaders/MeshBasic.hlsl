@@ -94,6 +94,22 @@ void MSMain(
 			float(GroupID & 7) / 8);
 		
 	}
+	
+	//for (uint i = GroupThreadID; i < meshlet.TriangleCount; i += 128)
+	//{
+	//	uint offset = meshlet.TriangleOffset + i * 3;
+	//	Triangles[i] = uint3(
+	//        PrimitiveIndices[offset],
+	//        PrimitiveIndices[offset + 1],
+	//        PrimitiveIndices[offset + 2]
+	//    );
+	//}
+	//for (uint j = GroupThreadID; j < meshlet.VertexCount; j += 128)
+	//{
+	//	uint index = UniqueVertexIndices[meshlet.VertexOffset + j];
+	//	Vertices[j] = GetVertexAttributes(index, GroupID);
+	//}
+
 }
 
 float4 PSMain(VertexOut pin) : SV_TARGET
