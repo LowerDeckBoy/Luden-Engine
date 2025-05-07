@@ -55,7 +55,7 @@ namespace Luden
 		if (FAILED(result))
 		{
 			char hResultError[512]{};
-			::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, 0, hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
+			::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
 			LOG_WARNING("Failed to load texture: {}\n{}", Path.string(), hResultError);
 			__debugbreak();
 			return;
@@ -105,7 +105,7 @@ namespace Luden
 		if (FAILED(result))
 		{
 			char hResultError[512]{};
-			::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, 0, hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
+			::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
 			LOG_WARNING("Failed to load texture: {}", hResultError);
 		}
 

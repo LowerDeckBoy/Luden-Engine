@@ -55,10 +55,10 @@ namespace Luden
 
 		//DirectX::BoundingFrustum Frustum;
 
-		bool IsInsideFrustum(ecs::BoundingBoxComponent& AABB);
-		std::array<DirectX::XMFLOAT4, 6> FrustumPlanes;
+		//bool IsInsideFrustum(ecs::BoundingBoxComponent& AABB);
+		//std::array<DirectX::XMFLOAT4, 6> FrustumPlanes;
 
-		void ConstructFrustum(const DirectX::XMMATRIX& Transformation);
+		//void ConstructFrustum(const DirectX::XMMATRIX& Transformation);
 
 		DirectX::XMMATRIX GetView();
 		DirectX::XMMATRIX GetProjection();
@@ -77,9 +77,12 @@ namespace Luden
 
 		// TODO:
 		// Check whether BoundingBox is inside of Camera's frustrum.
-		bool IsInFrustrum(ecs::BoundingBoxComponent& BoundingBox, DirectX::XMFLOAT4X4 Transform);
+		//bool IsInFrustrum(ecs::BoundingBoxComponent& BoundingBox, DirectX::XMFLOAT4X4 Transform);
 
-		bool IsInFrustrum(FMeshletBounds& BoundingBox, DirectX::XMFLOAT4X4 Transform);
+		//bool IsInFrustrum(FMeshletBounds& BoundingBox, DirectX::XMFLOAT4X4 Transform);
+
+		// If mouse if not hovered over scene viewport then ignore camera enabling with holding RMB.
+		bool IsInViewport = false;
 
 	private:
 		Platform::Window* m_ParentWindow;

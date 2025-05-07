@@ -1,6 +1,7 @@
 #pragma once
 
 #include "D3D12/D3D12Buffer.hpp"
+#include "D3D12/D3D12Texture.hpp"
 
 #include "ECS/Components/NameComponent.hpp"
 #include "ECS/Components/TransformComponent.hpp"
@@ -17,33 +18,42 @@ namespace Luden
 	{
 	public:
 		Model() = default;
+		~Model();
 		
 		// Create and upload Buffer Resources.
 		void Create(D3D12Device* pDevice);
 
-		// Single StaticMesh built from submeshes?
-		// Single Material built from submaterials?
+		void Release();
 
-		std::vector<StaticMesh> Meshes;
-		std::vector<Material>	Materials;
+		std::vector<StaticMesh>		Meshes;
+		std::vector<Material>		Materials;
+
+		std::vector<D3D12Texture*>	Textures;
 
 		uint32 ConstantBuffer;
 		Constants::ObjectTranforms cbObjectTransforms{};
 
-		Filepath GetFilepath()
+		// TODO:
+		void SetMaterial();
+
+		INLINE Filepath GetFilepath()
 		{
 			return m_Filepath;
 		}
 
-		void SetFilepath(Filepath Path)
+		INLINE void SetFilepath(Filepath Path)
 		{
 			m_Filepath = Path;
 		}
 
-		void Release();
-
 	private:
 		Filepath m_Filepath;
+
+		// Createb buffers related resources for this model.
+		void CreateResources();
+
+
+		D3D12Device* m_ParentDevice = nullptr;
 
 	};
 } // namespace Luden

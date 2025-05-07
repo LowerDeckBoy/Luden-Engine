@@ -59,7 +59,7 @@ namespace Luden
 
         Models.clear();
 
-        GetRegistry()->clear();
+        GetWorld()->Clear();
     }
 
     void Scene::CreateEntity(Entity& Target)
@@ -70,11 +70,14 @@ namespace Luden
     bool Scene::AddModel(Filepath Path)
     {
         Model model{};
-        
+
+        auto startTime = std::chrono::high_resolution_clock::now();
         if (!m_AssetImporter->ImportStaticMesh(Path, model))
         {
             return false;
         }
+        auto endTime = std::chrono::high_resolution_clock::now();
+        std::print("{0} load time: {1}", File::GetFilename(Path), std::chrono::duration<f64>(endTime - startTime));
 
         GetWorld()->CreateEntity(&model);
 

@@ -1,11 +1,10 @@
 #pragma once
 
-#include <Core/String.hpp>
-#include <Core/File.hpp>
-#include "SceneCamera.hpp"
-#include "Graphics/Model.hpp"
 #include "ECS/World.hpp"
-
+#include "Graphics/Model.hpp"
+#include "SceneCamera.hpp"
+#include <Core/File.hpp>
+#include <Core/String.hpp>
 
 namespace Luden
 {
@@ -13,10 +12,7 @@ namespace Luden
 	class Renderer;
 
 	// TODO:
-	// AssetImporter should be owned here.
-	// Pointer to RHI should too?
-	// Materials, Textures and Buffers should be stored inside a Scene?
-	// ^ that way it should be easier to create resource buffers and manage scene cleaning.
+	// Scene itself should be an entity that serves as a root for other entities.
 	class Scene
 	{
 	public:
@@ -53,9 +49,9 @@ namespace Luden
 		// Scene resource.
 		// They gonna be used to create buffers for GPU driven rendering.
 		std::vector<std::unique_ptr<Model>> Models;
-		std::vector<Material> Materials;
-		std::vector<StaticMesh> Meshes;
-		std::vector<D3D12Texture*> Textures;
+		std::vector<Material>				Materials;
+		std::vector<StaticMesh>				Meshes;
+		std::vector<D3D12Texture*>			Textures;
 
 		// Log scene stats, like amount of models, meshes, lights this scene has.
 		//void LogDebugInfo();

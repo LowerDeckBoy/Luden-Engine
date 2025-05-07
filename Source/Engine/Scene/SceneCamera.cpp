@@ -43,7 +43,7 @@ namespace Luden
 		AspectRatio = (f32)m_ParentWindow->Width / (f32)m_ParentWindow->Height;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
 
-		ConstructFrustum(GetViewProjection());
+		//ConstructFrustum(GetViewProjection());
 
 		Update();
 	}
@@ -59,8 +59,8 @@ namespace Luden
 
 		DxMouse->GetDeviceState(sizeof(mouseState), reinterpret_cast<LPVOID>(&mouseState));
 
-		// If RMB is not held - skip mouse and keyboard camera controls
-		if (!mouseState.rgbButtons[1])
+		// If RMB is not held or mouse is not hover over scene viewport - skip mouse and keyboard camera controls.
+		if (!IsInViewport || !mouseState.rgbButtons[1])
 		{
 			m_ParentWindow->OnCursorShow();
 
@@ -119,7 +119,7 @@ namespace Luden
 		}
 
 		Update();
-		ConstructFrustum(GetViewProjection());
+		//ConstructFrustum(GetViewProjection());
 	}
 
 	void SceneCamera::Update()
@@ -162,6 +162,7 @@ namespace Luden
 
 	}
 
+	/*
 	bool SceneCamera::IsInsideFrustum(ecs::BoundingBoxComponent& AABB)
 	{
 		// Corners
@@ -255,9 +256,8 @@ namespace Luden
 			vPlane = DirectX::XMVectorMultiply(vPlane, DirectX::XMVectorReciprocal(vLen));
 			DirectX::XMStoreFloat4(&FrustumPlanes.at(side), vPlane);
 		}
-
-
 	}
+	*/
 
 	DirectX::XMMATRIX SceneCamera::GetView()
 	{
@@ -325,12 +325,9 @@ namespace Luden
 		
 		return inside;
 	}
-	*/
 
-	bool SceneCamera::IsInFrustrum(FMeshletBounds& /* BoundingBox */, DirectX::XMFLOAT4X4 /* Transform */)
+	bool SceneCamera::IsInFrustrum(FMeshletBounds& BoundingBox, DirectX::XMFLOAT4X4 Transform)
 	{
-		//BoundingBox.ConeAxis[1];
-		
 		XMMATRIX vp = XMMatrixTranspose(GetViewProjection());
 		XMVECTOR planes[6] =
 		{
@@ -344,4 +341,5 @@ namespace Luden
 
 		return false;
 	}
+	*/
 } // namespace Luden

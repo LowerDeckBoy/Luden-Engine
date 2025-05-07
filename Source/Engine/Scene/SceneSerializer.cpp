@@ -17,9 +17,7 @@ namespace Luden
 			return false;
 		}
 
-		const auto fileExtension = File::GetExtension(Path);
-
-		if (fileExtension != ".json")
+		if (File::GetExtension(Path) != ".json")
 		{
 			LOG_WARNING("Currently only json based files can be used as Scene!");
 
@@ -43,28 +41,34 @@ namespace Luden
 			std::print("\n\t- loading: {0}", name);
 
 			Model model{};
-			pScene->GetWorld()->CreateEntity(&model);
+			// Initialize Enitity with a name, as every model in JSON scene file must have a name anyway.
+			pScene->GetWorld()->CreateEntity(&model, name);
 
-			model.AddComponent<ecs::NameComponent>(name);
 			model.AddComponent<ecs::TransformComponent>(
 				DirectX::XMFLOAT3(position[0], position[1], position[2]),
 				DirectX::XMFLOAT4(rotation[0], rotation[1], rotation[2], rotation[3]),
 				DirectX::XMFLOAT3(scale[0], scale[1], scale[2]));
 
 			auto startTime = std::chrono::high_resolution_clock::now();
-			pImporter->ImportStaticMesh(path, model);
+			if (!pImporter->ImportStaticMesh(path, model))
+			{
+				LOG_WARNING("Failed to load {}", name);
+
+				//continue;
+			}
 			auto endTime = std::chrono::high_resolution_clock::now();
 
 			std::print(", load time: {0}", std::chrono::duration<f64>(endTime - startTime));
 
 			model.SetFilepath(path);
-			pScene->Models.emplace_back(model);
+			pScene->Models.push_back(std::make_unique<Model>(model));
 		}
 
 		std::println();
 
 		file.close();
 
+		// Be default set Scene name as a scene filename.
 		pScene->Name = File::GetFilename(Path);
 
 		return true;

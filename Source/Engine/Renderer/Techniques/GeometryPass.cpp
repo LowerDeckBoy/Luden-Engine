@@ -18,10 +18,10 @@ namespace Luden
 	{
 		Release();
 
-		BaseColor.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, "GBuffer BaseColor");
-		Normal.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, "GBuffer Normal");
-		MetallicRoughness.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, "GBuffer MetallicRoughness");
-		Emissive.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, "GBuffer Emissive");
+		BaseColor.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, RenderTargetClearColor, "GBuffer BaseColor");
+		Normal.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT, RenderTargetClearColor, "GBuffer Normal");
+		MetallicRoughness.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, RenderTargetClearColor, "GBuffer MetallicRoughness");
+		Emissive.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, RenderTargetClearColor, "GBuffer Emissive");
 
 		m_RenderTargetHandles.push_back(&BaseColor.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&Normal.RenderTargetHandle);
@@ -49,7 +49,7 @@ namespace Luden
 		Emissive.Resize(Width, Height);
 	}
 	
-	void GeometryPass::Render(Scene* pScene, Frame& CurrentFrame, std::function<void()> const& DrawFunction)
+	void GeometryPass::Render(Frame& CurrentFrame, std::function<void()> const& DrawFunction)
 	{
 		auto commandList = CurrentFrame.GraphicsCommandList;
 		//auto device = m_RHI->Device;
@@ -65,7 +65,7 @@ namespace Luden
 		//commandList->ResourceTransition(WorldPosition, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		commandList->SetRenderTargets(m_RenderTargetHandles, m_RHI->SceneDepthBuffer->DepthStencilHandle);
-		commandList->ClearRenderTargets(m_RenderTargetHandles);
+		commandList->ClearRenderTargets(m_RenderTargetHandles, { 0.0f, 0.0f, 0.0f, 0.0f });
 
 		DrawFunction();
 

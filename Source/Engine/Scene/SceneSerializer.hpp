@@ -26,8 +26,12 @@ namespace Luden
 		SceneSerializer() = default;
 		~SceneSerializer() = default;
 
+
 		//
 		static bool Load(AssetImporter* pImporter, Scene* pScene, Filepath Path);
+
+		//
+		static bool LoadFromJSON();
 		
 		// 
 		static bool Save(Scene* pScene, Filepath Path);

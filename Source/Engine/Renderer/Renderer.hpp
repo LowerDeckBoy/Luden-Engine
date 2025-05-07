@@ -4,18 +4,36 @@
 #include "RenderPass.hpp"
 #include "Scene/Scene.hpp"
 #include <Core/Core.hpp>
-
 #include "RHI/Constants.hpp"
-
 #include "Asset/ShaderCompiler.hpp"
+
+#include "Techniques/GeometryPass.hpp"
+#include "Techniques/LightPass.hpp"
+
 
 namespace Luden
 {
 	struct SceneRenderTargets
 	{
 		// Final image
-		//uint32 Scene;
 		D3D12RenderTexture Scene;
+
+		D3D12Descriptor* ImageToDisplay;
+	};
+
+	struct SceneConstants
+	{
+		DirectX::XMMATRIX View;
+		DirectX::XMMATRIX Projection;
+
+		DirectX::XMMATRIX InvView;
+		DirectX::XMMATRIX InvProjection;
+
+		std::array<DirectX::XMFLOAT4, 6> FrustumPlanes;
+
+		f32 NearZ;
+		f32 FarZ;
+
 	};
 	
 	class Renderer
@@ -33,7 +51,12 @@ namespace Luden
 
 		void Resize();
 
+		// Draw given scene to Geometry Buffer.
 		void Draw(Scene* pScene, Frame& CurrentFrame);
+
+		void DrawScene(Scene* pScene, Frame& CurrentFrame);
+
+		void BuildScene(Scene* pScene);
 
 		static SceneRenderTargets SceneTextures;
 
@@ -45,11 +68,6 @@ namespace Luden
 		void BuildPipelines();
 
 		Scene* ActiveScene;
-
-		void InitializeScene(Scene* pScene);
-
-		// Import model to active scene.
-		bool AddModel(AssetImporter* pAssetImporter, Filepath Path);
 
 		void ReleaseActiveScene();
 
@@ -65,17 +83,22 @@ namespace Luden
 		
 		uint64 CulledVertices = 0;
 
+		// Test
+		SceneConstants cbScene{};
+
+		// Render Passes
+		GeometryPass*	GBuffer;
+		LightPass*		LightingPass;
+	
+		// Test
+		D3D12BVH* RaytracingBVH;
+		void InitializeRaytracingResources();
+
 	private:
 		D3D12RHI* m_D3D12RHI;
 		Platform::Window* m_ParentWindow;
 
 		ShaderCompiler* m_ShaderCompiler;
-
-		D3D12Shader BaseVS;
-		D3D12Shader BasePS;
-
-		D3D12RootSignature BaseRS;
-		D3D12PipelineState BasePSO;
 
 		D3D12Shader VertexVS;
 		D3D12Shader VertexPS;
@@ -89,6 +112,13 @@ namespace Luden
 
 		D3D12RootSignature MeshRS;
 		D3D12PipelineState MeshPSO;
+
+		D3D12Shader MeshCullAS;
+		D3D12Shader MeshCullMS;
+		D3D12Shader MeshCullPS;
+
+		D3D12RootSignature MeshCullRS;
+		D3D12PipelineState MeshCullPSO;
 
 	};
 } // namespace Luden

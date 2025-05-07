@@ -16,14 +16,12 @@ namespace Luden
 		{ }
 
 		virtual void Resize(uint32 Width, uint32 Height) = 0;
+		virtual void Release() = 0;
+
+		D3D12Pipeline Pipeline;
 
 	protected:
 		D3D12RHI* m_RHI;
-
-		D3D12RootSignature*		m_RootSignature;
-		D3D12MeshPipelineState* m_MPSO;
-		// RootSignature
-		// PipelineState
 
 	};
 } // namespace Luden

@@ -5,20 +5,27 @@
 
 namespace Luden
 {
+	enum EAlphaMode
+	{
+		Opaque,
+		Mask,
+		Blend,
+	};
+
 	struct Material
 	{
-		DirectX::XMFLOAT4 BaseColorFactor;
-		DirectX::XMFLOAT4 EmissiveFactor;
+		DirectX::XMFLOAT4 BaseColorFactor{};
+		DirectX::XMFLOAT4 EmissiveFactor{};
 
-		f32	AlphaCutoff		= 0.5f;
-		f32	Metallic		= 0.0f;
-		f32	Roughness		= 0.5f;
-		f32	Specular		= 0.0f;
-
-
-		//int32		bDoubleSided	= false;
-		//f32		Clearcoat;
-		//f32		Glossiness;
+		float AlphaCutoff		= 0.5f;
+		float Metallic			= 0.0f;
+		float Roughness			= 0.5f;
+		float IndexOfRefraction	= 1.0f;
+		
+		float Anisotropy		= 0.0f;
+		float Glossiness		= 0.0f;
+		float Reflectivity		= 0.0f;
+		EAlphaMode AlphaMode	= Opaque;
 
 		uint32	BaseColorIndex			= 0xFFFFFFFF;
 		uint32	NormalIndex				= 0xFFFFFFFF;

@@ -14,12 +14,13 @@ namespace Luden
 		ShaderCompiler();
 		~ShaderCompiler();
 	
+		D3D12Shader Compile(Filepath Path, ShaderStageFlag ShaderStage, std::string_view EntryPoint, bool bHasRootSignature = false);
+
 		D3D12Shader CompileVS(Filepath Path, bool bHasRootSignature = false, std::string_view EntryPoint = "VSMain");
 		D3D12Shader CompileAS(Filepath Path, bool bHasRootSignature = false, std::string_view EntryPoint = "ASMain");
 		D3D12Shader CompileMS(Filepath Path, bool bHasRootSignature = false, std::string_view EntryPoint = "MSMain");
 		D3D12Shader CompilePS(Filepath Path, bool bHasRootSignature = false, std::string_view EntryPoint = "PSMain");
-
-		D3D12Shader Compile(Filepath Path, ShaderStageFlag ShaderStage, std::string_view EntryPoint, bool bHasRootSignature = false);
+		D3D12Shader CompileCS(Filepath Path, bool bHasRootSignature = false, std::string_view EntryPoint = "CSMain");
 
 	private:
 		Ref<IDxcCompiler3>		m_DxcCompiler;

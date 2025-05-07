@@ -8,17 +8,17 @@ namespace Luden
 	static std::string ShaderStageToString(ShaderStageFlag ShaderStage)
 	{
 		switch (ShaderStage)
-		{
-		
-		case Luden::ShaderStageFlag::Vertex:			return "vs_6_6";
-		case Luden::ShaderStageFlag::Pixel:				return "ps_6_6";
-		case Luden::ShaderStageFlag::Amplification:		return "as_6_6";
-		case Luden::ShaderStageFlag::Mesh:				return "ms_6_6";
-		case Luden::ShaderStageFlag::RayGen:			return "lib_6_6";
-		case Luden::ShaderStageFlag::ClosestHit:		return "lib_6_6";
-		case Luden::ShaderStageFlag::Miss:				return "lib_6_6";
-		case Luden::ShaderStageFlag::None:				FALLTHROUGH;
-		default:										return "invalid";
+		{	
+		case ShaderStageFlag::Compute:			return "cs_6_6";
+		case ShaderStageFlag::Vertex:			return "vs_6_6";
+		case ShaderStageFlag::Pixel:			return "ps_6_6";
+		case ShaderStageFlag::Amplification:	return "as_6_6";
+		case ShaderStageFlag::Mesh:				return "ms_6_6";
+		case ShaderStageFlag::RayGen:			return "lib_6_6";
+		case ShaderStageFlag::ClosestHit:		return "lib_6_6";
+		case ShaderStageFlag::Miss:				return "lib_6_6";
+		case ShaderStageFlag::None:				FALLTHROUGH;
+		default:								return "invalid";
 		}
 	}
 
@@ -59,6 +59,11 @@ namespace Luden
 		return Compile(Path, ShaderStageFlag::Pixel, EntryPoint, bHasRootSignature);
 	}
 
+	D3D12Shader ShaderCompiler::CompileCS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
+	{
+		return Compile(Path, ShaderStageFlag::Compute, EntryPoint, bHasRootSignature);;
+	}
+
 	D3D12Shader ShaderCompiler::Compile(Filepath Path, ShaderStageFlag ShaderStage, std::string_view EntryPoint, bool bHasRootSignature)
 	{
 		const auto path = File::GetRelativePath(Path);
@@ -72,31 +77,6 @@ namespace Luden
 
 		std::wstring entryPoint = String::ToWide(EntryPoint);
 
-		/*
-		std::vector<LPCWSTR> arguments;
-		arguments.push_back(L"-E");
-		arguments.push_back(entryPoint.c_str());
-		if (bHasRootSignature)
-		{
-			arguments.push_back(L"-T");
-			arguments.push_back(L"rootsig_1_1");
-		}
-		arguments.push_back(L"-T");
-		arguments.push_back(shaderType.c_str());
-		arguments.push_back(L"-I Shaders/");
-		arguments.push_back(L"-I ");
-		arguments.push_back(parentPath.c_str());
-		arguments.push_back(L"-HV 2021");
-		arguments.push_back(DXC_ARG_ALL_RESOURCES_BOUND);
-	#if defined (_DEBUG)
-		arguments.push_back(DXC_ARG_DEBUG);
-		arguments.push_back(DXC_ARG_DEBUG_NAME_FOR_SOURCE);
-		arguments.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);
-	#else
-		arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);
-	#endif
-		*/
-		
 		std::vector<LPCWSTR> arguments = {
 			// Entry point
 			L"-E", entryPoint.c_str(),
@@ -113,7 +93,8 @@ namespace Luden
 			DXC_ARG_DEBUG_NAME_FOR_SOURCE,
 			DXC_ARG_SKIP_OPTIMIZATIONS,
 	#else
-			DXC_ARG_OPTIMIZATION_LEVEL3
+			DXC_ARG_OPTIMIZATION_LEVEL3,
+			DXC_ARG_WARNINGS_ARE_ERRORS
 	#endif
 		};
 		
