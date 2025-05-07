@@ -4,10 +4,26 @@ D3D12 based hobby renderer.
 
 Very much work in progress.
 
-Mostly made for testing and learning purposes for building graphics and generally 3D engines and their architecture.
+Project is made for mainly for learning about 3D engines design and architecture.
+
 
 Note:
 Repo does not provide model assets.
+
+## Features:
+
+- Renderer
+    - Basic meshletizing
+- Scene
+    - loading and unloading JSON scenes at runtime,
+    - adding models to scene at runtime,
+
+## Requirements
+
+- C++23
+- Visual Studio 2022
+- vcpkg
+- DirectX Ultimate capable GPU
 
 ## Showcase
 
@@ -19,3 +35,6 @@ Repo does not provide model assets.
 ![bistro_meshlets](Media/bistro_exterior_meshlets.png)
 ![bistro_meshlets](Media/bistro_interior_meshlets.png)
 --->
+
+## Third-party
+
