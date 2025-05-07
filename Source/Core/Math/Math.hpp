@@ -15,6 +15,8 @@ namespace Luden::Math
 
 	#define ALIGN(Value, Alignment) (Value + (Alignment - 1)) & ~(Alignment - 1)
 
+	#define ROUND_UP(Value)	static_cast<uint32>((Value) + 1)
+
 	template<typename T>
 	constexpr T Align(T Value, T Alignment)
 	{
@@ -45,5 +47,11 @@ namespace Luden::Math
 	constexpr f32 Clamp(f32 Value, f32 Min, f32 Max)
 	{
 		return (Value < Min) ? Min : (Value > Max) ? Max : Value;
+	}
+
+	template<typename T>
+	constexpr T RoundUp(T Value)
+	{
+		return static_cast<T>(Value + 0.5f);
 	}
 } // namespace Luden::Math

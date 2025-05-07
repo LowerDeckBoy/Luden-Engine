@@ -4,6 +4,7 @@
 
 #include "Types.hpp"
 #include <thread>
+#include <future>
 #include <vector>
 
 namespace Luden::Core

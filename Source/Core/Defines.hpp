@@ -5,11 +5,11 @@
 #endif
 
 #if defined (_DEBUG) || (DEBUG)
-	#define CORE_DEBUG		1
-	#define CORE_RELEASE	0
+	#define CORE_DEBUG 1
+	#define CORE_RELEASE 0
 #else
-	#define CORE_DEBUG		0
-	#define CORE_RELEASE	1
+	#define CORE_DEBUG 0
+	#define CORE_RELEASE 1
 #endif
 
 #define CORE_STRINGIFY(Arg) #Arg
@@ -25,6 +25,9 @@
 #define INLINE		inline
 #define FORCEINLINE __forceinline
 
-#define DEPRECATED	[[deprecated]]
-#define NODISCARD	[[nodiscard]]
-#define FALLTHROUGH [[fallthrough]]
+#define DEBUGBREAK()	__debugbreak()
+
+#define NODISCARD		[[nodiscard]]
+#define FALLTHROUGH		[[fallthrough]]
+
+#define DEPRECATED(Reason)	[[deprecated(Reason)]]

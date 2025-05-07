@@ -35,4 +35,11 @@ namespace Luden::String
 
 		return narrowed;
 	}
+
+	// Check whether two given const char* are the same.
+	CORE_API INLINE bool Compare(const char* String1, const char* String2)
+	{
+		return std::strcmp(String1, String2);
+	}
+
 } // namespace Luden::String

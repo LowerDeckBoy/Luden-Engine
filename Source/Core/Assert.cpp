@@ -1,18 +1,14 @@
 #include "Logger.hpp"
 #include "Assert.hpp"
 #include "Defines.hpp"
+#include "File.hpp"
 
 namespace Luden::Core
 {
-	static std::string ExtractFilename(const char* File)
-	{
-		return strrchr(File, '\\') ? strrchr(File, '\\') + 1 : File;
-	}
-
-	std::string Assert::GetWhereCalled(const std::source_location & Location)
+	std::string Assert::GetWhereCalled(const std::source_location& Location)
 	{
 		return std::format("File: {0} ({1}:{2})\nFunction: {3}",
-			ExtractFilename(Location.file_name()),
+			File::ExtractFilename(Location.file_name()),
 			Location.line(),
 			Location.column(),
 			Location.function_name()
@@ -34,10 +30,10 @@ namespace Luden::Core
 		LOG_FATAL("{0}", message);
 
 	#if CORE_DEBUG
-		__debugbreak();
+		DEBUGBREAK();
 	#else
 		// Temporal
-		throw std::expection("");
+		throw std::runtime_error("");
 	#endif
 
 	}
@@ -58,10 +54,10 @@ namespace Luden::Core
 		LOG_FATAL("{0}\n\n{1}", Message, message);
 
 	#if CORE_DEBUG
-		__debugbreak();
+		DEBUGBREAK();
 	#else
 		// Temporal
-		throw std::expection("");
+		throw std::runtime_error("");
 	#endif
 
 	}

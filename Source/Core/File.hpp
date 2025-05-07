@@ -1,35 +1,42 @@
 #pragma once
 
 #include "Export.hpp"
+#include "String.hpp"
 #include <filesystem>
-#include <string>
 
 using Filepath = std::filesystem::path;
 
 namespace Luden::File
 {
-	inline bool CORE_API Exists(Filepath Path)
+	CORE_API inline bool Exists(Filepath Path)
 	{
 		return std::filesystem::exists(Path);
 	}
 
-	inline std::string CORE_API GetFilename(Filepath Path)
-	{
-		return Path.filename().string();
-	}
-
-	inline std::string CORE_API GetExtension(Filepath Path)
+	CORE_API inline std::string GetExtension(Filepath Path)
 	{
 		return Path.extension().string();
 	}
 
-	inline std::string CORE_API GetRelativePath(Filepath Path)
+	CORE_API inline std::string GetRelativePath(Filepath Path)
 	{
 		return Path.relative_path().string();
 	}
 
-	inline std::string CORE_API GetParentPath(Filepath Path)
+	CORE_API inline std::string GetParentPath(Filepath Path)
 	{
 		return Path.parent_path().string();
+	}
+
+	// Return filename without it's extension.
+	CORE_API inline std::string GetFilename(Filepath Path)
+	{
+		return Path.stem().string();
+	}
+
+	// Return filename without it's extension.
+	CORE_API inline std::string ExtractFilename(const char* File)
+	{
+		return std::string(strrchr(File, '\\') ? strrchr(File, '\\') + 1 : File);
 	}
 } // namespace Luden::File

@@ -1,11 +1,10 @@
 #pragma once
 
 #include "Types.hpp"
-#include <atomic>
 #include <memory>
-#include <wrl/client.h>
+//#include <wrl/client.h>
 
-//struct IUnknown;
+struct IUnknown;
 
 namespace Luden
 {
@@ -27,7 +26,7 @@ namespace Luden
 			InternalAddRef();
 		}
 		Ref(Ref&& Other)
-			: m_Ptr(Other.m_Ptr)
+			: m_Ptr(std::exchange(Other.m_Ptr, nullptr))
 		{
 			InternalAddRef();
 		}
@@ -38,13 +37,14 @@ namespace Luden
 		}
 		~Ref()
 		{
+			//Release();
 			InternalRelease();
 		}
 
 		uint32 Release()
 		{
 			uint32 prevCount = m_RefCount.fetch_sub(1);
-		
+
 			if (prevCount == 1)
 			{
 				delete m_Ptr;
@@ -87,7 +87,8 @@ namespace Luden
 		{
 			static_assert(std::is_base_of_v<IUnknown, K> && std::is_base_of_v<IUnknown, T>, "Invalid base type!");
 
-			m_Ptr->QueryInterface(IID_PPV_ARGS(&pOther));
+			//m_Ptr->QueryInterface(IID_PPV_ARGS(&pOther));
+			pOther = static_cast<K*>(m_Ptr);
 		}
 
 		operator bool() const
@@ -100,7 +101,7 @@ namespace Luden
 			return m_Ptr;
 		}
 
-		operator T* ()
+		operator T*() const
 		{
 			return m_Ptr;
 		}
@@ -130,6 +131,7 @@ namespace Luden
 			{
 				Ref(Other).Swap(*this);
 			}
+
 			return *this;
 		}
 
@@ -146,7 +148,7 @@ namespace Luden
 
 		uint32 AddRef()
 		{
-			m_RefCount.fetch_add(1);
+			return m_RefCount.fetch_add(1);
 		}
 
 
@@ -161,14 +163,13 @@ namespace Luden
 
 		uint32 InternalRelease()
 		{
-			uint32 refCount = m_RefCount.fetch_sub(1);
+			uint32 refCount = 0;
 
 			T* temp = m_Ptr;
 
 			if (temp != nullptr)
 			{
 				m_Ptr = nullptr;
-				//temp->Release();
 				refCount = temp->Release();
 			}
 
