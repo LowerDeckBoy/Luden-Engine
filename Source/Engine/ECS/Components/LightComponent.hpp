@@ -4,6 +4,11 @@
 
 namespace Luden::ecs
 {
+	struct DirectionalLightComponent
+	{
+
+	};
+
 	struct PointLightComponent
 	{
 		DirectX::XMFLOAT3 Position = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
@@ -14,6 +19,7 @@ namespace Luden::ecs
 
 		PointLightComponent(DirectX::XMFLOAT3 Position = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f))
 			: Position(Position)
-		{ }
+		{
+		}
 	};
 } // namespace Luden::ecs
