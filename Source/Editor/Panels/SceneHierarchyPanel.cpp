@@ -134,7 +134,6 @@ namespace Luden::Panel
 				ImGui::TreePop();
 			}
 			
-
 			/*
 			// Set output image.
 			{
@@ -240,7 +239,7 @@ namespace Luden::Panel
 					return;
 				}
 
-				// TODO:
+				// Iterate over every entity that owns a NameComponent.
 				const auto& view = m_ActiveScene->GetRegistry()->view<ecs::NameComponent>();
 				for (auto [handle, name] : view.each())
 				{
