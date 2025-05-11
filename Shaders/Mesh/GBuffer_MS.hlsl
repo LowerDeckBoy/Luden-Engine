@@ -183,11 +183,11 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 	//float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
 	//output.BaseColor = float4(meshletColor, 1.0f);
 	
-	//if (Constants.bDrawMeshlets)
-	//{
-	//	float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
-	//	//return float4(meshletColor, 1.0f);
-	//}
+	if (Constants.bDrawMeshlets)
+	{
+		float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
+		output.BaseColor = float4(meshletColor, 1.0f);
+	}
 	
 	if (IsIndexValid(Material.NormalIndex))
 	{
@@ -201,9 +201,7 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 	{
 		Texture2D mrTexture = ResourceDescriptorHeap[Material.MetallicRoughnessIndex];
 		float4 mr = mrTexture.Sample(AnisotropicSampler, pin.TexCoord);
-		//output.MetallicRoughness = float4(0.0f, mr.g * Material.Roughness, mr.b * Material.Metallic, 1.0f);
-		output.MetallicRoughness = float4(mr.r, mr.g, mr.b, 1.0f);
-		//output.MetallicRoughness = float4(0.0f, mr.g, mr.b, 1.0f);
+		output.MetallicRoughness = float4(mr.r, mr.g * Material.Roughness, mr.b * Material.Metallic, 1.0f);
 	}
 	else
 	{
