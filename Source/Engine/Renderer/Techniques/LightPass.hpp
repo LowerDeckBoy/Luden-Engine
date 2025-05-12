@@ -5,13 +5,15 @@
 
 namespace Luden
 {
+	class ShaderCompiler;
+
 	class LightPass : public RenderPass
 	{
 	public:
-		LightPass(D3D12RHI* pD3D12RHI, GeometryPass* pGeometryPass, uint32 Width, uint32 Height);
+		LightPass(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, GeometryPass* pGeometryPass, uint32 Width, uint32 Height);
 		~LightPass();
 
-		void Initialize(D3D12RHI* pD3D12RHI, GeometryPass* pGeometryPass, uint32 Width, uint32 Height);
+		void Initialize(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, GeometryPass* pGeometryPass, uint32 Width, uint32 Height);
 
 		void Render(Scene* pScene, Frame& CurrentFrame);
 

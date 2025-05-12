@@ -23,6 +23,7 @@ namespace Luden
 
 		Camera = new SceneCamera(pParentWindow);
 
+		/*
 		VertexVS = m_ShaderCompiler->CompileVS("../../Shaders/Vertex.hlsl", true);
 		VertexPS = m_ShaderCompiler->CompilePS("../../Shaders/Vertex.hlsl", false);
 
@@ -33,9 +34,10 @@ namespace Luden
 		MeshCullAS = m_ShaderCompiler->CompileAS("../../Shaders/MSCulled.hlsl", true);
 		MeshCullMS = m_ShaderCompiler->CompileMS("../../Shaders/MSCulled.hlsl", true);
 		MeshCullPS = m_ShaderCompiler->CompilePS("../../Shaders/MSCulled.hlsl", false);
+		*/
 
-		GBuffer		 = new GeometryPass(pD3D12RHI, pParentWindow->Width, pParentWindow->Height);
-		LightingPass = new LightPass(pD3D12RHI, GBuffer, pParentWindow->Width, pParentWindow->Height);
+		GBuffer		 = new GeometryPass(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
+		LightingPass = new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, pParentWindow->Width, pParentWindow->Height);
 
 		BuildPipelines();
 
@@ -109,11 +111,24 @@ namespace Luden
 		LightingPass->Render(ActiveScene, *frame);
 		//Draw(pScene, *frame);
 
-		frame->GraphicsCommandList->ResourceTransition(&SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ);
+		frame->GraphicsCommandList->ResourcesTransition({
+				{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ },
+				{ &backbuffer,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
 
-		frame->GraphicsCommandList->ResourceTransition(&backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		frame->GraphicsCommandList->GetHandleRaw()->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 		frame->GraphicsCommandList->GetHandleRaw()->ClearRenderTargetView(rtvHandle, DefaultClearColor.data(), 0, nullptr);
+
+		// Debug usage only
+		if (Config::Get().bHideEditor)
+		{
+			frame->GraphicsCommandList->ResourcesTransition({
+				{ &GBuffer->BaseColor,	D3D12_RESOURCE_STATE_COPY_SOURCE },
+				{ &backbuffer,			D3D12_RESOURCE_STATE_COPY_DEST } });
+			frame->GraphicsCommandList->CopyResource(&GBuffer->BaseColor, &backbuffer);
+			frame->GraphicsCommandList->ResourcesTransition({
+				{ &GBuffer->BaseColor,	D3D12_RESOURCE_STATE_GENERIC_READ },
+				{ &backbuffer,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
+		}
 
 	}
 
@@ -286,7 +301,7 @@ namespace Luden
 		for (auto& model : pScene->Models)
 		{
 			auto& transform = model->GetComponent<ecs::TransformComponent>();
-			transform.Update();
+			//transform.Update();
 
 			auto* constantBuffer = device->ConstantBuffers.at(model->ConstantBuffer);
 
@@ -348,29 +363,37 @@ namespace Luden
 
 		//m_D3D12RHI->MeshCommandSignature = new D3D12CommandSignature();
 
-		//std::vector<FDispatchMeshCommand> drawCommands;
+		std::vector<FDispatchMeshCommand> drawCommands;
 
 		for (auto& model : pScene->Models)
 		{
 			// Initialize resources.
 			model->Create(m_D3D12RHI->Device);
+			
 			// Gather indirect arguments.
-			/*
-			for (usize meshIdx = 0; meshIdx < model.Meshes.size(); ++meshIdx)
+			for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
 			{
 				m_D3D12RHI->MeshCommandSignature->AddDispatchMeshCommand();
 
+				auto& mesh = model->Meshes.at(meshIdx);
+
 				FDispatchMeshCommand command{};
-				command.Argument.ThreadGroupCountX = model.Meshes.at(meshIdx).NumMeshlets;
-				command.Argument.ThreadGroupCountY = 1;
-				command.Argument.ThreadGroupCountZ = 1;
+				command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
+				command.Argument.ThreadGroupCountY	= 1;
+				command.Argument.ThreadGroupCountZ	= 1;
+
+				command.MeshletBufferIndex			= mesh.MeshletsBuffer;
+				command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
+				command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
+				command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
+
 
 				drawCommands.push_back(command);
 			}
-			*/
+			
 		}
-		//https://kidswithsticks.com/how-to-create-rain-in-unreal-engine-4-niagara/
-		
+		//m_D3D12RHI->MeshCommandSignature->Build(m_D3D12RHI->Device,)
+		m_D3D12RHI->MeshCommandSignature->CreateCommandsBuffer();
 
 		//InitializeRaytracingResources();
 
@@ -381,6 +404,7 @@ namespace Luden
 
 	void Renderer::BuildPipelines()
 	{
+		/*
 		// Vertex
 		{
 			VERIFY_D3D12_RESULT(VertexRS.BuildFromShader(m_D3D12RHI->Device, &VertexVS, PipelineType::Graphics));
@@ -427,83 +451,9 @@ namespace Luden
 
 			VERIFY_D3D12_RESULT(builder.Build(MeshCullPSO));
 		}
-
-		// GBuffer
-		{
-			GBuffer->Pipeline.Amplification = m_ShaderCompiler->CompileAS("../../Shaders/Mesh/GBuffer_MS.hlsl", false);
-			GBuffer->Pipeline.Mesh			= m_ShaderCompiler->CompileMS("../../Shaders/Mesh/GBuffer_MS.hlsl", true);
-			GBuffer->Pipeline.Pixel			= m_ShaderCompiler->CompilePS("../../Shaders/Mesh/GBuffer_MS.hlsl", false);
-			
-			VERIFY_D3D12_RESULT(GBuffer->Pipeline.RootSignature.BuildFromShader(m_D3D12RHI->Device, &GBuffer->Pipeline.Mesh, PipelineType::Graphics));
-
-			D3D12MeshPipelineStateBuilder builder(m_D3D12RHI->Device);
-			builder.SetRootSignature(&GBuffer->Pipeline.RootSignature);
-			builder.SetAmplificationShader(&GBuffer->Pipeline.Amplification);
-			builder.SetMeshShader(&GBuffer->Pipeline.Mesh);
-			builder.SetPixelShader(&GBuffer->Pipeline.Pixel);
-			builder.EnableDepth(true);
-			builder.SetCullMode(D3D12_CULL_MODE_NONE);
-			builder.SetAlphaOpaqueMode(0);
-			builder.SetRenderTargetFormats({ 
-				GBuffer->BaseColor.GetFormat(),
-				GBuffer->Normal.GetFormat(),
-				GBuffer->MetallicRoughness.GetFormat(),
-				GBuffer->Emissive.GetFormat()
-			});
-
-			VERIFY_D3D12_RESULT(builder.Build(GBuffer->Pipeline.PipelineState));
-		}
-
-		// LightPass
-		{
-			LightingPass->Pipeline.Vertex = m_ShaderCompiler->CompileVS("../../Shaders/Deferred/Deferred.hlsl", false);
-			LightingPass->Pipeline.Pixel  = m_ShaderCompiler->CompilePS("../../Shaders/Deferred/Deferred.hlsl", true);
-
-			VERIFY_D3D12_RESULT(LightingPass->Pipeline.RootSignature.BuildFromShader(m_D3D12RHI->Device, &LightingPass->Pipeline.Pixel, PipelineType::Graphics));
-
-			D3D12PipelineStateBuilder builder(m_D3D12RHI->Device);
-			builder.EnableDepth(false);
-			builder.SetCullMode(D3D12_CULL_MODE_NONE);
-			builder.SetVertexShader(&LightingPass->Pipeline.Vertex);
-			builder.SetPixelShader(&LightingPass->Pipeline.Pixel);
-			builder.SetRenderTargetFormats({ LightingPass->RenderTexture.GetFormat() });
-
-			VERIFY_D3D12_RESULT(builder.Build(LightingPass->Pipeline.PipelineState));
-		}
-
+		*/
 	}
 
-	/*
-	bool Renderer::AddModel(AssetImporter* pAssetImporter, Filepath Path)
-	{
-		pAssetImporter->Device = m_D3D12RHI->Device;
-
-		Model model{};
-		auto importStartTime = std::chrono::high_resolution_clock::now();
-
-		ActiveScene->GetWorld()->CreateEntity(&model);
-
-		model.AddComponent<ecs::NameComponent>(File::GetFilename(Path));
-		model.AddComponent<ecs::TransformComponent>();
-
-		if (!pAssetImporter->ImportStaticMesh(Path, model))
-		{	
-			// LOG
-			LOG_ERROR("Failed to add model!");
-			return false;
-		}
-
-		auto importEndTime = std::chrono::high_resolution_clock::now();
-		LOG_DEBUG("{0} import time: {1}", File::GetFilename(Path), std::chrono::duration<f64>(importEndTime - importStartTime));
-
-		model.Create(m_D3D12RHI->Device);
-
-		ActiveScene->Models.push_back(std::make_unique<Model>(model));
-
-		return true;
-
-	}*/
-	
 	void Renderer::ReleaseActiveScene()
 	{
 		m_D3D12RHI->Wait();
@@ -542,33 +492,12 @@ namespace Luden
 		m_D3D12RHI->GraphicsQueue->Execute(lists);
 		m_D3D12RHI->Wait();
 		
+		// Is it necessary tho?
 		GBuffer->Initialize(m_D3D12RHI, m_ParentWindow->Width, m_ParentWindow->Height);
 
 		auto unloadEndTime = std::chrono::high_resolution_clock::now();
 		LOG_DEBUG("Scene: {0} unloaded. Unload time: {1}.", ActiveScene->Name, std::chrono::duration<f64>(unloadEndTime - unloadStartTime));
 
-	}
-
-	void Renderer::HandleRequests()
-	{
-		if (bRequestCleanup)
-		{
-			ReleaseActiveScene();
-			bRequestCleanup = false;
-		}
-
-		//if (bRequestSceneLoad)
-		//{
-		//	bRequestSceneLoad = false;
-		//	MainScene = nullptr;
-		//	MainScene = new Scene();
-		//	SceneSerializer::Load(&Importer, MainScene, m_Renderer->SceneToLoad);
-		//	InitializeScene(MainScene);
-		//	ActiveScene = MainScene;
-		//	SceneToLoad = "";
-		//	GetRHI()->Wait();
-		//	//continue;
-		//}
 	}
 
 	void Renderer::InitializeRaytracingResources()

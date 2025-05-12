@@ -51,9 +51,9 @@ namespace Luden
 
 		void Resize();
 
-		// Draw given scene to Geometry Buffer.
-		void Draw(Scene* pScene, Frame& CurrentFrame);
+		//void Draw(Scene* pScene, Frame& CurrentFrame);
 
+		// Draw given scene to Geometry Buffer.
 		void DrawScene(Scene* pScene, Frame& CurrentFrame);
 
 		void BuildScene(Scene* pScene);
@@ -72,8 +72,6 @@ namespace Luden
 		void ReleaseActiveScene();
 
 		SceneCamera* Camera;
-
-		void HandleRequests();
 
 		// TODO:
 		// Clean these up

@@ -10,10 +10,12 @@ namespace Luden
 	class GeometryPass : public RenderPass
 	{
 	public:
-		GeometryPass(D3D12RHI* pRHI, uint32 Width, uint32 Height);
+		GeometryPass(D3D12RHI* pRHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height);
 		~GeometryPass();
 
 		void Initialize(D3D12RHI* pRHI, uint32 Width, uint32 Height);
+
+		void CreatePipeline(ShaderCompiler* pShaderCompiler);
 
 		void Release() override;
 
