@@ -117,6 +117,18 @@ namespace Luden
 		pResource->SetResourceState(After);
 	}
 
+	void D3D12CommandList::ResourcesTransition(const std::vector<std::pair<D3D12Resource*, D3D12_RESOURCE_STATES>>& pResources)
+	{
+		std::vector<CD3DX12_RESOURCE_BARRIER> barriers{};
+		for (auto& resource : pResources)
+		{
+			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(resource.first->GetHandleRaw(), resource.first->GetCurrentState(), resource.second));
+			resource.first->SetResourceState(resource.second);
+		}
+
+		m_GraphicsCommandList->ResourceBarrier(static_cast<uint32>(barriers.size()), barriers.data());
+	}
+
 	void D3D12CommandList::CopyResource(D3D12Resource* pSource, D3D12Resource* pDestination)
 	{
 		m_GraphicsCommandList->CopyResource(pDestination->GetHandleRaw(), pSource->GetHandleRaw());

@@ -44,8 +44,11 @@ namespace Luden
 
 		void SetViewport(D3D12Viewport* pViewport);
 
+		// Single Resource transition.
 		// Before state is taken from pResource itself.
 		void ResourceTransition(D3D12Resource* pResource, D3D12_RESOURCE_STATES After);
+		// Multiple Resources transition.
+		void ResourcesTransition(const std::vector<std::pair<D3D12Resource*, D3D12_RESOURCE_STATES>>& pResources);
 
 		// Either Buffer to Buffer or Texture to Texture.
 		void CopyResource(D3D12Resource* pSource, D3D12Resource* pDestination);
