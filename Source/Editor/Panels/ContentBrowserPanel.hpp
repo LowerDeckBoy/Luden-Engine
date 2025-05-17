@@ -5,12 +5,12 @@ namespace Luden::Panel
 	// TODO:
 	// - Make tree structure of project directories.
 	// - Determine display icons by file extensions.
-	class ContentPanel
+	class ContentBrowserPanel
 	{
 		friend class Editor;
 	public:
-		ContentPanel();
-		~ContentPanel() = default;
+		ContentBrowserPanel();
+		~ContentBrowserPanel() = default;
 
 		void DrawPanel();
 
