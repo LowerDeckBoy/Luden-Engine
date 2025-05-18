@@ -1,0 +1,37 @@
+{
+    "scene": {
+        "models": [
+            {
+                "name": "Baby Robot",
+                "path": "../../Assets/Models/baby_robot/scene.gltf",
+                "transform": {
+                    "position": [ 90.0, 0.0, 0.0 ],
+                    "rotation": [ 0.0, -145.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            },
+            {
+                "name": "Robot",
+                "path": "../../Assets/Models/robot/scene.gltf",
+                "transform": {
+                    "position": [ 0.0, 0.0, 64.0 ],
+                    "rotation": [ 0.0, -180.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            },
+            {
+                "name": "Grass",
+                "path": "../../Assets/Models/grass/scene.gltf",
+                "transform": {
+                    "position": [ 0.0, 0.0, 0.0 ],
+                    "rotation": [ 0.0, -180.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            }
+        ],
+        "lights": [
+
+        ]
+
+    }
+}
