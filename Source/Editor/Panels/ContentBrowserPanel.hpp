@@ -17,5 +17,8 @@ namespace Luden::Panel
 	private:
 		Filepath m_CurrentDirectory = "";
 
+		// To finish:
+		void DrawDirectoryTree();
+
 	};
 } // namespace Luden::Panel

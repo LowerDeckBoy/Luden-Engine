@@ -34,12 +34,7 @@ namespace Luden::Panel
 
 	void ContentBrowserPanel::DrawPanel()
 	{
-		ImGui::Begin("Content Hierarchy");
-
-		const std::string& directoryString = m_CurrentDirectory.string();
-		ImGui::Text("Current directory: %s", directoryString.c_str());
-
-		ImGui::End();
+		DrawDirectoryTree();
 
 		ImGui::Begin("Content");
 
@@ -51,7 +46,7 @@ namespace Luden::Panel
 
 		const ImVec2 thumbnailSize = { imageSize, imageSize };
 
-		const auto& panelWidth = ImGui::GetContentRegionAvail().x;
+		const float panelWidth = ImGui::GetContentRegionAvail().x;
 		int32 columnsCount = (int32)(panelWidth / cellSize);
 		if (columnsCount < 1.0f) columnsCount = 1;
 		
@@ -73,31 +68,31 @@ namespace Luden::Panel
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
 			}
 			ImGui::Text("...");
-
+			
 			ImGui::TableNextColumn();
 
-			for (const auto& path : std::filesystem::directory_iterator(Filepath(m_CurrentDirectory)))
+			for (const auto& entry : std::filesystem::directory_iterator(Filepath(m_CurrentDirectory)))
 			{
-				const std::string filename = path.path().filename().string();
+				const std::string filename = entry.path().filename().string();
 
-				if (path.is_directory())
+				if (File::IsDirectory(entry))
 				{
 					ImGui::ImageButton(filename.c_str(), (ImTextureID)Luden::Editor::EditorDirectoryTexture->ShaderResourceHandle.GpuHandle.ptr, thumbnailSize);
 
 					if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 					{
-						m_CurrentDirectory /= path.path().filename();
+						m_CurrentDirectory /= entry.path().filename();
 					}
 
 					ImGui::Text(filename.c_str());
 				}
 				else
 				{
-					ImGui::ImageButton(filename.c_str(), (ImTextureID)GetFileIconToExtension(File::GetExtension(path)), thumbnailSize);
+					ImGui::ImageButton(filename.c_str(), (ImTextureID)GetFileIconToExtension(File::GetExtension(entry)), thumbnailSize);
 
 					if (ImGui::BeginDragDropSource())
 					{
-						const std::string relative = AssetDirectory + "/" + File::GetRelativePath(path, AssetDirectory);
+						const std::string relative = AssetDirectory + "/" + File::GetRelativePath(entry, AssetDirectory);
 
 						// Without adding 1 to length some files cannot be loaded.
 						ImGui::SetDragDropPayload("PAYLOAD_ITEM", relative.data(), (relative.length() + 1) * sizeof(char), ImGuiCond_Once);
@@ -117,6 +112,41 @@ namespace Luden::Panel
 		}
 		
 		ImGui::PopStyleColor();
+
+		ImGui::End();
+	}
+
+	void ContentBrowserPanel::DrawDirectoryTree()
+	{
+		ImGui::Begin("Content Hierarchy");
+
+		const std::string& directoryString = m_CurrentDirectory.string();
+
+		ImGui::Text("Current directory: %s", directoryString.c_str());
+		ImGui::Text("Assets");
+
+		for (const auto& entry : std::filesystem::directory_iterator(AssetDirectory))
+		{
+			if (File::IsDirectory(entry))
+			{
+				if (ImGui::TreeNodeEx(entry.path().filename().string().c_str(), ImGuiTreeNodeFlags_FramePadding))
+				{
+					// Draw child content.
+					for (const auto& childEntry : std::filesystem::directory_iterator(entry))
+					{
+						if (File::IsDirectory(childEntry))
+						{
+							if (ImGui::TreeNodeEx(childEntry.path().filename().string().c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding))
+							{
+								ImGui::TreePop();
+							}
+						}
+					}
+
+					ImGui::TreePop();
+				}
+			}		
+		}
 
 		ImGui::End();
 	}
