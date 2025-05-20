@@ -60,5 +60,7 @@ namespace Luden
 		// Placeholder for now.
 		bool bDrawGrid = false;
 
+		bool bHideEditor = false;
+
 	};
 } // namespace Luden
