@@ -41,9 +41,12 @@ namespace Luden
 		
 
 		// TODOs:
-		//void AddPointLight();
-		//void AddDirectionalLight();
+		void AddDirectionalLight();
+		void AddPointLight();
 		//void AddSpotLight();
+
+		std::vector<Entity> DirectionalLights;
+		std::vector<Entity> PointLights;
 
 		// Test
 		// Scene resource.
