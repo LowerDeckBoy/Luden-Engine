@@ -14,7 +14,7 @@ namespace Luden
 		SAFE_RELEASE(m_PipelineState);
 	}
 
-	void D3D12PipelineState::SetName(std::string_view Name)
+	void D3D12PipelineState::SetName(std::string_view Name) const
 	{
 		NAME_D3D12_OBJECT(m_PipelineState.Get(), Name);
 	}
@@ -117,26 +117,22 @@ namespace Luden
 		m_DepthDesc			= CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
 		m_BlendDesc			= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 
+		m_Desc.SampleDesc = DXGI_SAMPLE_DESC{ 1, 0 };
+		m_Desc.SampleMask = 0xFFFFFFFF;
+		m_Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	}
 
 	HRESULT D3D12MeshPipelineStateBuilder::Build(D3D12PipelineState& Pipeline)
 	{
-
-		m_Desc.NodeMask = m_Device->NodeMask;
-		m_Desc.RasterizerState = m_RasterizerDesc;
-
-		m_Desc.DepthStencilState = m_DepthDesc;
+		m_Desc.NodeMask				= m_Device->NodeMask;
+		m_Desc.RasterizerState		= m_RasterizerDesc;
+		m_Desc.DepthStencilState	= m_DepthDesc;
+		m_Desc.BlendState			= m_BlendDesc;
+		m_Desc.DSVFormat			= DXGI_FORMAT_D32_FLOAT;
 		
-		m_Desc.BlendState = m_BlendDesc;
-		
-
-		m_Desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-
-		m_Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		//m_Desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 		m_Desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-		m_Desc.SampleMask = UINT32_MAX;
-		m_Desc.SampleDesc = { 1, 0 };
 
 		auto psoStream = CD3DX12_PIPELINE_MESH_STATE_STREAM(m_Desc);
 
@@ -197,44 +193,120 @@ namespace Luden
 	{
 		m_Desc.NumRenderTargets = static_cast<uint32>(Formats.size());
 
+		assert(m_Desc.NumRenderTargets > 0);
+
 		for (usize i = 0; i < Formats.size(); ++i)
 		{
 			m_Desc.RTVFormats[i] = Formats.at(i);
 		}
 	}
 
-	void D3D12MeshPipelineStateBuilder::SetAlphaOpaqueMode(usize RenderTargetIndex)
+	void D3D12MeshPipelineStateBuilder::SetAlphaModeOpaque(uint32 RenderTargetIndex)
 	{
-		//m_BlendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		m_BlendDesc.AlphaToCoverageEnable = false;
-		m_BlendDesc.IndependentBlendEnable = false;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendEnable		= false;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].LogicOpEnable	= false;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].SrcBlend		= D3D12_BLEND_ONE;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].DestBlend		= D3D12_BLEND_ZERO;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendOp			= D3D12_BLEND_OP_ADD;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].SrcBlendAlpha	= D3D12_BLEND_ONE;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].DestBlendAlpha	= D3D12_BLEND_ZERO;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendOpAlpha	= D3D12_BLEND_OP_ADD;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].LogicOp			= D3D12_LOGIC_OP_NOOP;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+		D3D12_RENDER_TARGET_BLEND_DESC desc{};
+		desc.BlendEnable			= false;
+		desc.LogicOpEnable			= false;
+		desc.SrcBlend				= D3D12_BLEND_ONE;
+		desc.DestBlend				= D3D12_BLEND_ZERO;
+		desc.SrcBlendAlpha			= D3D12_BLEND_ONE;
+		desc.DestBlendAlpha			= D3D12_BLEND_ZERO;
+		desc.BlendOpAlpha			= D3D12_BLEND_OP_ADD;
+		desc.BlendOp				= D3D12_BLEND_OP_ADD;
+		desc.LogicOp				= D3D12_LOGIC_OP_NOOP;
+		desc.RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
+
+		m_BlendDesc.AlphaToCoverageEnable			= false;
+		m_BlendDesc.IndependentBlendEnable			= false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex] = desc;
 	}
 
-	void D3D12MeshPipelineStateBuilder::SetAlphaBlendMode(usize RenderTargetIndex)
+	void D3D12MeshPipelineStateBuilder::SetAlphaModeBlend(uint32 RenderTargetIndex)
 	{
-		m_BlendDesc.AlphaToCoverageEnable = false;
-		m_BlendDesc.IndependentBlendEnable = false;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendEnable		= true;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].LogicOpEnable	= false;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].SrcBlend		= D3D12_BLEND_SRC_ALPHA;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].DestBlend		= D3D12_BLEND_INV_SRC_ALPHA;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].SrcBlendAlpha	= D3D12_BLEND_SRC_ALPHA;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].DestBlendAlpha	= D3D12_BLEND_INV_SRC_ALPHA;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendOp			= D3D12_BLEND_OP_ADD;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].BlendOpAlpha	= D3D12_BLEND_OP_ADD;
-		m_BlendDesc.RenderTarget[RenderTargetIndex].LogicOp			= D3D12_LOGIC_OP_NOOP;
+		D3D12_RENDER_TARGET_BLEND_DESC desc{};
+		desc.BlendEnable			= true;
+		desc.LogicOpEnable			= false;
+		desc.SrcBlend				= D3D12_BLEND_SRC_ALPHA;
+		desc.DestBlend				= D3D12_BLEND_INV_SRC_ALPHA;
+		desc.BlendOp				= D3D12_BLEND_OP_ADD;
+		desc.SrcBlendAlpha			= D3D12_BLEND_ONE;
+		desc.DestBlendAlpha			= D3D12_BLEND_ONE;
+		desc.BlendOpAlpha			= D3D12_BLEND_OP_ADD;
+		desc.LogicOp				= D3D12_LOGIC_OP_NOOP;
+		desc.RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
+
+		m_BlendDesc.AlphaToCoverageEnable			= false;
+		m_BlendDesc.IndependentBlendEnable			= false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex] = desc;
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetAlphaModeAdditive(uint32 RenderTargetIndex)
+	{
+		D3D12_RENDER_TARGET_BLEND_DESC desc{};
+		desc.BlendEnable			= true;
+		desc.LogicOpEnable			= false;
+		desc.SrcBlend				= D3D12_BLEND_SRC_ALPHA;
+		desc.DestBlend				= D3D12_BLEND_ONE;
+		desc.SrcBlendAlpha			= D3D12_BLEND_ONE;
+		desc.DestBlendAlpha			= D3D12_BLEND_ZERO;
+		desc.BlendOp				= D3D12_BLEND_OP_ADD;
+		desc.BlendOpAlpha			= D3D12_BLEND_OP_ADD;
+		desc.LogicOp				= D3D12_LOGIC_OP_NOOP;
+		desc.RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
+		
+		m_BlendDesc.AlphaToCoverageEnable			= false;
+		m_BlendDesc.IndependentBlendEnable			= false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex] = desc;
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetDefaultDepthDesc()
+	{
+		m_DepthDesc = CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
+	}
+
+	void D3D12MeshPipelineStateBuilder::SetAlphaBlendDepthDesc()
+	{
+		m_DepthDesc.DepthEnable						= true;
+		m_DepthDesc.DepthFunc						= D3D12_COMPARISON_FUNC_LESS;
+		m_DepthDesc.DepthWriteMask					= D3D12_DEPTH_WRITE_MASK_ALL;
+		m_DepthDesc.DepthBoundsTestEnable			= false;
+		m_DepthDesc.StencilEnable					= false;
+
+		m_DepthDesc.FrontFace.StencilFailOp			= D3D12_STENCIL_OP_KEEP;
+		m_DepthDesc.FrontFace.StencilDepthFailOp	= D3D12_STENCIL_OP_INCR;
+		m_DepthDesc.FrontFace.StencilPassOp			= D3D12_STENCIL_OP_KEEP;
+		m_DepthDesc.FrontFace.StencilFunc			= D3D12_COMPARISON_FUNC_ALWAYS;
+		m_DepthDesc.FrontFace.StencilReadMask		= D3D12_DEFAULT_STENCIL_READ_MASK;
+		m_DepthDesc.FrontFace.StencilWriteMask		= D3D12_DEFAULT_STENCIL_WRITE_MASK;
+
+		m_DepthDesc.BackFace.StencilFailOp			= D3D12_STENCIL_OP_KEEP;
+		m_DepthDesc.BackFace.StencilDepthFailOp		= D3D12_STENCIL_OP_DECR;
+		m_DepthDesc.BackFace.StencilPassOp			= D3D12_STENCIL_OP_KEEP;
+		m_DepthDesc.BackFace.StencilFunc			= D3D12_COMPARISON_FUNC_ALWAYS;
+		m_DepthDesc.BackFace.StencilReadMask		= D3D12_DEFAULT_STENCIL_READ_MASK;
+		m_DepthDesc.BackFace.StencilWriteMask		= D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	}
+
+	D3D12ComputePipelineStateBuilder::D3D12ComputePipelineStateBuilder(D3D12Device* pDevice)
+		: m_Device(pDevice)
+	{
 
 	}
 
+	HRESULT D3D12ComputePipelineStateBuilder::Build(D3D12Device* pDevice, D3D12PipelineState& OutPipeline)
+	{
+		m_Desc.NodeMask = pDevice->NodeMask;
+		
+		return pDevice->LogicalDevice->CreateComputePipelineState(&m_Desc, IID_PPV_ARGS(&OutPipeline.GetHandle()));
+	}
+
+	void D3D12ComputePipelineStateBuilder::SetRootSignature(D3D12RootSignature* pRootSignature)
+	{
+		m_Desc.pRootSignature = pRootSignature->GetHandleRaw();
+	}
+
+	void D3D12ComputePipelineStateBuilder::SetComputeShader(D3D12Shader* pShader)
+	{
+		m_Desc.CS = pShader->Bytecode();
+	}
 
 } // namespace Luden
