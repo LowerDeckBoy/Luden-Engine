@@ -1,6 +1,5 @@
 #pragma once
 
-#define _XM_SSE4_INTRINSICS_
 #include <DirectXMath.h>
 #include <DirectXCollision.h>
 
@@ -21,16 +20,6 @@ namespace Luden::Platform
 namespace Luden
 {
 	struct FMeshletBounds;
-
-	enum EFrustumSide : usize
-	{
-		Left, 
-		Right,
-		Bottom,
-		Top,
-		Back, 
-		Front
-	};
 
 	class SceneCamera
 	{
@@ -53,33 +42,26 @@ namespace Luden
 		DirectX::XMFLOAT4X4 InversedView;
 		DirectX::XMFLOAT4X4 InversedProjection;
 
-		//DirectX::BoundingFrustum Frustum;
+		DirectX::BoundingFrustum Frustum;
 
-		//bool IsInsideFrustum(ecs::BoundingBoxComponent& AABB);
-		//std::array<DirectX::XMFLOAT4, 6> FrustumPlanes;
-
-		//void ConstructFrustum(const DirectX::XMMATRIX& Transformation);
+		void UpdateFrustum();
+		std::array<DirectX::XMFLOAT4, 6> FrustumPlanes;
+		void GetFrustumPlanes();
 
 		DirectX::XMMATRIX GetView();
 		DirectX::XMMATRIX GetProjection();
 		DirectX::XMMATRIX GetViewProjection() const;
 
 		f32 zNear		= 0.01f;
-		f32 zFar		= 10000.0f;
+		f32 zFar		= 50000.0f;
 
 		f32 AspectRatio = 1.0f;
-		f32 FieldOfView = 45.0f;
+		f32 FieldOfView = 45;
 
 		f32 Pitch		= 0.0f;
 		f32 Yaw			= 0.0f;
 		
 		f32 CameraSpeed = 15.0f;
-
-		// TODO:
-		// Check whether BoundingBox is inside of Camera's frustrum.
-		//bool IsInFrustrum(ecs::BoundingBoxComponent& BoundingBox, DirectX::XMFLOAT4X4 Transform);
-
-		//bool IsInFrustrum(FMeshletBounds& BoundingBox, DirectX::XMFLOAT4X4 Transform);
 
 		// If mouse if not hovered over scene viewport then ignore camera enabling with holding RMB.
 		bool IsInViewport = false;
@@ -94,7 +76,7 @@ namespace Luden
 		DirectX::XMFLOAT3 m_Upward					= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultPosition	= DirectX::XMFLOAT3(0.0f, 1.0f, -15.0f);
-		DirectX::XMFLOAT4 const m_DefaultTarget		= DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+		DirectX::XMFLOAT4 const m_DefaultTarget		= DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 		DirectX::XMFLOAT3 const m_DefaultUp			= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultForward	= DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);

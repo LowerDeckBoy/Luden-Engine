@@ -19,7 +19,7 @@ namespace Luden
 		Up			= m_DefaultUp;
 
 		XMStoreFloat4x4(&View, XMMatrixLookAtLH(XMLoadFloat3(&Position), XMLoadFloat4(&Target), XMLoadFloat3(&Up)));
-		AspectRatio = (f32)pWindow->Width / pWindow->Height;
+		AspectRatio = (f32)pWindow->Width / (f32)pWindow->Height;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
 
 		DirectInput8Create(pWindow->Instance, DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(&DxInput), NULL);
@@ -30,7 +30,8 @@ namespace Luden
 		DxMouse->SetDataFormat(&c_dfDIMouse);
 		DxMouse->SetCooperativeLevel(pWindow->Handle, DISCL_NONEXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
 
-		//Frustum.Origin = Target;
+		UpdateFrustum();
+
 	}
 
 	SceneCamera::~SceneCamera()
@@ -43,9 +44,9 @@ namespace Luden
 		AspectRatio = (f32)m_ParentWindow->Width / (f32)m_ParentWindow->Height;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
 
-		//ConstructFrustum(GetViewProjection());
-
 		Update();
+
+		UpdateFrustum();
 	}
 
 	void SceneCamera::Tick(f64 DeltaTime)
@@ -86,7 +87,7 @@ namespace Luden
 			DxLastMouseState = mouseState;
 		}
 
-		const f32 intensity = static_cast<f32>(DeltaTime * CameraSpeed * 0.001f);
+		const f32 intensity = static_cast<f32>(CameraSpeed * 0.001f * DeltaTime);
 
 		if (keyboardState.at(DIK_W) & state)
 		{
@@ -152,6 +153,8 @@ namespace Luden
 
 		XMStoreFloat4x4(&View, XMMatrixLookAtLH(position, target, up));
 
+		UpdateFrustum();
+
 		// Store vector and matrices
 		XMStoreFloat3(&m_Forward, forward);
 		XMStoreFloat3(&m_Right, right);
@@ -159,6 +162,7 @@ namespace Luden
 		XMStoreFloat4x4(&m_RotationMatrix, rotationMatrix);
 		XMStoreFloat4(&Target, target);
 		XMStoreFloat3(&Position, position);
+
 
 	}
 
@@ -259,6 +263,36 @@ namespace Luden
 	}
 	*/
 
+	void SceneCamera::UpdateFrustum()
+	{
+		Frustum = DirectX::BoundingFrustum(GetProjection());
+		Frustum.Transform(Frustum, DirectX::XMMatrixInverse(nullptr, GetView()));
+		//DirectX::BoundingFrustum::CreateFromMatrix(Frustum, GetViewProjection());
+		//Frustum.Transform(Frustum, GetView());
+		//Frustum.Orientation = Target;
+		//Frustum.Origin = Position;
+		//Frustum.Near = zNear;
+		//Frustum.Far = zFar;
+		GetFrustumPlanes();
+
+	}
+
+	void SceneCamera::GetFrustumPlanes()
+	{
+		std::array<DirectX::XMVECTOR, 6> vplanes{};
+
+		Frustum.GetPlanes(
+			&vplanes.at(0), &vplanes.at(1),
+			&vplanes.at(2), &vplanes.at(3),
+			&vplanes.at(4), &vplanes.at(5));
+			
+		for (uint32 i = 0; i < 6; ++i)
+		{
+			DirectX::XMStoreFloat4(&FrustumPlanes.at(i), vplanes.at(i));
+		}
+
+	}
+
 	DirectX::XMMATRIX SceneCamera::GetView()
 	{
 		return DirectX::XMLoadFloat4x4(&View);
@@ -271,75 +305,7 @@ namespace Luden
 
 	DirectX::XMMATRIX SceneCamera::GetViewProjection() const
 	{
-		return DirectX::XMLoadFloat4x4(&View) * DirectX::XMLoadFloat4x4(&Projection);
+		return DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&View), DirectX::XMLoadFloat4x4(&Projection));
 	}
 
-	/*
-	bool SceneCamera::IsInFrustrum(ecs::BoundingBoxComponent& BoundingBox, DirectX::XMFLOAT4X4 Transform)
-	{
-		XMFLOAT4 aabbCorners[8] = {
-		{ BoundingBox.Min.x, BoundingBox.Min.y, BoundingBox.Min.z, 1.0 }, // x y z
-		{ BoundingBox.Max.x, BoundingBox.Min.y, BoundingBox.Min.z, 1.0 }, // X y z
-		{ BoundingBox.Min.x, BoundingBox.Max.y, BoundingBox.Min.z, 1.0 }, // x Y z
-		{ BoundingBox.Max.x, BoundingBox.Max.y, BoundingBox.Min.z, 1.0 }, // X Y z
-
-		{ BoundingBox.Min.x, BoundingBox.Min.y, BoundingBox.Max.z, 1.0 }, // x y Z
-		{ BoundingBox.Max.x, BoundingBox.Min.y, BoundingBox.Max.z, 1.0 }, // X y Z
-		{ BoundingBox.Min.x, BoundingBox.Max.y, BoundingBox.Max.z, 1.0 }, // x Y Z
-		{ BoundingBox.Max.x, BoundingBox.Max.y, BoundingBox.Max.z, 1.0 }, // X Y Z
-		};
-
-		//Frustum.Origin = Target;
-		//Frustum.
-		Frustum.Near = 0.1f;
-		Frustum.CreateFromMatrix(Frustum, XMLoadFloat4x4(&Projection));
-		std::array<DirectX::XMFLOAT3, 8> corners{};
-		Frustum.GetCorners(corners.data());
-
-		auto within = [&](float negW, float target, float posW)
-		{
-			if (target >= negW && target <= posW)
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		};
-
-		bool inside = false;
-
-		for (size_t corner_idx = 0; corner_idx < 8; corner_idx++)
-		{
-			// Transform vertex
-			XMFLOAT4 corner;
-			XMStoreFloat4(&corner, XMVector4Transform(XMLoadFloat4(&aabbCorners[corner_idx]), XMLoadFloat4x4(&Transform)));
-			//XMFLOAT4 test = corner * XMMulti XMFLOAT4(corners[corner_idx].x, corners[corner_idx].y, corners[corner_idx].z, 1.0f);
-			// Check vertex against clip space bounds
-			inside = inside ||
-				within(-corner.w, corner.x, corner.w) &&
-				within(-corner.w, corner.y, corner.w) &&
-				within(0.0f, corner.z, corner.w);
-		}
-		
-		return inside;
-	}
-
-	bool SceneCamera::IsInFrustrum(FMeshletBounds& BoundingBox, DirectX::XMFLOAT4X4 Transform)
-	{
-		XMMATRIX vp = XMMatrixTranspose(GetViewProjection());
-		XMVECTOR planes[6] =
-		{
-			XMPlaneNormalize(vp.r[3] + vp.r[0]), // Left
-			XMPlaneNormalize(vp.r[3] - vp.r[0]), // Right
-			XMPlaneNormalize(vp.r[3] + vp.r[1]), // Bottom
-			XMPlaneNormalize(vp.r[3] - vp.r[1]), // Top
-			XMPlaneNormalize(vp.r[2]          ), // Near
-			XMPlaneNormalize(vp.r[3] - vp.r[2]), // Far
-		};
-
-		return false;
-	}
-	*/
 } // namespace Luden
