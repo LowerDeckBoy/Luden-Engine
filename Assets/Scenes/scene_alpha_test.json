@@ -1,0 +1,19 @@
+{
+	"scene": {
+		"models": [
+			{
+				"name": "AlphaBlendModeTest",
+				"path": "../../Assets/Models/AlphaBlendModeTest/AlphaBlendModeTest.gltf",
+				"transform": {
+					"position": [ 0.0, 0.0, 0.0 ],
+					"rotation": [ 0.0, 0, 0.0, 1.0 ],
+					"scale": [ 1.0, 1.0, 1.0 ]
+				}
+			}
+		],
+		"lights": [
+
+		]
+
+	}
+}
