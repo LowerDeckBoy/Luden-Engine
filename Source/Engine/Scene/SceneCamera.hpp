@@ -1,7 +1,6 @@
 #pragma once
 
 #include <DirectXMath.h>
-#include <DirectXCollision.h>
 
 #ifndef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
@@ -20,6 +19,30 @@ namespace Luden::Platform
 namespace Luden
 {
 	struct FMeshletBounds;
+
+	enum EPlaneFace
+	{
+		Right = 0,
+		Left,
+		Top,
+		Bottom,
+		Far,
+		Near
+	};
+
+	struct CameraFrustum
+	{
+		// XYZ - Normal
+		// W   - Distance
+		DirectX::XMFLOAT4 Planes[6];
+
+		DirectX::XMFLOAT3 Position;
+		float Near = 0.1f;
+		float Far = 10000.0f;
+
+		//void Construct(DirectX::XMMATRIX ViewProjection, float NearZ = 0.1f, float FarZ = 10000.0f);
+		void Construct(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 Target, DirectX::XMMATRIX ViewProjection, float NearZ = 0.1f, float FarZ = 10000.0f);
+	};
 
 	class SceneCamera
 	{
@@ -42,21 +65,17 @@ namespace Luden
 		DirectX::XMFLOAT4X4 InversedView;
 		DirectX::XMFLOAT4X4 InversedProjection;
 
-		DirectX::BoundingFrustum Frustum;
-
-		void UpdateFrustum();
-		std::array<DirectX::XMFLOAT4, 6> FrustumPlanes;
-		void GetFrustumPlanes();
+		CameraFrustum TestFrustum{};
 
 		DirectX::XMMATRIX GetView();
 		DirectX::XMMATRIX GetProjection();
 		DirectX::XMMATRIX GetViewProjection() const;
 
 		f32 zNear		= 0.01f;
-		f32 zFar		= 50000.0f;
+		f32 zFar		= 10000.0f;
 
 		f32 AspectRatio = 1.0f;
-		f32 FieldOfView = 45;
+		f32 FieldOfView = 45.0f;
 
 		f32 Pitch		= 0.0f;
 		f32 Yaw			= 0.0f;
@@ -76,7 +95,7 @@ namespace Luden
 		DirectX::XMFLOAT3 m_Upward					= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultPosition	= DirectX::XMFLOAT3(0.0f, 1.0f, -15.0f);
-		DirectX::XMFLOAT4 const m_DefaultTarget		= DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+		DirectX::XMFLOAT4 const m_DefaultTarget		= DirectX::XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f);
 		DirectX::XMFLOAT3 const m_DefaultUp			= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultForward	= DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);

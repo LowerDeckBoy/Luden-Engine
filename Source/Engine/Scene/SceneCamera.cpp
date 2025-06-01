@@ -5,8 +5,6 @@
 #include <Core/Math/Math.hpp>
 #pragma comment(lib, "dinput8")
 
-//#include "Graphics/Mesh.hpp"
-
 using namespace DirectX;
 
 namespace Luden
@@ -30,8 +28,7 @@ namespace Luden
 		DxMouse->SetDataFormat(&c_dfDIMouse);
 		DxMouse->SetCooperativeLevel(pWindow->Handle, DISCL_NONEXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
 
-		UpdateFrustum();
-
+		TestFrustum.Construct(Position, Target, GetViewProjection());
 	}
 
 	SceneCamera::~SceneCamera()
@@ -43,16 +40,14 @@ namespace Luden
 	{
 		AspectRatio = (f32)m_ParentWindow->Width / (f32)m_ParentWindow->Height;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
-
+	
 		Update();
-
-		UpdateFrustum();
 	}
 
 	void SceneCamera::Tick(f64 DeltaTime)
 	{
 		DIMOUSESTATE mouseState{};
-		constexpr int keys = 256;
+		constexpr int32 keys = 256;
 		std::array<BYTE, keys> keyboardState{};
 
 		DxKeyboard->Acquire();
@@ -76,7 +71,7 @@ namespace Luden
 
 		DxKeyboard->GetDeviceState(sizeof(keyboardState), reinterpret_cast<LPVOID>(&keyboardState));
 
-		constexpr int state = 0x80;
+		constexpr int32 state = 0x80;
 
 		m_ParentWindow->OnCursorHide();
 
@@ -120,7 +115,7 @@ namespace Luden
 		}
 
 		Update();
-		//ConstructFrustum(GetViewProjection());
+		
 	}
 
 	void SceneCamera::Update()
@@ -152,8 +147,7 @@ namespace Luden
 		target += position;
 
 		XMStoreFloat4x4(&View, XMMatrixLookAtLH(position, target, up));
-
-		UpdateFrustum();
+		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
 
 		// Store vector and matrices
 		XMStoreFloat3(&m_Forward, forward);
@@ -163,134 +157,8 @@ namespace Luden
 		XMStoreFloat4(&Target, target);
 		XMStoreFloat3(&Position, position);
 
-
-	}
-
-	/*
-	bool SceneCamera::IsInsideFrustum(ecs::BoundingBoxComponent& AABB)
-	{
-		// Corners
-		std::array<DirectX::XMFLOAT4, 8> corners = {
-			XMFLOAT4(AABB.Min.x, AABB.Min.y, AABB.Min.z, 1.0f),
-			XMFLOAT4(AABB.Max.x, AABB.Min.y, AABB.Min.z, 1.0f),
-			XMFLOAT4(AABB.Max.x, AABB.Max.y, AABB.Min.z, 1.0f),
-			XMFLOAT4(AABB.Min.x, AABB.Max.y, AABB.Min.z, 1.0f),
-
-			XMFLOAT4(AABB.Min.x, AABB.Min.y, AABB.Max.z, 1.0f),
-			XMFLOAT4(AABB.Max.x, AABB.Min.y, AABB.Max.z, 1.0f),
-			XMFLOAT4(AABB.Max.x, AABB.Max.y, AABB.Max.z, 1.0f),
-			XMFLOAT4(AABB.Min.x, AABB.Max.y, AABB.Max.z, 1.0f)
-		};
-
-		constexpr float EPSILON = 0.000002f;
-		const XMVECTOR V_EPSILON = XMVectorSet(EPSILON, EPSILON, EPSILON, EPSILON);
-
-		for (int p = 0; p < 6; ++p)	// for each plane
-		{
-			bool bInside = false;
-			for (const XMFLOAT4& f4Point : corners)
-			{
-				XMVECTOR vPoint = XMLoadFloat4(&f4Point);
-				XMVECTOR vPlane = XMLoadFloat4(&FrustumPlanes.at(p));
-				XMVECTOR cmp = XMVectorGreater(XMVector4Dot(vPoint, vPlane), V_EPSILON);
-				if (bInside = cmp.m128_u32[0]) // is point inside frustum ?
-				{
-					break;
-				}
-			}
-			if (!bInside) // if all the BB points are outside the frustum plane
-				return false;
-		}
-
-		return true;
-	}
-
-	// https://github.com/vilbeyli/VQEngine/blob/master/Source/Engine/CullingData.h
-	void SceneCamera::ConstructFrustum(const DirectX::XMMATRIX& Transformation)
-	{
-		const auto& m = Transformation;
-
-		FrustumPlanes.at(EFrustumSide::Left) = DirectX::XMFLOAT4(
-			m.r[0].m128_f32[3] + m.r[0].m128_f32[0],
-			m.r[1].m128_f32[3] + m.r[1].m128_f32[0],
-			m.r[2].m128_f32[3] + m.r[2].m128_f32[0],
-			m.r[3].m128_f32[3] + m.r[3].m128_f32[0]
-		);
+		TestFrustum.Construct(Position, Target, GetViewProjection());
 		
-		FrustumPlanes.at(EFrustumSide::Right) = DirectX::XMFLOAT4(
-			m.r[0].m128_f32[3] - m.r[0].m128_f32[0],
-			m.r[1].m128_f32[3] - m.r[1].m128_f32[0],
-			m.r[2].m128_f32[3] - m.r[2].m128_f32[0],
-			m.r[3].m128_f32[3] - m.r[3].m128_f32[0]
-		);
-
-		FrustumPlanes.at(EFrustumSide::Top) = DirectX::XMFLOAT4(
-			m.r[0].m128_f32[3] - m.r[0].m128_f32[1],
-			m.r[1].m128_f32[3] - m.r[1].m128_f32[1],
-			m.r[2].m128_f32[3] - m.r[2].m128_f32[1],
-			m.r[3].m128_f32[3] - m.r[3].m128_f32[1]
-		);
-
-		FrustumPlanes.at(EFrustumSide::Bottom) = DirectX::XMFLOAT4(
-			m.r[0].m128_f32[3] + m.r[0].m128_f32[1],
-			m.r[1].m128_f32[3] + m.r[1].m128_f32[1],
-			m.r[2].m128_f32[3] + m.r[2].m128_f32[1],
-			m.r[3].m128_f32[3] + m.r[3].m128_f32[1]
-		);
-
-		FrustumPlanes.at(EFrustumSide::Back) = DirectX::XMFLOAT4(
-			m.r[0].m128_f32[2],
-			m.r[1].m128_f32[2],
-			m.r[2].m128_f32[2],
-			m.r[3].m128_f32[2]
-		);
-
-		FrustumPlanes.at(EFrustumSide::Front) = DirectX::XMFLOAT4(
-			m.r[0].m128_f32[3] - m.r[0].m128_f32[2],
-			m.r[1].m128_f32[3] - m.r[1].m128_f32[2],
-			m.r[2].m128_f32[3] - m.r[2].m128_f32[2],
-			m.r[3].m128_f32[3] - m.r[3].m128_f32[2]
-		);
-
-		// Normalize
-		for (int32 side = 0; side < 6; ++side)
-		{
-			DirectX::XMVECTOR vPlane = DirectX::XMLoadFloat4(&FrustumPlanes.at(side));
-			DirectX::XMVECTOR vLen = DirectX::XMVectorSqrt(DirectX::XMVector3Dot(vPlane, vPlane));
-			vPlane = DirectX::XMVectorMultiply(vPlane, DirectX::XMVectorReciprocal(vLen));
-			DirectX::XMStoreFloat4(&FrustumPlanes.at(side), vPlane);
-		}
-	}
-	*/
-
-	void SceneCamera::UpdateFrustum()
-	{
-		Frustum = DirectX::BoundingFrustum(GetProjection());
-		Frustum.Transform(Frustum, DirectX::XMMatrixInverse(nullptr, GetView()));
-		//DirectX::BoundingFrustum::CreateFromMatrix(Frustum, GetViewProjection());
-		//Frustum.Transform(Frustum, GetView());
-		//Frustum.Orientation = Target;
-		//Frustum.Origin = Position;
-		//Frustum.Near = zNear;
-		//Frustum.Far = zFar;
-		GetFrustumPlanes();
-
-	}
-
-	void SceneCamera::GetFrustumPlanes()
-	{
-		std::array<DirectX::XMVECTOR, 6> vplanes{};
-
-		Frustum.GetPlanes(
-			&vplanes.at(0), &vplanes.at(1),
-			&vplanes.at(2), &vplanes.at(3),
-			&vplanes.at(4), &vplanes.at(5));
-			
-		for (uint32 i = 0; i < 6; ++i)
-		{
-			DirectX::XMStoreFloat4(&FrustumPlanes.at(i), vplanes.at(i));
-		}
-
 	}
 
 	DirectX::XMMATRIX SceneCamera::GetView()
@@ -306,6 +174,60 @@ namespace Luden
 	DirectX::XMMATRIX SceneCamera::GetViewProjection() const
 	{
 		return DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&View), DirectX::XMLoadFloat4x4(&Projection));
+	}
+
+	// https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
+	void CameraFrustum::Construct(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 Target, DirectX::XMMATRIX ViewProjection, float NearZ, float FarZ)
+	{
+		Near = NearZ;
+		Far = FarZ;
+
+		const auto invViewProjection = DirectX::XMMatrixTranspose(ViewProjection);
+
+		Planes[0] = {	invViewProjection.r[0].m128_f32[3] - invViewProjection.r[0].m128_f32[0], 
+						invViewProjection.r[1].m128_f32[3] - invViewProjection.r[1].m128_f32[0],
+						invViewProjection.r[2].m128_f32[3] - invViewProjection.r[2].m128_f32[0],
+						invViewProjection.r[3].m128_f32[3] - invViewProjection.r[3].m128_f32[0] };
+
+		Planes[1] = {	invViewProjection.r[0].m128_f32[3] + invViewProjection.r[0].m128_f32[0],
+						invViewProjection.r[1].m128_f32[3] + invViewProjection.r[1].m128_f32[0],
+						invViewProjection.r[2].m128_f32[3] + invViewProjection.r[2].m128_f32[0],
+						invViewProjection.r[3].m128_f32[3] + invViewProjection.r[3].m128_f32[0] };
+
+		Planes[2] = {	invViewProjection.r[0].m128_f32[3] - invViewProjection.r[0].m128_f32[1],
+						invViewProjection.r[1].m128_f32[3] - invViewProjection.r[1].m128_f32[1],
+						invViewProjection.r[2].m128_f32[3] - invViewProjection.r[2].m128_f32[1],
+						invViewProjection.r[3].m128_f32[3] - invViewProjection.r[3].m128_f32[1] };
+
+		Planes[3] = {	invViewProjection.r[0].m128_f32[3] + invViewProjection.r[0].m128_f32[1],
+						invViewProjection.r[1].m128_f32[3] + invViewProjection.r[1].m128_f32[1],
+						invViewProjection.r[2].m128_f32[3] + invViewProjection.r[2].m128_f32[1],
+						invViewProjection.r[3].m128_f32[3] + invViewProjection.r[3].m128_f32[1] };
+
+		Planes[4] = {	invViewProjection.r[0].m128_f32[3] - invViewProjection.r[0].m128_f32[2],
+						invViewProjection.r[1].m128_f32[3] - invViewProjection.r[1].m128_f32[2],
+						invViewProjection.r[2].m128_f32[3] - invViewProjection.r[2].m128_f32[2],
+						(invViewProjection.r[3].m128_f32[3] - invViewProjection.r[3].m128_f32[2])  };
+		
+		Planes[5] = {	invViewProjection.r[0].m128_f32[2], 
+						invViewProjection.r[1].m128_f32[2], 
+						invViewProjection.r[2].m128_f32[2], 
+						invViewProjection.r[3].m128_f32[2]  };
+
+		for (uint32 i = 0; i < 6; ++i)
+		{
+			//const float length = std::sqrt((Planes[i].x * Planes[i].x) + (Planes[i].y * Planes[i].y) + (Planes[i].z * Planes[i].z));
+			////DirectX::XMVectorSqrt()
+			//Planes[i].x /= length;
+			//Planes[i].y /= length;
+			//Planes[i].z /= length;
+			//Planes[i].w /= length;
+
+			DirectX::XMVECTOR vPlane = DirectX::XMLoadFloat4(&Planes[i]);
+			DirectX::XMVECTOR vLen = DirectX::XMVectorSqrt(DirectX::XMVector3Dot(vPlane, vPlane));
+			vPlane = DirectX::XMVectorMultiply(vPlane, DirectX::XMVectorReciprocal(vLen));
+			DirectX::XMStoreFloat4(&Planes[i], vPlane);
+		}
 	}
 
 } // namespace Luden
