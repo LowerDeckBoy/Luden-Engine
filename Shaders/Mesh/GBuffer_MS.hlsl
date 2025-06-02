@@ -19,6 +19,14 @@ struct Transform
 	row_major float4x4 World;
 };
 
+struct CameraConsts
+{
+	float3 Position;
+	uint pad;
+	float4 Planes[6];
+
+};
+
 // Indices to buffers.
 struct PushConstants
 {
@@ -29,6 +37,7 @@ struct PushConstants
 	uint MeshletBoundsIndex;
 	uint bDrawMeshlets;
 	uint bAlphaMask;
+	uint pad;
 };
 
 struct Vertex
@@ -52,6 +61,7 @@ struct VertexOut
 ConstantBuffer<Transform> Transforms	: register(b0);
 ConstantBuffer<PushConstants> Constants : register(b1);
 ConstantBuffer<FMaterial> Material		: register(b2);
+ConstantBuffer<CameraConsts> CameraConstants : register(b3);
 
 VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 {
@@ -67,7 +77,7 @@ VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 
 	vout.TBN = float3x3(T, B, N);
 	vout.TBN = mul((float3x3)Transforms.World, transpose(vout.TBN));
-	//vout.Bitangent = normalize(mul(Transforms.World, InVertex.Tangent));
+
 	vout.MeshletIndex = MeshletIndex;
 	
 	return vout;
@@ -78,18 +88,65 @@ struct Payload
 	uint MeshletIndices[AS_GROUP_SIZE];
 };
 
+bool IsVisible(MeshletBound bounds, row_major float4x4 world, float3 viewPos)
+{	
+	// Frustum 
+	float4 center = mul(world, float4(bounds.Center.xyz, 1));
+	float radius = bounds.Radius;
+
+	for (int i = 0; i < 6; ++i)
+	{
+		//if (dot(center.xyz, CameraConstants.Planes[i].xyz) - CameraConstants.Planes[i].w <= -radius)
+		if (dot(center.xyz, CameraConstants.Planes[i].xyz) + center.w <= -radius)
+		{
+			return false;
+		}
+	}
+	
+	//float3 axis = normalize(mul(world, float4(bounds.ConeAxis.xyz, 0))).xyz;
+	//float3 apex = center.xyz - axis * bounds.ConeApex;
+	//float3 view = normalize(viewPos - apex);
+	
+	// Backface culling
+	//if (dot(normalize(bounds.ConeApex - view), bounds.ConeAxis) >= bounds.ConeCutoff)
+	//{
+	//	return false;
+	//}
+
+	return true;
+	
+}
+
 groupshared Payload sPayload;
 
+//https://www.tmarrec.dev/posts/mesh-shaders-and-meshlet-culling.html
 [NumThreads(AS_GROUP_SIZE, 1, 1)]
 void ASMain(
 	uint GroupThreadID : SV_GroupThreadID,
 	uint DispatchThreadID : SV_DispatchThreadID,
 	uint GroupID : SV_GroupID)
-{
-	sPayload.MeshletIndices[GroupThreadID] = DispatchThreadID;
+{	
+	StructuredBuffer<MeshletBound> MeshletBoundsBuffer = ResourceDescriptorHeap[Constants.MeshletBoundsIndex];
+	MeshletBound bounds = MeshletBoundsBuffer[DispatchThreadID];
 	
+	bool visible = IsVisible(bounds, Transforms.World, CameraConstants.Position);
+	//bool visible = IsVisible(bounds, Transforms.WVP, CameraConstants.Position);
+	
+	if (visible)
+	{
+		uint index = WavePrefixCountBits(visible);
+		sPayload.MeshletIndices[index] = DispatchThreadID;
+	}
+
+	uint visibleCount = WaveActiveCountBits(visible);
+	DispatchMesh(visibleCount, 1, 1, sPayload);
+	
+	
+	/*
+	sPayload.MeshletIndices[GroupThreadID] = DispatchThreadID;
 	DispatchMesh(AS_GROUP_SIZE, 1, 1, sPayload);
-}
+	*/
+	}
 
 [RootSignature(GBUFFER_ROOT_SIG)]
 [NumThreads(128, 1, 1)]
@@ -159,11 +216,19 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 {
 	GBuffers output = (GBuffers) 0;
 
+	if (IsIndexValid(Material.EmissiveIndex))
+	{
+		Texture2D emissiveTexture = ResourceDescriptorHeap[Material.EmissiveIndex];
+		output.Emissive = emissiveTexture.Sample(AnisotropicSampler, pin.TexCoord);
+
+	}
+	
+	output.BaseColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
 	if (IsIndexValid(Material.BaseColorIndex))
 	{
 		Texture2D baseColorTexture = GetTexture(Material.BaseColorIndex);
 		
-		float4 baseColor = baseColorTexture.Sample(AnisotropicSampler, pin.TexCoord);
+		float4 baseColor = baseColorTexture.Sample(AnisotropicSampler, pin.TexCoord) * float4(Material.BaseColorFactor.rgba);
 		
 		if (Constants.bAlphaMask)
 		{
@@ -173,15 +238,12 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 			}
 		}
 		
-		output.BaseColor = baseColor;
+		output.BaseColor = float4(baseColor.rgb, 1.0f);
 	}
-	else
-	{
-		output.BaseColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
-
-	}
-	//float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
-	//output.BaseColor = float4(meshletColor, 1.0f);
+	
+	// Saving depth into unused Normal's W component.
+	const float z = 1.0f - (pin.Position.z / pin.Position.w);
+	output.Normal.w = z;
 	
 	if (Constants.bDrawMeshlets)
 	{
@@ -189,6 +251,7 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 		output.BaseColor = float4(meshletColor, 1.0f);
 	}
 	
+	output.Normal = float4(0.0f, 1.0f, 0.0f, 1.0f);
 	if (IsIndexValid(Material.NormalIndex))
 	{
 		Texture2D normalTexture = ResourceDescriptorHeap[Material.NormalIndex];
@@ -197,31 +260,15 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 		output.Normal = float4(n.rgb, normalMap.w);
 	}
 	
+	output.MetallicRoughness = float4(0.0f, Material.Roughness, Material.Metallic, 1.0f);
 	if (IsIndexValid(Material.MetallicRoughnessIndex))
 	{
 		Texture2D mrTexture = ResourceDescriptorHeap[Material.MetallicRoughnessIndex];
 		float4 mr = mrTexture.Sample(AnisotropicSampler, pin.TexCoord);
 		output.MetallicRoughness = float4(mr.r, mr.g * Material.Roughness, mr.b * Material.Metallic, 1.0f);
 	}
-	else
-	{
-		output.MetallicRoughness = float4(0.0f, Material.Roughness, Material.Metallic, 1.0f);
-	}
-	
-	if (IsIndexValid(Material.EmissiveIndex))
-	{
-		Texture2D emissiveTexture = ResourceDescriptorHeap[Material.EmissiveIndex];
-		output.Emissive = emissiveTexture.Sample(AnisotropicSampler, pin.TexCoord);
 
-	}
-	
-	// Saving depth into unused Normal's W component.
-	//const float z = 1.0f - (pin.Position.z / pin.Position.w);
-	//output.Normal.w = z;
-	
-	
 	return output;
-
 }
 
 #endif // GBUFFER_MS_HLSL
