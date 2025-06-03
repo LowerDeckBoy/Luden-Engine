@@ -32,16 +32,11 @@ namespace Luden
 
 	struct CameraFrustum
 	{
-		// XYZ - Normal
-		// W   - Distance
+		// xyz - normal, w - distance
 		DirectX::XMFLOAT4 Planes[6];
 
-		DirectX::XMFLOAT3 Position;
-		float Near = 0.1f;
-		float Far = 10000.0f;
+		void Construct(const DirectX::XMMATRIX& ViewProjection);
 
-		//void Construct(DirectX::XMMATRIX ViewProjection, float NearZ = 0.1f, float FarZ = 10000.0f);
-		void Construct(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 Target, DirectX::XMMATRIX ViewProjection, float NearZ = 0.1f, float FarZ = 10000.0f);
 	};
 
 	class SceneCamera
@@ -50,8 +45,9 @@ namespace Luden
 		SceneCamera(Platform::Window* pWindow);
 		~SceneCamera();
 
-		// Update Projection matrix.
+		// Update Projection matrix and aspect ratio.
 		void Resize();
+
 		void Tick(f64 DeltaTime);
 		void Update();
 		
@@ -65,10 +61,10 @@ namespace Luden
 		DirectX::XMFLOAT4X4 InversedView;
 		DirectX::XMFLOAT4X4 InversedProjection;
 
-		CameraFrustum TestFrustum{};
+		CameraFrustum Frustum{};
 
-		DirectX::XMMATRIX GetView();
-		DirectX::XMMATRIX GetProjection();
+		DirectX::XMMATRIX GetView() const;
+		DirectX::XMMATRIX GetProjection() const;
 		DirectX::XMMATRIX GetViewProjection() const;
 
 		f32 zNear		= 0.01f;
@@ -95,7 +91,7 @@ namespace Luden
 		DirectX::XMFLOAT3 m_Upward					= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultPosition	= DirectX::XMFLOAT3(0.0f, 1.0f, -15.0f);
-		DirectX::XMFLOAT4 const m_DefaultTarget		= DirectX::XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f);
+		DirectX::XMFLOAT4 const m_DefaultTarget		= DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 		DirectX::XMFLOAT3 const m_DefaultUp			= DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		DirectX::XMFLOAT3 const m_DefaultForward	= DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);

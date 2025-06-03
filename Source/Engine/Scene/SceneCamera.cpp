@@ -1,8 +1,8 @@
 #include "SceneCamera.hpp"
-#include <Platform/Window.hpp>
-#include <array>
 #include <Core/Logger.hpp>
 #include <Core/Math/Math.hpp>
+#include <Platform/Window.hpp>
+
 #pragma comment(lib, "dinput8")
 
 using namespace DirectX;
@@ -28,7 +28,7 @@ namespace Luden
 		DxMouse->SetDataFormat(&c_dfDIMouse);
 		DxMouse->SetCooperativeLevel(pWindow->Handle, DISCL_NONEXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
 
-		TestFrustum.Construct(Position, Target, GetViewProjection());
+		Frustum.Construct(GetViewProjection());
 	}
 
 	SceneCamera::~SceneCamera()
@@ -120,6 +120,7 @@ namespace Luden
 
 	void SceneCamera::Update()
 	{
+		// Load vectors.
 		XMVECTOR position	= XMLoadFloat3(&Position);
 		XMVECTOR forward	= XMLoadFloat3(&m_Forward);
 		XMVECTOR right		= XMLoadFloat3(&m_Right);
@@ -149,7 +150,7 @@ namespace Luden
 		XMStoreFloat4x4(&View, XMMatrixLookAtLH(position, target, up));
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
 
-		// Store vector and matrices
+		// Store vector and matrices.
 		XMStoreFloat3(&m_Forward, forward);
 		XMStoreFloat3(&m_Right, right);
 		XMStoreFloat3(&Up, up);
@@ -157,16 +158,16 @@ namespace Luden
 		XMStoreFloat4(&Target, target);
 		XMStoreFloat3(&Position, position);
 
-		TestFrustum.Construct(Position, Target, GetViewProjection());
+		Frustum.Construct(GetViewProjection());
 		
 	}
 
-	DirectX::XMMATRIX SceneCamera::GetView()
+	DirectX::XMMATRIX SceneCamera::GetView() const
 	{
 		return DirectX::XMLoadFloat4x4(&View);
 	}
 
-	DirectX::XMMATRIX SceneCamera::GetProjection()
+	DirectX::XMMATRIX SceneCamera::GetProjection() const
 	{
 		return DirectX::XMLoadFloat4x4(&Projection);
 	}
@@ -176,57 +177,46 @@ namespace Luden
 		return DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&View), DirectX::XMLoadFloat4x4(&Projection));
 	}
 
-	// https://www.braynzarsoft.net/viewtutorial/q16390-34-aabb-cpu-side-frustum-culling
-	void CameraFrustum::Construct(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 Target, DirectX::XMMATRIX ViewProjection, float NearZ, float FarZ)
+	void CameraFrustum::Construct(const DirectX::XMMATRIX& ViewProjection)
 	{
-		Near = NearZ;
-		Far = FarZ;
+		Planes[EPlaneFace::Right] = {	ViewProjection.r[0].m128_f32[3] - ViewProjection.r[0].m128_f32[0],
+										ViewProjection.r[1].m128_f32[3] - ViewProjection.r[1].m128_f32[0],
+										ViewProjection.r[2].m128_f32[3] - ViewProjection.r[2].m128_f32[0],
+										ViewProjection.r[3].m128_f32[3] - ViewProjection.r[3].m128_f32[0] };
 
-		const auto invViewProjection = DirectX::XMMatrixTranspose(ViewProjection);
+		Planes[EPlaneFace::Left] = {	ViewProjection.r[0].m128_f32[3] + ViewProjection.r[0].m128_f32[0],
+										ViewProjection.r[1].m128_f32[3] + ViewProjection.r[1].m128_f32[0],
+										ViewProjection.r[2].m128_f32[3] + ViewProjection.r[2].m128_f32[0],
+										ViewProjection.r[3].m128_f32[3] + ViewProjection.r[3].m128_f32[0] };
 
-		Planes[0] = {	invViewProjection.r[0].m128_f32[3] - invViewProjection.r[0].m128_f32[0], 
-						invViewProjection.r[1].m128_f32[3] - invViewProjection.r[1].m128_f32[0],
-						invViewProjection.r[2].m128_f32[3] - invViewProjection.r[2].m128_f32[0],
-						invViewProjection.r[3].m128_f32[3] - invViewProjection.r[3].m128_f32[0] };
+		Planes[EPlaneFace::Top] = {		ViewProjection.r[0].m128_f32[3] - ViewProjection.r[0].m128_f32[1],
+										ViewProjection.r[1].m128_f32[3] - ViewProjection.r[1].m128_f32[1],
+										ViewProjection.r[2].m128_f32[3] - ViewProjection.r[2].m128_f32[1],
+										ViewProjection.r[3].m128_f32[3] - ViewProjection.r[3].m128_f32[1] };
 
-		Planes[1] = {	invViewProjection.r[0].m128_f32[3] + invViewProjection.r[0].m128_f32[0],
-						invViewProjection.r[1].m128_f32[3] + invViewProjection.r[1].m128_f32[0],
-						invViewProjection.r[2].m128_f32[3] + invViewProjection.r[2].m128_f32[0],
-						invViewProjection.r[3].m128_f32[3] + invViewProjection.r[3].m128_f32[0] };
+		Planes[EPlaneFace::Bottom] = {	ViewProjection.r[0].m128_f32[3] + ViewProjection.r[0].m128_f32[1],
+										ViewProjection.r[1].m128_f32[3] + ViewProjection.r[1].m128_f32[1],
+										ViewProjection.r[2].m128_f32[3] + ViewProjection.r[2].m128_f32[1],
+										ViewProjection.r[3].m128_f32[3] + ViewProjection.r[3].m128_f32[1] };
 
-		Planes[2] = {	invViewProjection.r[0].m128_f32[3] - invViewProjection.r[0].m128_f32[1],
-						invViewProjection.r[1].m128_f32[3] - invViewProjection.r[1].m128_f32[1],
-						invViewProjection.r[2].m128_f32[3] - invViewProjection.r[2].m128_f32[1],
-						invViewProjection.r[3].m128_f32[3] - invViewProjection.r[3].m128_f32[1] };
+		Planes[EPlaneFace::Far] = {		ViewProjection.r[0].m128_f32[3] - ViewProjection.r[0].m128_f32[2],
+										ViewProjection.r[1].m128_f32[3] - ViewProjection.r[1].m128_f32[2],
+										ViewProjection.r[2].m128_f32[3] - ViewProjection.r[2].m128_f32[2],
+										ViewProjection.r[3].m128_f32[3] - ViewProjection.r[3].m128_f32[2] };
 
-		Planes[3] = {	invViewProjection.r[0].m128_f32[3] + invViewProjection.r[0].m128_f32[1],
-						invViewProjection.r[1].m128_f32[3] + invViewProjection.r[1].m128_f32[1],
-						invViewProjection.r[2].m128_f32[3] + invViewProjection.r[2].m128_f32[1],
-						invViewProjection.r[3].m128_f32[3] + invViewProjection.r[3].m128_f32[1] };
+		Planes[EPlaneFace::Near] = {	ViewProjection.r[0].m128_f32[3] + ViewProjection.r[0].m128_f32[2],
+										ViewProjection.r[1].m128_f32[3] + ViewProjection.r[1].m128_f32[2],
+										ViewProjection.r[2].m128_f32[3] + ViewProjection.r[2].m128_f32[2],
+										ViewProjection.r[3].m128_f32[3] + ViewProjection.r[3].m128_f32[2] };
 
-		Planes[4] = {	invViewProjection.r[0].m128_f32[3] - invViewProjection.r[0].m128_f32[2],
-						invViewProjection.r[1].m128_f32[3] - invViewProjection.r[1].m128_f32[2],
-						invViewProjection.r[2].m128_f32[3] - invViewProjection.r[2].m128_f32[2],
-						(invViewProjection.r[3].m128_f32[3] - invViewProjection.r[3].m128_f32[2])  };
-		
-		Planes[5] = {	invViewProjection.r[0].m128_f32[2], 
-						invViewProjection.r[1].m128_f32[2], 
-						invViewProjection.r[2].m128_f32[2], 
-						invViewProjection.r[3].m128_f32[2]  };
-
-		for (uint32 i = 0; i < 6; ++i)
+		// Normalize planes.
+		for (uint32 plane = 0; plane < 6; ++plane)
 		{
-			//const float length = std::sqrt((Planes[i].x * Planes[i].x) + (Planes[i].y * Planes[i].y) + (Planes[i].z * Planes[i].z));
-			////DirectX::XMVectorSqrt()
-			//Planes[i].x /= length;
-			//Planes[i].y /= length;
-			//Planes[i].z /= length;
-			//Planes[i].w /= length;
-
-			DirectX::XMVECTOR vPlane = DirectX::XMLoadFloat4(&Planes[i]);
-			DirectX::XMVECTOR vLen = DirectX::XMVectorSqrt(DirectX::XMVector3Dot(vPlane, vPlane));
-			vPlane = DirectX::XMVectorMultiply(vPlane, DirectX::XMVectorReciprocal(vLen));
-			DirectX::XMStoreFloat4(&Planes[i], vPlane);
+			const float length = std::sqrt((Planes[plane].x * Planes[plane].x) + (Planes[plane].y * Planes[plane].y) + (Planes[plane].z * Planes[plane].z));
+			Planes[plane].x /= length;
+			Planes[plane].y /= length;
+			Planes[plane].z /= length;
+			Planes[plane].w /= length;
 		}
 	}
 
