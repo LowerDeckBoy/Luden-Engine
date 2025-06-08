@@ -1,17 +1,17 @@
 #pragma once
 
+#include <Scene/Scene.hpp>
+
+#include "Panels/ConfigPanel.hpp"
+#include "Panels/ContentBrowserPanel.hpp"
+#include "Panels/PropertyPanel.hpp"
+#include "Panels/SceneHierarchyPanel.hpp"
+#include <Core/Core.hpp>
+#include <Core/Timer.hpp>
+#include <Engine/Asset/AssetImporter.hpp>
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_impl_dx12.h>
 #include <ImGui/imgui_impl_win32.h>
-
-#include <Core/Core.hpp>
-#include <Core/Timer.hpp>
-
-#include <Engine/Asset/AssetImporter.hpp>
-#include <Scene/Scene.hpp>
-
-#include "Panels/PropertyPanel.hpp"
-#include "Panels/SceneHierarchyPanel.hpp"
 
 namespace Luden
 {
@@ -29,8 +29,6 @@ namespace Luden
 		void End();
 
 	public:
-
-		//
 		void SetActiveScene(Scene* pScene);
 
 		// Set image to draw into Scene panel.
@@ -40,8 +38,6 @@ namespace Luden
 		void DrawEditorLayer();
 
 		void DrawMainMenuBar();
-
-		void DrawSceneControlPanel();
 
 		void DrawSceneImage() const;
 
@@ -57,8 +53,6 @@ namespace Luden
 		// - GPU's VRAM usage
 		// Draws into MainMenuBar panel.
 		void DisplayDebugInfo();
-
-		void DrawLightData();
 
 		void DrawEntityComponents(Entity& Entity);
 
@@ -78,18 +72,31 @@ namespace Luden
 
 		ImGuiViewport* m_MainViewport;
 
-		ImTextureID m_DrawImageAddress;
-
 		ImGuiStyle* m_Theme;
 		
 		// Temporarly hard coded paths.
 		const char* FontPath		= "..\\..\\Build\\Debug\\Assets\\Fonts\\CascadiaCode.ttf";
 		const char* IconsFontPath	= "..\\..\\Build\\Debug\\Assets\\Fonts\\fa-solid-900.ttf";
 
-		static inline int32 DisplayImageIndex = 1;
-
+		Panel::ConfigPanel			m_ConfigPanel;
 		Panel::SceneHierarchyPanel	m_HierarchyPanel;
 		Panel::PropertyPanel		m_PropertyPanel;
+		Panel::ContentBrowserPanel	m_ContentBrowserPanel;
+
+	public:
+		// Temporal
+		void CreateEditorResources();
+		static D3D12Texture* EditorDirectoryTexture;
+		static D3D12Texture* EditorFileTexture;
+
+		static D3D12Texture* EditorGLTFTexture;
+		static D3D12Texture* EditorGLBTexture;
+		static D3D12Texture* EditorFBXTexture;
+		static D3D12Texture* EditorOBJTexture;
+		static D3D12Texture* EditorPNGTexture;
+		static D3D12Texture* EditorJPGTexture;
+		static D3D12Texture* EditorJPEGTexture;
+		static D3D12Texture* EditorBINTexture;
 
 	};
 } // namespace Luden

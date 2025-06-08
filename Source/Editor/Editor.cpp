@@ -1,7 +1,6 @@
 #include "Editor.hpp"
 #include "Theme.hpp"
 #include <Engine/Renderer/Renderer.hpp>
-#include <Engine/Scene/SceneSerializer.hpp>
 #include <FontAwsome6/IconsFontAwesome6.h>
 #include <Platform/FileDialog.hpp>
 #include <Platform/Utility.hpp>
@@ -11,6 +10,16 @@
 
 namespace Luden
 {
+	D3D12Texture* Editor::EditorDirectoryTexture = nullptr;
+	D3D12Texture* Editor::EditorFileTexture = nullptr;
+	D3D12Texture* Editor::EditorGLTFTexture = nullptr;
+	D3D12Texture* Editor::EditorGLBTexture = nullptr;
+	D3D12Texture* Editor::EditorOBJTexture = nullptr;
+	D3D12Texture* Editor::EditorPNGTexture = nullptr;
+	D3D12Texture* Editor::EditorJPGTexture = nullptr;
+	D3D12Texture* Editor::EditorJPEGTexture = nullptr;
+	D3D12Texture* Editor::EditorBINTexture = nullptr;
+
 	Editor::Editor(Platform::Window* pParentWindow, Renderer* pRenderer, Core::Timer* pApplicationTimer)
 	{
 		Initialize(pParentWindow, pRenderer, pApplicationTimer);
@@ -23,6 +32,16 @@ namespace Luden
 
 		ImGui_ImplDX12_InvalidateDeviceObjects();
 		ImGui::DestroyContext();
+
+		delete EditorDirectoryTexture;
+		delete EditorFileTexture;
+		delete EditorGLTFTexture;
+		delete EditorGLBTexture;
+		delete EditorOBJTexture;
+		delete EditorPNGTexture;
+		delete EditorJPGTexture;
+		delete EditorJPEGTexture;
+		delete EditorBINTexture;
 	}
 
 	void Editor::Initialize(Platform::Window* pParentWindow, Renderer* pRenderer, Core::Timer* pApplicationTimer)
@@ -78,8 +97,13 @@ namespace Luden
 		{
 			LOG_WARNING("Failed to call ImGui_ImplDX12_CreateDeviceObjects()");
 		}
-	   
+		
 		SetSceneImage(m_Renderer->GBuffer->BaseColor.ShaderResourceHandle);
+		
+		m_ConfigPanel.Initialize(m_Renderer, m_Timer);
+
+		Importer.Device = pRenderer->GetRHI()->Device;
+		CreateEditorResources();
 
 	}
 
@@ -119,7 +143,7 @@ namespace Luden
 	{
 		m_CurrentScene = pScene;
 		
-		m_HierarchyPanel.SetActiveScene(pScene);
+		m_HierarchyPanel.SetActiveScene(pScene, m_Renderer);
 
 	}
 
@@ -130,10 +154,8 @@ namespace Luden
 			return;
 		}
 
-		m_DrawImageAddress = (ImTextureID)TextureDescriptor.GpuHandle.ptr;
+		m_ConfigPanel.DisplayImageAddress = (ImTextureID)TextureDescriptor.GpuHandle.ptr;
 
-		//const auto& viewportSize = ImGui::GetContentRegionAvail();
-		//ImGui::Image((ImTextureID)TextureDescriptor.GpuHandle.ptr, viewportSize);
 	}
 
 	void Editor::DrawEditorLayer()
@@ -142,8 +164,10 @@ namespace Luden
 
 		ImGui::Begin("Hierarchy");
 
-		//DrawSceneControlPanel();
+
+		m_ConfigPanel.DrawPanel();
 		m_HierarchyPanel.DrawPanel();
+		m_ContentBrowserPanel.DrawPanel();
 		DrawPropertyPanel();
 
 		ImGui::End();
@@ -153,7 +177,13 @@ namespace Luden
 
 	void Editor::DrawMainMenuBar()
 	{
-		ImGui::BeginMainMenuBar();
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+		if (!ImGui::BeginMainMenuBar())
+		{
+			ImGui::EndMainMenuBar();
+			ImGui::PopStyleVar();
+			return;
+		}
 
 		if (ImGui::BeginMenu("File"))
 		{
@@ -168,7 +198,7 @@ namespace Luden
 			{	
 				auto selected = Platform::FileDialog::Open(Platform::FOpenDialogOptions{
 					.FilterExtensions = Platform::EExtensionFilter::Scene,
-					.OpenLocation = "D:\\Dev\\Engines\\Luden\\Source\\Editor\\Scenes",
+					.OpenLocation = "D:\\Dev\\Engines\\Luden\\Assets\\Scenes",
 					.Title = "Select a scene file"
 					});
 					
@@ -188,7 +218,6 @@ namespace Luden
 
 			if (ImGui::MenuItem(ICON_FA_CHESS_KNIGHT" Add model"))
 			{
-				//auto selected = Platform::FileDialog::Open("D:\\Dev\\Engines\\Luden\\Build\\Debug\\Assets\\");
 				auto selected = Platform::FileDialog::Open(Platform::FOpenDialogOptions{
 					.FilterExtensions = Platform::EExtensionFilter::Model,
 					.OpenLocation = "D:\\Dev\\Engines\\Luden\\Assets\\Models\\",
@@ -199,6 +228,18 @@ namespace Luden
 				{
 					m_Renderer->ActiveScene->AddModel(selected);
 				}
+			}
+
+			// Temp
+			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Directional Light"))
+			{
+				m_Renderer->ActiveScene->AddDirectionalLight();
+			}
+
+			// Temp
+			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Point Light"))
+			{
+				m_Renderer->ActiveScene->AddPointLight();
 			}
 
 			ImGui::Separator();
@@ -213,221 +254,34 @@ namespace Luden
 		DisplayDebugInfo();
 
 		ImGui::EndMainMenuBar();
-	}
-
-	void Editor::DrawSceneControlPanel()
-	{
-		if (ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
-		{
-			ImGui::SeparatorText("Config");
-			auto& config = Config::Get();
-			
-			if (ImGui::BeginTable("##data", 2))
-			{
-				// Row 0
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("V-Sync:");
-				static const char* syncing[]{ "Off", "On", "Half", "Third", "Quarter" };
-				ImGui::TableNextColumn();
-				ImGui::Combo("##Interval:", &config.SyncInterval, syncing, IM_ARRAYSIZE(syncing));
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				if (config.SyncInterval == 0)
-				{
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Set fixed frame rate:");
-					gui::OnItemHover("Allows to limit frame rate to value in range [24;240].");
-					ImGui::TableNextColumn();
-					ImGui::Checkbox("##Limit frames", &config.bAllowFixedFrameRate);
-
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					if (config.bAllowFixedFrameRate)
-					{
-						ImGui::AlignTextToFramePadding();
-						ImGui::Text("Frame rate:");
-						ImGui::TableNextColumn();
-						ImGui::SliderInt("##Frame rate:", &m_Timer->FrameLimit, 24, 240);
-					}
-				}
-
-				// Row 1;
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Mesh shading: ");
-				gui::OnItemHover("Whether to use mesh shading pipeline instead of vertex shading.");
-				ImGui::TableNextColumn();
-				ImGui::Checkbox("##Mesh shading", &config.bMeshShading);
-
-				if (config.bMeshShading)
-				{
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-
-					ImGui::AlignTextToFramePadding();
-					ImGui::Text("Meshlets: ");
-					gui::OnItemHover("Check to draw debug meshlet instances.");
-					ImGui::TableNextColumn();
-					ImGui::Checkbox("##meshlets", &config.bDrawMeshlets);
-				}
-
-				// Temporarly
-
-				// Row 2;
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Raytracing: ");
-				gui::OnItemHover("Check to dispatch ray tracing.");
-				ImGui::TableNextColumn();
-				ImGui::Checkbox("##raytracing", &config.bRaytracing);
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Alpha mask: ");
-				gui::OnItemHover("Check to enable alpha mask cutoff in pixel shaders.");
-				ImGui::TableNextColumn();
-				ImGui::Checkbox("##bAlphaMask", &config.bAlphaMask);
-
-				ImGui::BeginDisabled();
-				// Row 3;
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Draw sky: ");
-				ImGui::TableNextColumn();
-				ImGui::Checkbox("##drawSky", &config.bDrawSky);
-
-				// Row 4;
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Draw grid: ");
-				ImGui::TableNextColumn();
-				ImGui::Checkbox("##drawGrid", &config.bDrawGrid);
-
-				ImGui::EndDisabled();
-
-				ImGui::EndTable();
-			}
-
-			// Set output image.
-			{
-				ImGui::Text("Image to display:");
-
-				const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive", "LightPass" };
-
-				if (ImGui::Combo("##comb", &DisplayImageIndex, items, IM_ARRAYSIZE(items)))
-				{
-					switch (DisplayImageIndex)
-					{
-					case 0:
-						SetSceneImage(m_Renderer->SceneTextures.Scene.ShaderResourceHandle);
-						break;
-					case 1:
-						SetSceneImage(m_Renderer->GBuffer->BaseColor.ShaderResourceHandle);
-						break;
-					case 2:
-						SetSceneImage(m_Renderer->GBuffer->Normal.ShaderResourceHandle);
-						break;
-					case 3:
-						SetSceneImage(m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle);
-						break;
-					case 4:
-						SetSceneImage(m_Renderer->GBuffer->Emissive.ShaderResourceHandle);
-						break;
-					case 5:
-						SetSceneImage(m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle);
-						break;
-					}
-
-				}
-			}
-
-			ImGui::SeparatorText(ICON_FA_VIDEO" Camera");
-			if (ImGui::BeginTable("##cameraPanel", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame))
-			{
-				ImGui::TableSetupColumn("Property",  ImGuiTableColumnFlags_WidthStretch, 100.0f);
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Position");
-				ImGui::TableNextColumn();
-				if (gui::Math::DrawFloat3("Position", m_Renderer->Camera->Position))
-				{
-					m_Renderer->Camera->Update();
-				}
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Speed");
-				gui::OnItemHover("Speed is controlable when mouse scroll is used when RBM is hold.");
-		
-				ImGui::TableNextColumn();
-				ImGui::DragFloat("##Speed", &m_Renderer->Camera->CameraSpeed, 1.0f, 1.0f, 250.0f);
-				
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Field of View");
-				ImGui::TableNextColumn();
-				if (ImGui::DragFloat("##fov", &m_Renderer->Camera->FieldOfView, 1.0f, 1.0f, 90.0f))
-				{
-					m_Renderer->Camera->Resize();
-				}
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Near Z");
-				ImGui::TableNextColumn();
-				if (ImGui::DragFloat("##zNear", &m_Renderer->Camera->zNear, 0.1f, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
-				{
-					m_Renderer->Camera->Resize();
-				}
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Far Z");
-				ImGui::TableNextColumn();
-				if (ImGui::DragFloat("##zFar", &m_Renderer->Camera->zFar, 1.0f, 1000.0f, 0.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
-				{
-					m_Renderer->Camera->Resize();
-				}
-
-				ImGui::EndTable();
-			}
-
-			ImGui::TreePop();
-		}
+		ImGui::PopStyleVar();
 	}
 
 	void Editor::DrawSceneImage() const
 	{
-		ImGui::Begin(ICON_FA_DESKTOP" Scene");
+		ImGui::Begin(ICON_FA_DESKTOP" Scene", nullptr, ImGuiWindowFlags_NoScrollbar);
 		const auto& viewportSize = ImGui::GetContentRegionAvail();
-		ImGui::Image(m_DrawImageAddress, viewportSize);
-		if (ImGui::IsItemHovered())
+		ImGui::Image(m_ConfigPanel.DisplayImageAddress, viewportSize);
+
+		if (ImGui::IsWindowHovered())
 		{
 			m_Renderer->Camera->IsInViewport = true;
 		}
 		else
 		{
 			m_Renderer->Camera->IsInViewport = false;
+		}
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			auto payload = ImGui::AcceptDragDropPayload("PAYLOAD_ITEM", ImGuiDragDropFlags_None);
+			if (payload)
+			{
+				const char* str = (const char*)payload->Data;
+				m_CurrentScene->AddModel(Filepath(str));
+			}
+
+			ImGui::EndDragDropTarget();
 		}
 
 		ImGui::End();
@@ -437,7 +291,7 @@ namespace Luden
 	{
 		ImGui::Begin("Properties");
 
-		if (m_HierarchyPanel.GetSelectedEntity().IsAlive())
+		if (m_HierarchyPanel.GetSelectedEntity().IsValid())
 		{
 			m_PropertyPanel.DrawEntity(m_HierarchyPanel.GetSelectedEntity());
 		}
@@ -457,7 +311,7 @@ namespace Luden
 	{
 		ImGui::SetNextItemWidth(500.0f);
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 375.0f);
-		ImGui::Text("fps: %d %0.2f ms", m_Timer->FPS, m_Timer->Miliseconds);
+		ImGui::Text("FPS: %d %0.2f ms", m_Timer->FPS, m_Timer->Miliseconds);
 	   
 		gui::SeparatorVertical();
 
@@ -465,16 +319,6 @@ namespace Luden
 
 		ImGui::Text("VRAM: %dMB", m_Renderer->GetRHI()->Adapter->QueryAdapterMemory());
 
-	}
-
-	void Editor::DrawLightData()
-	{
-		if (ImGui::TreeNodeEx("Lighting", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
-		{
-			// Draw all lights here
-
-			ImGui::TreePop();
-		}
 	}
 
 	void Editor::DrawEntityComponents(Entity& Entity)
@@ -489,6 +333,36 @@ namespace Luden
 
 		ImGui::Text("Name: %s", nameComponent.Name.c_str());
 
+	}
+
+	void Editor::CreateEditorResources()
+	{
+		EditorDirectoryTexture	= Importer.LoadTexture("../../Assets/Textures/Editor/folder-1485.png");
+		EditorDirectoryTexture->SetDebugName("[Editor] Directory Icon Texture");
+
+		EditorFileTexture = Importer.LoadTexture("../../Assets/Textures/Editor/file-1453.png");
+		EditorFileTexture->SetDebugName("[Editor] File Icon Texture");
+
+		EditorGLTFTexture = Importer.LoadTexture("../../Assets/Textures/Editor/gltf-file-icon.png");
+		EditorGLTFTexture->SetDebugName("[Editor] glTF Icon Texture");
+
+		EditorGLBTexture = Importer.LoadTexture("../../Assets/Textures/Editor/glb-file-icon.png");
+		EditorGLBTexture->SetDebugName("[Editor] glb Icon Texture");
+		
+		EditorOBJTexture = Importer.LoadTexture("../../Assets/Textures/Editor/obj-file-icon.png");
+		EditorOBJTexture->SetDebugName("[Editor] obj Icon Texture");
+
+		EditorPNGTexture = Importer.LoadTexture("../../Assets/Textures/Editor/png-file-icon.png");
+		EditorPNGTexture->SetDebugName("[Editor] png Icon Texture");
+
+		EditorJPGTexture = Importer.LoadTexture("../../Assets/Textures/Editor/jpg-file-icon.png");
+		EditorJPGTexture->SetDebugName("[Editor] jpg Icon Texture");
+
+		EditorJPEGTexture = Importer.LoadTexture("../../Assets/Textures/Editor/jpeg-file-icon.png");
+		EditorJPEGTexture->SetDebugName("[Editor] jpeg Icon Texture");
+
+		EditorBINTexture = Importer.LoadTexture("../../Assets/Textures/Editor/bin-file-icon.png");
+		EditorBINTexture->SetDebugName("[Editor] bin Icon Texture");
 	}
 
 } // namespace Luden
