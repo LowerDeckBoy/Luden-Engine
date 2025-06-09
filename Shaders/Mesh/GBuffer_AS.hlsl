@@ -6,22 +6,21 @@
 bool IsVisible(MeshletBound bounds, row_major float4x4 world, float3 viewPos)
 {
 	// Frustum culling.
-	float4 center = mul(world, float4(bounds.Center.xyz, 1));
-	float radius = bounds.Radius;
+	float4 center = mul(world, float4(bounds.Center.xyz, 1.0f));
 
 	for (int i = 0; i < 6; ++i)
 	{
-		if (dot(center.xyz, CameraConstants.Planes[i].xyz) + CameraConstants.Planes[i].w <= -radius)
+		if (dot(CameraConstants.Planes[i].xyz, center.xyz) + CameraConstants.Planes[i].w <= -bounds.Radius)
 		{
 			return false;
 		}
 	}
 	
 	// Backface culling
-	if (dot(normalize(bounds.ConeApex - viewPos), bounds.ConeAxis) >= bounds.ConeCutoff)
-	{
-		return false;
-	}
+	//if (dot(normalize(bounds.ConeApex - viewPos), bounds.ConeAxis) >= bounds.ConeCutoff)
+	//{
+	//	return false;
+	//}
 	
 	return true;
 }
@@ -34,19 +33,31 @@ void ASMain(
 	uint DispatchThreadID : SV_DispatchThreadID,
 	uint GroupID : SV_GroupID)
 {
-	StructuredBuffer<MeshletBound> MeshletBoundsBuffer = ResourceDescriptorHeap[Constants.MeshletBoundsIndex];
-	MeshletBound bounds = MeshletBoundsBuffer[DispatchThreadID];
-	
-	bool visible = IsVisible(bounds, Transforms.World, CameraConstants.Position);
-	
-	if (visible)
+	uint dispatchCount = AS_GROUP_SIZE;
+
+	if (Constants.bMeshletCulling)
 	{
-		uint index = WavePrefixCountBits(visible);
-		sPayload.MeshletIndices[index] = DispatchThreadID;
-	}
+		StructuredBuffer<MeshletBound> MeshletBoundsBuffer = ResourceDescriptorHeap[Constants.MeshletBoundsIndex];
+		MeshletBound bounds = MeshletBoundsBuffer[DispatchThreadID];
+
+		bool visible = IsVisible(bounds, Transforms.World, CameraConstants.Position);
+
+		if (visible)
+		{
+			uint index = WavePrefixCountBits(visible);
+			sPayload.MeshletIndices[index] = DispatchThreadID;
+		}
 	
-	uint visibleCount = WaveActiveCountBits(visible);
-	DispatchMesh(visibleCount, 1, 1, sPayload);
+		dispatchCount = WaveActiveCountBits(visible);
+
+	}
+	else
+	{
+		sPayload.MeshletIndices[GroupThreadID] = DispatchThreadID;
+	}
+		
+	DispatchMesh(dispatchCount, 1, 1, sPayload);
+	
 	
 	// Non-culling version.
 	/*
