@@ -60,21 +60,25 @@ namespace Luden::Platform
 	std::string FileDialog::Open(FOpenDialogOptions Options)
 	{
 		IFileOpenDialog* pFileOpen{};
+		std::string output = "";
 
 		// Create the FileOpenDialog object.
 		HRESULT hResult = ::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&pFileOpen));
 
-		std::string output = "";
+		if (FAILED(hResult))
+		{
+			return output;
+		}
 
 		const auto extensions = ExtensionFilterToTypes(Options.FilterExtensions);
 
 		pFileOpen->SetFileTypes(static_cast<uint32_t>(extensions.size()), extensions.data());
-		pFileOpen->SetOptions(FOS_DONTADDTORECENT | FOS_FILEMUSTEXIST);
+		pFileOpen->SetOptions(FOS_DONTADDTORECENT | FOS_FILEMUSTEXIST | FOS_FORCEFILESYSTEM);
 		pFileOpen->SetTitle(std::wstring(Options.Title.begin(), Options.Title.end()).c_str());
 
 		std::wstring defaultFolderLocation = std::wstring(Options.OpenLocation.begin(), Options.OpenLocation.end());
 		IShellItem2* pDefaultFolder = nullptr;
-		::SHCreateItemFromParsingName(defaultFolderLocation.c_str(), NULL, IID_PPV_ARGS(&pDefaultFolder));
+		::SHCreateItemFromParsingName(defaultFolderLocation.c_str(), nullptr, IID_PPV_ARGS(&pDefaultFolder));
 
 		pFileOpen->SetFolder(pDefaultFolder);
 
@@ -84,16 +88,18 @@ namespace Luden::Platform
 			hResult = pFileOpen->Show(nullptr);
 
 			// TODO:
-			//if (hResult == HRESULT_FROM_WIN32(ERROR_CANCELLED)) // No items were selected.
-			//{	
-			//	return output;
-			//}
+			if (hResult == HRESULT_FROM_WIN32(ERROR_CANCELLED)) // No items were selected.
+			{
+				pFileOpen->Release();
+				return output;
+			}
 
 			// Get the file name from the dialog box.
 			if (SUCCEEDED(hResult))
 			{
-				IShellItem* pItem;
+				IShellItem* pItem = nullptr;
 				hResult = pFileOpen->GetResult(&pItem);
+
 				if (SUCCEEDED(hResult))
 				{
 					PWSTR pszFilePath{};
@@ -105,14 +111,17 @@ namespace Luden::Platform
 
 						::CoTaskMemFree(pszFilePath);
 						pItem->Release();
-					}
+						pFileOpen->Release();
 
+						return output;
+					}
 				}
 			}
-			pFileOpen->Release();
 
+			pFileOpen->Release();
 		}
 
 		return output;
 	}
+
 } // namespace Luden::Platform

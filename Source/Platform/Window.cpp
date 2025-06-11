@@ -1,4 +1,5 @@
 #include "Window.hpp"
+#include <shlobj.h>
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi")
 
@@ -70,17 +71,26 @@ namespace Luden::Platform
 		BOOL bDarkMode = TRUE;
 		::DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &bDarkMode, sizeof(bDarkMode));
 
-		::COLORREF captionColor = DarkThemeBackground;
-		::DwmSetWindowAttribute(Handle, DWMWA_CAPTION_COLOR, &captionColor, sizeof(captionColor));
+		//::COLORREF captionColor = DarkThemeBackground;
+		//::DwmSetWindowAttribute(Handle, DWMWA_CAPTION_COLOR, &captionColor, sizeof(captionColor));
 
 		::ShowWindow(Handle, (Desc.bMaximize) ? SW_SHOWMAXIMIZED : SW_SHOW);
 		::SetForegroundWindow(Handle);
 		::SetFocus(Handle);
 		::UpdateWindow(Handle);
+
+
+		if (FAILED(::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
+		{
+
+		}
+		
 	}
 
 	void Window::Shutdown()
 	{
+		::CoUninitialize();
+
 		if (Instance)
 		{
 			::UnregisterClassA(WindowClassName, Instance);
