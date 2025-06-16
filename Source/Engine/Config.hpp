@@ -19,8 +19,6 @@ namespace Luden
 			return config;
 		}
 
-		bool bEnableDebugLayer = true;
-
 		// Note: don't change during runtime.
 		// Either 2 or 3.
 		uint32 NumBackBuffers = 2;
@@ -33,32 +31,30 @@ namespace Luden
 		// 4 - VSync quarter
 		int32 SyncInterval = 1;
 
+		bool bEnableDebugLayer = true;
+
 		// If SyncInterval == 0.
 		// Frame limit can be set to value in range [24; 240].
 		bool bAllowFixedFrameRate = false;
 
 		// TODO:
 		// Clamp frame rate to desired [min;max] range.
-		bool bAllowSmoothFrameRate = false;
+		//bool bAllowSmoothFrameRate = false;
 
 		// If false - switch to vertex shading.
 		bool bMeshShading = true;
 		
-		bool bDrawMeshlets = true;
+		bool bDrawMeshlets = false;
 
-		// True, to dispatch Raytracing.
-		// Else, use raster mode.
-		bool bRaytracing = false;
+		bool bMeshletCulling = true;
 
 		// Debug only.
 		// Whether to enable alpha masking cutoff in pixel shaders.
 		bool bAlphaMask = true;
 
-		bool bDrawSky = false;
-
-		// Debug grid for Editor Mode.
-		// Placeholder for now.
-		bool bDrawGrid = false;
+		// True, to dispatch Raytracing.
+		// Else, use raster mode.
+		bool bRaytracing = false;
 
 		bool bHideEditor = false;
 

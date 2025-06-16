@@ -87,14 +87,14 @@ namespace Luden::Panel
 			// Temporarly
 
 			// Row 2;
-			//ImGui::TableNextRow();
-			//ImGui::TableNextColumn();
-			//
-			//ImGui::AlignTextToFramePadding();
-			//ImGui::Text("Raytracing: ");
-			//gui::OnItemHover("Check to dispatch ray tracing.");
-			//ImGui::TableNextColumn();
-			//ImGui::Checkbox("##raytracing", &config.bRaytracing);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Raytracing: ");
+			gui::OnItemHover("Check to dispatch ray tracing.");
+			ImGui::TableNextColumn();
+			ImGui::Checkbox("##raytracing", &config.bRaytracing);
 
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
@@ -134,7 +134,7 @@ namespace Luden::Panel
 		{
 			ImGui::Text("Image to display:");
 
-			const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive", "LightPass" };
+			const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive", "LightPass", "Raytracing" };
 
 			if (ImGui::Combo("##comb", &DisplayImageIndex, items, IM_ARRAYSIZE(items)))
 			{
@@ -157,6 +157,9 @@ namespace Luden::Panel
 					break;
 				case 5:
 					DisplayImageAddress = m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle.GpuHandle.ptr;
+					break;
+				case 6:
+					DisplayImageAddress = m_Renderer->RaytracingOutputSR->ShaderResourceHandle.GpuHandle.ptr;
 					break;
 				}
 			}
