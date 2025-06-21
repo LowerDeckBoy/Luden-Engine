@@ -39,31 +39,6 @@ namespace Luden
 		SAFE_RELEASE(m_DxcIncludeHandler);
 	}
 
-	D3D12Shader ShaderCompiler::CompileVS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
-	{
-		return Compile(Path, ShaderStageFlag::Vertex, EntryPoint, bHasRootSignature);
-	}
-
-	D3D12Shader ShaderCompiler::CompileAS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
-	{
-		return Compile(Path, ShaderStageFlag::Amplification, EntryPoint, bHasRootSignature);
-	}
-
-	D3D12Shader ShaderCompiler::CompileMS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
-	{
-		return Compile(Path, ShaderStageFlag::Mesh, EntryPoint, bHasRootSignature);
-	}
-
-	D3D12Shader ShaderCompiler::CompilePS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
-	{
-		return Compile(Path, ShaderStageFlag::Pixel, EntryPoint, bHasRootSignature);
-	}
-
-	D3D12Shader ShaderCompiler::CompileCS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
-	{
-		return Compile(Path, ShaderStageFlag::Compute, EntryPoint, bHasRootSignature);;
-	}
-
 	D3D12Shader ShaderCompiler::Compile(Filepath Path, ShaderStageFlag ShaderStage, std::string_view EntryPoint, bool bHasRootSignature)
 	{
 		const auto path = File::GetRelativePath(Path);
@@ -98,7 +73,6 @@ namespace Luden
 	#endif
 		};
 		
-
 		DxcBuffer buffer{ 
 			sourceBlob->GetBufferPointer(), 
 			sourceBlob->GetBufferSize(),
@@ -112,9 +86,9 @@ namespace Luden
 		dxcResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), &outputName);
 		if (errors && errors->GetStringLength() > 0)
 		{
-			//std::string errorMessage = std::format("File: {}\n\n{}", Path.c_str(), (char*)errors->GetBufferPointer());
-			std::string errorMessage = std::format("{}", (char*)errors->GetBufferPointer());
+			std::string errorMessage = std::format("File: {}\n\n{}", File::GetFilename(Path).c_str(), (char*)errors->GetBufferPointer());
 			::MessageBoxA(nullptr, errorMessage.c_str(), "HLSL Error", MB_OK);
+
 			throw std::runtime_error((char*)errors->GetBufferPointer());
 		}
 
@@ -131,4 +105,35 @@ namespace Luden
 		return output;
 		//return D3D12Shader("test", blob->GetBufferPointer(), blob->GetBufferSize(), ShaderStage);
 	}
+
+	D3D12Shader ShaderCompiler::CompileVS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
+	{
+		return Compile(Path, ShaderStageFlag::Vertex, EntryPoint, bHasRootSignature);
+	}
+
+	D3D12Shader ShaderCompiler::CompileAS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
+	{
+		return Compile(Path, ShaderStageFlag::Amplification, EntryPoint, bHasRootSignature);
+	}
+
+	D3D12Shader ShaderCompiler::CompileMS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
+	{
+		return Compile(Path, ShaderStageFlag::Mesh, EntryPoint, bHasRootSignature);
+	}
+
+	D3D12Shader ShaderCompiler::CompilePS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
+	{
+		return Compile(Path, ShaderStageFlag::Pixel, EntryPoint, bHasRootSignature);
+	}
+
+	D3D12Shader ShaderCompiler::CompileCS(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
+	{
+		return Compile(Path, ShaderStageFlag::Compute, EntryPoint, bHasRootSignature);
+	}
+
+	D3D12Shader ShaderCompiler::CompileLib(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint)
+	{
+		return Compile(Path, ShaderStageFlag::RayGen, EntryPoint, bHasRootSignature);
+	}
+
 } // namespace Luden

@@ -22,6 +22,8 @@ namespace Luden
 		D3D12Shader CompilePS(Filepath Path, bool bHasRootSignature = false, std::string_view EntryPoint = "PSMain");
 		D3D12Shader CompileCS(Filepath Path, bool bHasRootSignature = false, std::string_view EntryPoint = "CSMain");
 
+		D3D12Shader CompileLib(Filepath Path, bool bHasRootSignature, std::string_view EntryPoint);
+
 	private:
 		Ref<IDxcCompiler3>		m_DxcCompiler;
 		Ref<IDxcIncludeHandler> m_DxcIncludeHandler;
