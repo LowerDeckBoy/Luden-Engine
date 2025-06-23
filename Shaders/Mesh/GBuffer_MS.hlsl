@@ -5,7 +5,7 @@
 #include "GBufferCommon.hlsli"
 
 [RootSignature(GBUFFER_ROOT_SIG)]
-[NumThreads(124, 1, 1)]
+[NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
 void MSMain(
 	uint GroupThreadID : SV_GroupThreadID,

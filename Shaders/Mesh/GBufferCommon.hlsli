@@ -40,8 +40,10 @@ struct PushConstants
 	uint MeshletTrianglesIndex;
 	uint MeshletBoundsIndex;
 	uint bDrawMeshlets;
+	uint bMeshletCulling;
 	uint bAlphaMask;
-	uint pad;
+	uint MaterialBuffer;
+	uint MaterialID;
 };
 
 struct Vertex

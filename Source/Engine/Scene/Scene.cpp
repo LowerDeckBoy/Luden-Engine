@@ -24,15 +24,7 @@ namespace Luden
 
 	Scene::~Scene()
 	{
-		for (auto& model : Models)
-		{
-			model->Release();
-		}
-
-		if (m_World)
-		{
-			delete m_World;
-		}
+		Release();
 	}
 
 	void Scene::Build(D3D12Device* pDevice)
@@ -58,6 +50,12 @@ namespace Luden
 			model->Release();
 		}
 
+		if (MaterialBuffer)
+		{
+			delete MaterialBuffer;
+			MaterialBuffer = nullptr;
+		}
+
 		Models.clear();
 
 		GetWorld()->Clear();
@@ -73,10 +71,12 @@ namespace Luden
 		Model model{};
 
 		auto startTime = std::chrono::high_resolution_clock::now();
-		if (!m_AssetImporter->ImportStaticMesh(Path, model))
+
+		if (!m_AssetImporter->ImportStaticMesh(this, Path, model))
 		{
 			return false;
 		}
+
 		auto endTime = std::chrono::high_resolution_clock::now();
 		std::println("{0} load time: {1}", File::GetFilename(Path), std::chrono::duration<f64>(endTime - startTime));
 

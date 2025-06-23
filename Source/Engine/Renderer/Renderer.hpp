@@ -11,6 +11,9 @@
 #include "Techniques/LightPass.hpp"
 
 
+// Test
+#include "D3D12/D3D12StateObject.hpp"
+
 namespace Luden
 {
 	struct SceneRenderTargets
@@ -21,21 +24,14 @@ namespace Luden
 		D3D12Descriptor* ImageToDisplay;
 	};
 
-	struct SceneConstants
+	// TODO:
+	enum class ERenderLayer
 	{
-		DirectX::XMMATRIX View;
-		DirectX::XMMATRIX Projection;
-
-		DirectX::XMMATRIX InvView;
-		DirectX::XMMATRIX InvProjection;
-
-		std::array<DirectX::XMFLOAT4, 6> FrustumPlanes;
-
-		f32 NearZ;
-		f32 FarZ;
-
+		Opaque,
+		Transparent,
+		Sky
 	};
-	
+
 	class Renderer
 	{
 	public:
@@ -51,8 +47,6 @@ namespace Luden
 
 		void Resize();
 
-		//void Draw(Scene* pScene, Frame& CurrentFrame);
-
 		// Draw given scene to Geometry Buffer.
 		void DrawScene(Scene* pScene, Frame& CurrentFrame);
 
@@ -60,63 +54,46 @@ namespace Luden
 
 		static SceneRenderTargets SceneTextures;
 
-		// - G-Buffer
-		std::vector<RenderPass> RenderPasses;
-
 		D3D12RHI* GetRHI() { return m_D3D12RHI; }
 
 		void BuildPipelines();
 
-		Scene* ActiveScene;
+		Scene* ActiveScene = nullptr;
 
 		void ReleaseActiveScene();
 
-		SceneCamera* Camera;
+		SceneCamera* Camera = nullptr;
 
 		// TODO:
 		// Clean these up
 		bool bRequestCleanup = false;
 		bool bRequestSceneLoad = false;
 		Filepath SceneToLoad;
-		
-		uint64 CulledVertices = 0;
-
-		// Test
-		SceneConstants cbScene{};
 
 		// Render Passes
-		GeometryPass*	GBuffer;
-		LightPass*		LightingPass;
+		GeometryPass*	GBuffer = nullptr;
+		LightPass*		LightingPass = nullptr;
 	
-		// Test
-		D3D12BVH* RaytracingBVH;
-		void InitializeRaytracingResources();
-
 	private:
-		D3D12RHI* m_D3D12RHI;
-		Platform::Window* m_ParentWindow;
+		D3D12RHI* m_D3D12RHI = nullptr;
+		Platform::Window* m_ParentWindow = nullptr;
 
 		ShaderCompiler* m_ShaderCompiler;
 
-		D3D12Shader VertexVS;
-		D3D12Shader VertexPS;
+	public:
+		// Test
+		D3D12BVH* RaytracingBVH = nullptr;
+		D3D12StateObject* RaytracingPSO = nullptr;
+		void InitializeRaytracingResources();
+		D3D12Shader* RayGenShader;
+		D3D12Shader* MissShader;
+		D3D12Shader* ClosestHitShader;
+		D3D12ShaderBindingTable* RaytracingShaderTable;
 
-		D3D12RootSignature VertexRS;
-		D3D12PipelineState VertexPSO;
-
-		D3D12Shader MeshAS;
-		D3D12Shader MeshMS;
-		D3D12Shader MeshPS;
-
-		D3D12RootSignature MeshRS;
-		D3D12PipelineState MeshPSO;
-
-		D3D12Shader MeshCullAS;
-		D3D12Shader MeshCullMS;
-		D3D12Shader MeshCullPS;
-
-		D3D12RootSignature MeshCullRS;
-		D3D12PipelineState MeshCullPSO;
+		D3D12RootSignature* RaytracingRS;
+		D3D12Texture* RaytracingOutput;
+		D3D12Texture* RaytracingOutputSR;
+		void DispatchRayTracing(Frame& CurrentFrame);
 
 	};
 } // namespace Luden

@@ -5,6 +5,8 @@
 namespace Luden
 {
 	class ShaderCompiler;
+	class Scene;
+	class SceneCamera;
 	struct Frame;
 
 	class GeometryPass : public RenderPass
@@ -21,7 +23,8 @@ namespace Luden
 
 		void Resize(uint32 Width, uint32 Height) override;
 
-		void Render(Frame& CurrentFrame, std::function<void()>  const& DrawFunction);
+		void Render(Frame& CurrentFrame, std::function<void()> const& DrawFunction);
+		void Render(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
 
 		D3D12RenderTexture BaseColor;
 		D3D12RenderTexture Normal;
@@ -31,6 +34,8 @@ namespace Luden
 	private:
 		// For internal use only.
 		std::vector<D3D12Descriptor*> m_RenderTargetHandles;
+
+		D3D12Pipeline BlendPipelineState;
 
 	};
 } // namespace Luden
