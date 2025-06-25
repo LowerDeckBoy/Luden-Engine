@@ -18,9 +18,11 @@ struct MeshletBound
 	float	Radius;
 
 	float3	ConeApex;
+	uint	pad;
 	float3	ConeAxis;
 	// cos(angle/2)
 	float	ConeCutoff;
+	float4  pad2;
 };
 
 uint3 UnpackTriangle(uint Packed)
@@ -54,12 +56,12 @@ float3 GetMeshletColor(uint MeshletIndex)
 
 float3 GetMeshletColorHashed(uint MeshletIndex)
 {
-	uint mhash = Hash(MeshletIndex);
+	uint hash = Hash(MeshletIndex);
 	
 	return float3(
-		float((mhash	  ) & 255),
-		float((mhash >> 8 ) & 255),
-		float((mhash >> 16) & 255)) / 255.0;
+		float((hash	  ) & 255),
+		float((hash >> 8 ) & 255),
+		float((hash >> 16) & 255)) / 255.0;
 }
 
 #endif // MESH_HLSLI

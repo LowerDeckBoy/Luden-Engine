@@ -1,7 +1,6 @@
 #ifndef GBUFFER_MS_HLSL
 #define GBUFFER_MS_HLSL
 
-
 #include "../Material.hlsli"
 #include "../Mesh.hlsli"
 		
@@ -40,7 +39,8 @@ struct PushConstants
 	uint MeshletTrianglesIndex;
 	uint MeshletBoundsIndex;
 	uint bDrawMeshlets;
-	uint bAlphaMask;
+	uint bMeshletCulling;
+	//uint bAlphaMask;
 	uint GBufferBaseColor;
 };
 
@@ -143,14 +143,6 @@ void MSMain(
 
 SamplerState AnisotropicSampler : register(s0);
 
-struct GBuffers
-{
-	float4 BaseColor;
-	float4 Normal;
-	float4 MetallicRoughness;
-	float4 Emissive;
-};
-
 int IsIndexValid(uint Index)
 {
 	if (Index == 0xFFFFFFFF)
@@ -167,38 +159,28 @@ Texture2D GetTexture(in uint Index)
 	return output;
 }
 
+#define NEAR_PLANE 0.1f
+#define FAR_PLANE 10000.0f
+
 [RootSignature(GBUFFER_ROOT_SIG)]
 float4 PSMain(VertexOut pin) : SV_TARGET0
 {
 	float4 output = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	if (IsIndexValid(Material.EmissiveIndex))
-	{
-		Texture2D emissiveTexture = GetTexture(Material.EmissiveIndex);
-		
-		float4 emissiveColor = emissiveTexture.Sample(AnisotropicSampler, pin.TexCoord);
-		
-		output.rgb += emissiveColor.rgb;
-	}
+	
+	
 	if (IsIndexValid(Material.BaseColorIndex))
 	{
 		Texture2D baseColorTexture = GetTexture(Material.BaseColorIndex);
 		
-		//float4 baseColor = baseColorTexture.Sample(AnisotropicSampler, pin.TexCoord) * float4(Material.BaseColorFactor.rgba);
 		float4 baseColor = baseColorTexture.Sample(AnisotropicSampler, pin.TexCoord);
-		
-		//if (Constants.bAlphaMask)
-		//{
-		//	if (baseColor.a < 0.5)
-		//	{
-		//		discard;
-		//	}
-		//}
-		
-		if (baseColor.a  == 0)
+	
+		if (baseColor.a == 0.0)
 		{
-			discard;
+			//baseColor.rgb *= Material.IndexOfRefraction;
+			baseColor.rgb = lerp(baseColor.rgb, baseColor.rgb, Material.IndexOfRefraction);
+			//discard;
 		}
-		
+	
 		if (Constants.bDrawMeshlets)
 		{
 			float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
@@ -208,7 +190,21 @@ float4 PSMain(VertexOut pin) : SV_TARGET0
 		output = baseColor;
 	}
 	
-	return output.rgba;
+	if (IsIndexValid(Material.EmissiveIndex))
+	{
+		Texture2D emissiveTexture = GetTexture(Material.EmissiveIndex);
+		
+		float4 emissiveColor = emissiveTexture.Sample(AnisotropicSampler, pin.TexCoord);
+		
+		output.rgb += emissiveColor.rgb;
+	}
+	
+	
+	//return output;
+	//const float z = 1.0f - (pin.Position.z / pin.Position.w);
+	
+	//return float4(z, z, z, output.a);
+	return float4(output.rgb, output.a);
 	
 }
 

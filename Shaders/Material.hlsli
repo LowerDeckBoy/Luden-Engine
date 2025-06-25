@@ -27,4 +27,9 @@ struct FMaterial
 
 };
 
+bool IsMaterialMasked(FMaterial Material)
+{
+	return Material.AlphaMode == ALPHA_MODE_MASK;
+}
+
 #endif // MATERIAL_HLSLI
