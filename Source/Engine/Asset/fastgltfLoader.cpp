@@ -55,13 +55,19 @@ namespace Luden
 		glTF::FfastgltfLoadingData loadData{};
 		loadData.Scene = std::move(&scene.get());
 
-		glTF::TraverseHierarchy(loadData);
-		glTF::LoadMaterials(loadData);
+		//glTF::TraverseHierarchy(loadData);
+		//glTF::LoadMaterials(loadData);
 
+		std::thread hierarchy([&](){ glTF::TraverseHierarchy(loadData); });
+		std::thread mats([&](){ glTF::LoadMaterials(loadData); });
+
+		hierarchy.join();
 		for (auto& mesh : loadData.Meshes)
 		{
 			BuildMesh(mesh);
 		}
+
+		mats.join();
 
 		const std::string pathToParent = std::filesystem::absolute(Path).parent_path().string();
 		// Some of glTF models use place their textures inside *textures/* directory, but some just don't.
@@ -151,6 +157,7 @@ namespace Luden
 
 							StaticMesh meshData{};
 							meshData.Transform.WorldMatrix = *(DirectX::XMMATRIX*)&matrix;
+							meshData.Name = gltfMesh->name.c_str();
 
 							if (primitive->indicesAccessor.has_value())
 							{

@@ -16,17 +16,24 @@ namespace Luden
 
 			return false;
 		}
-		
-		if (File::GetExtension(Path) == ".gltf")
-		{
-			return ImportFastglftModel(Path, OutModel);
-		}
-		else
-		{
-			return ImportAssimpModel(Path, OutModel);
-		}
 
-		return false;
+		return ImportAssimpModel(Path, OutModel);
+
+		//if (File::GetExtension(Path) == ".gltf")
+		//{
+		//	return ImportFastglftModel(Path, OutModel);
+		//}
+		//else
+		//{
+		//	return ImportAssimpModel(Path, OutModel);
+		//}
+
+		//return false;
+	}
+
+	bool AssetImporter::ImportStaticMesh(Scene* pScene, Filepath Path, Model& OutModel)
+	{
+		return ImportAssimpModel(pScene, Path, OutModel);
 	}
 
 	D3D12Texture* AssetImporter::LoadTexture(Filepath Path)
@@ -50,7 +57,7 @@ namespace Luden
 		DirectX::ScratchImage scratchImage{};
 		DirectX::TexMetadata metadata{};
 
-		HRESULT result = DirectX::LoadFromWICFile(Path.wstring().c_str(), DirectX::WIC_FLAGS_NONE, &metadata, scratchImage);
+		HRESULT result = DirectX::LoadFromWICFile(Path.wstring().c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, &metadata, scratchImage);
 		
 		if (FAILED(result))
 		{
@@ -101,13 +108,17 @@ namespace Luden
 	{	
 		DirectX::ScratchImage scratchImage{};
 		DirectX::TexMetadata metadata{};
-		HRESULT result = DirectX::LoadFromDDSFile(Path.c_str(), DirectX::DDS_FLAGS_FORCE_RGB, &metadata, scratchImage);
+		HRESULT result = DirectX::LoadFromDDSFile(Path.c_str(), DirectX::DDS_FLAGS_NONE, &metadata, scratchImage);
 		if (FAILED(result))
 		{
 			char hResultError[512]{};
 			::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
 			LOG_WARNING("Failed to load texture: {}", hResultError);
 		}
+		
+
+		DirectX::Image decompressed{};
+		VERIFY_D3D12_RESULT(DirectX::Decompress(decompressed, metadata.format, scratchImage));
 
 		TextureDesc desc{};
 		desc.Data			= (void*)scratchImage.GetImages()->pixels;
@@ -117,8 +128,6 @@ namespace Luden
 		desc.NumMips		= static_cast<uint16>(metadata.mipLevels);
 		desc.Format			= metadata.format;
 		//desc.NumMips = 1;
-
-		//DirectX::Decompress()
 
 		pTexture->Create(Device, desc);
 
@@ -229,7 +238,7 @@ namespace Luden
 
 			Mesh.MeshletBounds.emplace_back(output);
 		}
-
+		
 		//Mesh.MeshletTriangles = RepackMeshletTriangles()
 
 		Mesh.NumVertices			= static_cast<uint32>(Mesh.Vertices.size());

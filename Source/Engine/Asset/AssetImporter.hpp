@@ -10,6 +10,7 @@ namespace Luden
 	class D3D12Device;
 	class D3D12Texture;
 	class Model;
+	class Scene;
 
 	struct StaticMesh;
 	struct Material;
@@ -30,6 +31,7 @@ namespace Luden
 		~AssetImporter() = default;
 		
 		bool ImportStaticMesh(Filepath Path, Model& OutModel);
+		bool ImportStaticMesh(Scene* pScene, Filepath Path, Model& OutModel);
 
 		D3D12Texture* LoadTexture(Filepath Path);
 
@@ -46,6 +48,7 @@ namespace Luden
 
 		// For non glTF models.
 		bool ImportAssimpModel(Filepath Path, Model& OutModel);
+		bool ImportAssimpModel(Scene* pScene, Filepath Path, Model& OutModel);
 
 		// for glTF 2.0 models only.
 		bool ImportFastglftModel(Filepath Path, Model& OutModel);

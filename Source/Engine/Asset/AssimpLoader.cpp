@@ -5,6 +5,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <map>
+#include <thread>
+#include "Scene/Scene.hpp"
 
 namespace Luden
 {
@@ -17,6 +19,10 @@ namespace Luden
 			Filepath Path;
 
 			std::vector<StaticMesh>		Meshes;
+
+			// Test
+			std::vector<StaticMesh>		OpaqueMeshes;
+			std::vector<StaticMesh>		BlendMeshes;
 
 			std::vector<Material>		UniqueMaterials;
 			std::vector<D3D12Texture*>	ModelTextures;
@@ -127,9 +133,126 @@ namespace Luden
 			BuildMesh(mesh);
 		}
 
+		// test
+		//for (auto& material : data.UniqueMaterials)
+		//{
+		//
+		//}
+
 		OutModel.Meshes		= std::move(data.Meshes);
 		OutModel.Materials	= std::move(data.UniqueMaterials);
 		OutModel.Textures	= std::move(data.ModelTextures);
+
+		OutModel.SetFilepath(Path);
+		importer.FreeScene();
+
+		return true;
+	}
+
+	bool AssetImporter::ImportAssimpModel(Scene* pScene, Filepath Path, Model& OutModel)
+	{
+		constexpr int32 loadFlags =
+			aiProcess_ConvertToLeftHanded |
+			aiProcess_Triangulate |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_RemoveRedundantMaterials |
+			aiProcess_FindInstances |
+			aiProcess_GenSmoothNormals |
+			aiProcess_CalcTangentSpace |
+			aiProcess_GenBoundingBoxes;
+
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(Path.string(), (uint32)loadFlags);
+
+		if (!scene || !scene->mRootNode || !scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
+		{
+			LOG_WARNING("\n\tFailed to load model: {0}, reason: {1}", scene->GetShortFilename(Path.string().c_str()), importer.GetErrorString());
+
+			importer.FreeScene();
+
+			return false;
+		}
+
+		OutModel.Meshes.reserve(scene->mNumMeshes);
+		OutModel.Materials.reserve(scene->mNumMaterials);
+
+		assimp::FAssimpLoadingData data{};
+		data.Scene = scene;
+		data.Path = Path;
+
+		LoadMaterials(data);
+		TraverseNode(data, scene->mRootNode);
+
+		for (auto& texture : data.TexturesToLoad)
+		{
+			const auto& materialId = texture.first;
+			const auto& texturePath = texture.second.first;
+			const auto& textureType = texture.second.second;
+
+			if (!IsTextureLoaded(data, texturePath))
+			{
+				D3D12Texture* tex2D = LoadTexture(texturePath);
+
+				switch (textureType)
+				{
+				case ETextureType::BaseColor:
+					data.UniqueMaterials.at(materialId).BaseColorIndex = tex2D->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::Normal:
+					data.UniqueMaterials.at(materialId).NormalIndex = tex2D->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::MetallicRoughness:
+					data.UniqueMaterials.at(materialId).MetallicRoughnessIndex = tex2D->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::Emissive:
+					data.UniqueMaterials.at(materialId).EmissiveIndex = tex2D->ShaderResourceHandle.Index;
+					break;
+				}
+
+				tex2D->SetFilepath(texturePath);
+				data.LoadedPaths.push_back(texturePath.string());
+				data.ModelTextures.push_back(std::move(tex2D));
+			}
+			else
+			{
+				auto textureIndex = FindTextureWithPath(data.ModelTextures, texturePath);
+
+				switch (textureType)
+				{
+				case ETextureType::BaseColor:
+					data.UniqueMaterials.at(materialId).BaseColorIndex = data.ModelTextures.at(textureIndex)->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::Normal:
+					data.UniqueMaterials.at(materialId).NormalIndex = data.ModelTextures.at(textureIndex)->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::MetallicRoughness:
+					data.UniqueMaterials.at(materialId).MetallicRoughnessIndex = data.ModelTextures.at(textureIndex)->ShaderResourceHandle.Index;
+					break;
+				case ETextureType::Emissive:
+					data.UniqueMaterials.at(materialId).EmissiveIndex = data.ModelTextures.at(textureIndex)->ShaderResourceHandle.Index;
+					break;
+				}
+			}
+		}
+
+		for (auto& mesh : data.Meshes)
+		{
+			BuildMesh(mesh);
+
+			const uint32 handle = static_cast<uint32>(pScene->Materials.size());
+			pScene->Materials.push_back(data.UniqueMaterials.at(mesh.MaterialId));
+			mesh.MaterialId = handle;
+		}
+
+		// test
+		//for (auto& material : data.UniqueMaterials)
+		//{
+		//	pScene->Materials.p
+		//}
+
+		OutModel.Meshes = std::move(data.Meshes);
+		//OutModel.Materials = std::move(data.UniqueMaterials);
+		OutModel.Textures = std::move(data.ModelTextures);
 
 		OutModel.SetFilepath(Path);
 		importer.FreeScene();
@@ -241,25 +364,23 @@ namespace Luden
 				tangents.data(), sizeof(DirectX::XMFLOAT4),
 				tangents.data(), sizeof(DirectX::XMFLOAT4),
 				vertexCount, meshData.Transform.WorldMatrix);
-
+			
 			DirectX::XMVector4TransformStream(
 				bitangents.data(), sizeof(DirectX::XMFLOAT4),
 				bitangents.data(), sizeof(DirectX::XMFLOAT4),
 				vertexCount, meshData.Transform.WorldMatrix);
 
-			//meshopt_remapVertexBuffer(positions.data(), positions.data(), positions.size(), sizeof(Vertex), remap.data());
-
 			for (uint32 vertId = 0; vertId < vertexCount; ++vertId)
 			{
-				Vertex vout{};
+				Vertex vertex{};
 
-				vout.Position = *(DirectX::XMFLOAT3*)(&positions.at(vertId));
-				vout.TexCoord = texCoords.at(vertId);
-				vout.Normal = normals.at(vertId);
-				vout.Tangent = *(DirectX::XMFLOAT3*)(&tangents.at(vertId));
-				vout.Bitangent = *(DirectX::XMFLOAT3*)(&bitangents.at(vertId));
+				vertex.Position		= *(DirectX::XMFLOAT3*)(&positions.at(vertId));
+				vertex.TexCoord		= texCoords.at(vertId);
+				vertex.Normal		= normals.at(vertId);
+				vertex.Tangent		= *(DirectX::XMFLOAT3*)(&tangents.at(vertId));
+				vertex.Bitangent	= *(DirectX::XMFLOAT3*)(&bitangents.at(vertId));
 
-				meshData.Vertices.push_back(vout);
+				meshData.Vertices.push_back(vertex);
 			}
 
 			if (mesh->HasFaces())
@@ -276,8 +397,6 @@ namespace Luden
 					}
 				}
 			}
-
-			//BuildMesh(meshData);
 
 			DirectX::XMStoreFloat3x4(&meshData.RaytracingInstanceDesc.Transform, meshData.Transform.WorldMatrix);
 			meshData.RaytracingInstanceDesc.InstanceID = 0;
@@ -313,7 +432,8 @@ namespace Luden
 			// Some of glTF models use place their textures inside *textures/* directory, but some just don't.
 			const std::string pathToTexture = (std::filesystem::exists("textures/") ? "textures/" : "");
 
-			if (assimpMaterial->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS)
+			
+			if (assimpMaterial->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &path) == aiReturn_SUCCESS)
 			{
 				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
 				SceneData.TexturesToLoad.push_back({ materialIdx, { texturePath, ETextureType::BaseColor } });
@@ -325,7 +445,7 @@ namespace Luden
 				SceneData.TexturesToLoad.push_back({ materialIdx, { texturePath, ETextureType::Normal } });
 			}
 
-			if (assimpMaterial->GetTexture(aiTextureType_METALNESS, 0, &path) == aiReturn_SUCCESS)
+			if (assimpMaterial->GetTexture(AI_MATKEY_METALLIC_TEXTURE, &path) == aiReturn_SUCCESS)
 			{
 				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
 				SceneData.TexturesToLoad.push_back({ materialIdx, { texturePath, ETextureType::MetallicRoughness } });
@@ -336,7 +456,7 @@ namespace Luden
 				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
 				SceneData.TexturesToLoad.push_back({ materialIdx, { texturePath, ETextureType::Emissive } });
 			}
-
+			
 			assimpMaterial->Get(AI_MATKEY_METALLIC_FACTOR,		material.Metallic);
 			assimpMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR,		material.Roughness);
 			assimpMaterial->Get(AI_MATKEY_GLTF_ALPHACUTOFF,		material.AlphaCutoff);
@@ -346,7 +466,7 @@ namespace Luden
 			assimpMaterial->Get(AI_MATKEY_REFLECTIVITY,			material.Reflectivity);
 
 			aiColor4D baseColorFactor{};
-			assimpMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, baseColorFactor);
+			assimpMaterial->Get(AI_MATKEY_BASE_COLOR, baseColorFactor);
 			material.BaseColorFactor = *(DirectX::XMFLOAT4*)(&baseColorFactor);
 
 			aiColor4D emissiveColorFactor{};
@@ -368,7 +488,7 @@ namespace Luden
 			{
 				material.AlphaMode = EAlphaMode::Mask;
 			}
-
+			
 			SceneData.UniqueMaterials.push_back(material);
 		}
 	}
