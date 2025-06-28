@@ -459,25 +459,26 @@ namespace Luden
 			model->Create(m_D3D12RHI->Device);
 			
 			// Gather indirect arguments.
-			//for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
-			//{
-			//	m_D3D12RHI->MeshCommandSignature->AddDispatchMeshCommand();
-			//
-			//	auto& mesh = model->Meshes.at(meshIdx);
-			//
-			//	FDispatchMeshCommand command{};
-			//	command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
-			//	command.Argument.ThreadGroupCountY	= 1;
-			//	command.Argument.ThreadGroupCountZ	= 1;
-			//
-			//	command.MeshletBufferIndex			= mesh.MeshletsBuffer;
-			//	command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
-			//	command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
-			//	command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
-			//
-			//	drawCommands.push_back(command);
-			//}
+			/*
+			for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
+			{
+				m_D3D12RHI->MeshCommandSignature->AddDispatchMeshCommand();
 			
+				auto& mesh = model->Meshes.at(meshIdx);
+			
+				FDispatchMeshCommand command{};
+				command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
+				command.Argument.ThreadGroupCountY	= 1;
+				command.Argument.ThreadGroupCountZ	= 1;
+			
+				command.MeshletBufferIndex			= mesh.MeshletsBuffer;
+				command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
+				command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
+				command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
+			
+				drawCommands.push_back(command);
+			}
+			*/
 		}
 		
 		//BufferDesc desc{};
@@ -494,74 +495,29 @@ namespace Luden
 		if (pScene->MaterialBuffer != nullptr)
 		{
 			delete pScene->MaterialBuffer;
-			//pScene->MaterialBuffer->Release();
 			pScene->MaterialBuffer = nullptr;
+			pScene->MaterialBufferPtr = nullptr;
 		}
 
-		pScene->MaterialBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{ .BufferUsage = BufferUsageFlag::Storage,
-			.Data = pScene->Materials.data(),
-			.NumElements = static_cast<uint32>(pScene->Materials.size()),
+		constexpr uint32 dataAlignment = Math::Align<uint32>(sizeof(Material) * 4096, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+
+		pScene->MaterialBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{ 
+			.BufferUsage = BufferUsageFlag::Storage,
+			//.Data = pScene->Materials.data(),
+			.NumElements = 4096,
 			.Stride = sizeof(Material),
-			.Size = sizeof(Material) * pScene->Materials.size(),
+			.Size = dataAlignment,
+			//.Size = sizeof(Material) * 4096,
 			.bBindless = true,
 			.Name = "Scene Material Buffer" });
 
-		D3D12UploadContext::UploadBuffer(pScene->MaterialBuffer, sizeof(Material) * pScene->Materials.size());
+		//VERIFY_D3D12_RESULT(pScene->MaterialBuffer->GetHandle()->Map(0, 0, reinterpret_cast<void**>(&pScene->MaterialBuffer->GetBufferDesc().Data)));
+		VERIFY_D3D12_RESULT(pScene->MaterialBuffer->GetHandle()->Map(0, 0, &pScene->MaterialBuffer->GetBufferDesc().Data));
+		std::memcpy(pScene->MaterialBuffer->GetBufferDesc().Data, pScene->Materials.data(), pScene->MaterialBuffer->GetBufferDesc().Size);
+		pScene->MaterialBuffer->GetHandle()->Unmap(0, 0);
 
-		D3D12UploadContext::Upload();
-
-	}
-
-	void Renderer::BuildPipelines()
-	{
-		/*
-		// Vertex
-		{
-			VERIFY_D3D12_RESULT(VertexRS.BuildFromShader(m_D3D12RHI->Device, &VertexVS, PipelineType::Graphics));
-
-			D3D12PipelineStateBuilder builder(m_D3D12RHI->Device);
-			builder.SetRootSignature(&VertexRS);
-			builder.SetVertexShader(&VertexVS);
-			builder.SetPixelShader(&VertexPS);
-			builder.EnableDepth(true);
-			builder.SetCullMode(D3D12_CULL_MODE_BACK);
-			builder.SetRenderTargetFormats({ m_D3D12RHI->SwapChain->GetSwapChainFormat() });
-			
-			VERIFY_D3D12_RESULT(builder.Build(VertexPSO));
-		}
-
-		// Mesh
-		{
-			VERIFY_D3D12_RESULT(MeshRS.BuildFromShader(m_D3D12RHI->Device, &MeshMS, PipelineType::Graphics));
-
-			D3D12MeshPipelineStateBuilder builder(m_D3D12RHI->Device);
-			builder.SetRootSignature(&MeshRS);
-			builder.SetAmplificationShader(&MeshAS);
-			builder.SetMeshShader(&MeshMS);
-			builder.SetPixelShader(&MeshPS);
-			builder.EnableDepth(true);
-			builder.SetCullMode(D3D12_CULL_MODE_NONE);
-			builder.SetRenderTargetFormats({ m_D3D12RHI->SwapChain->GetSwapChainFormat() });
-
-			VERIFY_D3D12_RESULT(builder.Build(MeshPSO));
-		}
-
-		// MeshCull
-		{
-			VERIFY_D3D12_RESULT(MeshCullRS.BuildFromShader(m_D3D12RHI->Device, &MeshCullMS, PipelineType::Graphics));
-
-			D3D12MeshPipelineStateBuilder builder(m_D3D12RHI->Device);
-			builder.SetRootSignature(&MeshCullRS);
-			builder.SetAmplificationShader(&MeshCullAS);
-			builder.SetMeshShader(&MeshCullMS);
-			builder.SetPixelShader(&MeshCullPS);
-			builder.EnableDepth(true);
-			builder.SetCullMode(D3D12_CULL_MODE_NONE);
-			builder.SetRenderTargetFormats({ m_D3D12RHI->SwapChain->GetSwapChainFormat() });
-
-			VERIFY_D3D12_RESULT(builder.Build(MeshCullPSO));
-		}
-		*/
+		//D3D12UploadContext::UploadBuffer(pScene->MaterialBuffer, pScene->MaterialBuffer->GetBufferDesc().Size);
+		//D3D12UploadContext::Upload();
 	}
 
 	void Renderer::ReleaseActiveScene()

@@ -56,8 +56,6 @@ namespace Luden
 
 		D3D12RHI* GetRHI() { return m_D3D12RHI; }
 
-		void BuildPipelines();
-
 		Scene* ActiveScene = nullptr;
 
 		void ReleaseActiveScene();
