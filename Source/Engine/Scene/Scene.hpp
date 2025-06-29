@@ -22,8 +22,6 @@ namespace Luden
 
 	};
 
-	// TODO:
-	// Scene itself should be an entity that serves as a root for other entities.
 	class Scene
 	{
 	public:
@@ -32,7 +30,6 @@ namespace Luden
 		Scene(AssetImporter* pAssetImporter, D3D12Device* pDevice);
 		~Scene();
 
-		// test
 		GlobalConstants Consts;
 
 		std::string Name;
@@ -53,28 +50,17 @@ namespace Luden
 
 		bool IsEmpty() const;
 		
-		// TODOs:
 		void AddDirectionalLight();
 		void AddPointLight();
 
 		std::vector<Entity> DirectionalLights;
 		std::vector<Entity> PointLights;
 
-		// Test
-		// Scene resource.
-		// They gonna be used to create buffers for GPU driven rendering.
 		std::vector<std::unique_ptr<Model>> Models;
 
 		// TODO NOW
 		std::vector<Material> Materials;
 		D3D12Buffer* MaterialBuffer = nullptr;
-
-		// D3D12Buffer* LightBuffer;
-		//std::vector<StaticMesh>				Meshes;
-		//std::vector<D3D12Texture*>			Textures;
-
-		// Log scene stats, like amount of models, meshes, lights this scene has.
-		//void LogDebugInfo();
 
 	private:
 		Filepath m_Filepath;

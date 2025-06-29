@@ -2,7 +2,7 @@
 #include "Renderer/Renderer.hpp"
 #include "Scene.hpp"
 #include "ECS/Components/LightComponent.hpp"
-
+#define _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
 namespace Luden
 {
 	Scene::Scene()
@@ -89,6 +89,18 @@ namespace Luden
 		model.Create(m_AssetImporter->Device);
 
 		Models.push_back(std::make_unique<Model>(model));
+
+		// Currently only for debug.
+		// Will remove later.
+		if (Materials.size() * sizeof(Material) >= MaterialBuffer->GetBufferDesc().Size)
+		{
+			LOG_ERROR("Scene Material Buffer overload.");
+		}
+		else
+		{
+			const usize mapSize = static_cast<usize>(Materials.size() * sizeof(Material));
+			std::memcpy(MaterialBuffer->GetBufferDesc().Data, Materials.data(), mapSize);
+		}
 
 		return true;
 	}

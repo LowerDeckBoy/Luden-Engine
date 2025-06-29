@@ -27,8 +27,6 @@ namespace Luden
 		GBuffer = new GeometryPass(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
 		LightingPass = new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, pParentWindow->Width, pParentWindow->Height);
 
-		BuildPipelines();
-
 		//SceneTextures.ImageToDisplay = &SceneTextures.Scene.ShaderResourceHandle;
 		SceneTextures.ImageToDisplay = &GBuffer->BaseColor.ShaderResourceHandle;
 
@@ -481,6 +479,7 @@ namespace Luden
 			*/
 		}
 		
+		// To finish:
 		//BufferDesc desc{};
 		//desc.Data			= drawCommands.data();
 		//desc.NumElements	= static_cast<uint32>(drawCommands.size());
@@ -496,28 +495,25 @@ namespace Luden
 		{
 			delete pScene->MaterialBuffer;
 			pScene->MaterialBuffer = nullptr;
-			pScene->MaterialBufferPtr = nullptr;
 		}
 
-		constexpr uint32 dataAlignment = Math::Align<uint32>(sizeof(Material) * 4096, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+		constexpr uint64 alignedSize = Math::Align<uint64>(sizeof(Material) * 4096, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
 		pScene->MaterialBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{ 
 			.BufferUsage = BufferUsageFlag::Storage,
-			//.Data = pScene->Materials.data(),
+			.Data = pScene->Materials.data(),
 			.NumElements = 4096,
 			.Stride = sizeof(Material),
-			.Size = dataAlignment,
-			//.Size = sizeof(Material) * 4096,
+			.Size = alignedSize,
 			.bBindless = true,
 			.Name = "Scene Material Buffer" });
 
-		//VERIFY_D3D12_RESULT(pScene->MaterialBuffer->GetHandle()->Map(0, 0, reinterpret_cast<void**>(&pScene->MaterialBuffer->GetBufferDesc().Data)));
-		VERIFY_D3D12_RESULT(pScene->MaterialBuffer->GetHandle()->Map(0, 0, &pScene->MaterialBuffer->GetBufferDesc().Data));
-		std::memcpy(pScene->MaterialBuffer->GetBufferDesc().Data, pScene->Materials.data(), pScene->MaterialBuffer->GetBufferDesc().Size);
-		pScene->MaterialBuffer->GetHandle()->Unmap(0, 0);
+		const usize mapSize = static_cast<usize>(pScene->Materials.size() * sizeof(Material));
+		VERIFY_D3D12_RESULT(pScene->MaterialBuffer->GetHandle()->Map(0, nullptr, &pScene->MaterialBuffer->GetBufferDesc().Data));
+		std::memcpy(pScene->MaterialBuffer->GetBufferDesc().Data, pScene->Materials.data(), mapSize);
+		// Should I keep it persistent?
+		//pScene->MaterialBuffer->GetHandle()->Unmap(0, nullptr);
 
-		//D3D12UploadContext::UploadBuffer(pScene->MaterialBuffer, pScene->MaterialBuffer->GetBufferDesc().Size);
-		//D3D12UploadContext::Upload();
 	}
 
 	void Renderer::ReleaseActiveScene()
