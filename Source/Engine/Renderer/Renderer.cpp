@@ -3,6 +3,7 @@
 #include "D3D12/D3D12Utility.hpp"
 #include <Core/Logger.hpp>
 #include <Core/Math/Math.hpp>
+#include "ECS/Components/LightComponent.hpp"
 
 namespace Luden
 {
@@ -117,7 +118,7 @@ namespace Luden
 		if (!Config::Get().bRaytracing)
 		{
 			GBuffer->Render(ActiveScene, Camera, *frame);
-			//LightingPass->Render(ActiveScene, *frame);
+			LightingPass->Render(ActiveScene, *frame);
 		}
 		else
 		{
@@ -491,13 +492,15 @@ namespace Luden
 
 		//InitializeRaytracingResources();
 
+		// Material buffer
+
 		if (pScene->MaterialBuffer != nullptr)
 		{
 			delete pScene->MaterialBuffer;
 			pScene->MaterialBuffer = nullptr;
 		}
 
-		constexpr uint64 alignedSize = Math::Align<uint64>(sizeof(Material) * 4096, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+		uint64 alignedSize = Math::Align<uint64>(sizeof(Material) * 4096, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
 		pScene->MaterialBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{ 
 			.BufferUsage = BufferUsageFlag::Storage,
@@ -508,11 +511,33 @@ namespace Luden
 			.bBindless = true,
 			.Name = "Scene Material Buffer" });
 
-		const usize mapSize = static_cast<usize>(pScene->Materials.size() * sizeof(Material));
+		usize mapSize = static_cast<usize>(pScene->Materials.size() * sizeof(Material));
 		VERIFY_D3D12_RESULT(pScene->MaterialBuffer->GetHandle()->Map(0, nullptr, &pScene->MaterialBuffer->GetBufferDesc().Data));
 		std::memcpy(pScene->MaterialBuffer->GetBufferDesc().Data, pScene->Materials.data(), mapSize);
 		// Should I keep it persistent?
 		//pScene->MaterialBuffer->GetHandle()->Unmap(0, nullptr);
+
+		// Lighting buffer
+		if (pScene->LightBuffer != nullptr)
+		{
+			delete pScene->LightBuffer;
+			pScene->LightBuffer = nullptr;
+		}
+
+		alignedSize = Math::Align<uint64>(sizeof(ecs::PointLightComponent) * 128, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+
+		pScene->LightBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{
+			.BufferUsage = BufferUsageFlag::Storage,
+			.Data = pScene->PointLights.data(),
+			.NumElements = 128,
+			.Stride = sizeof(ecs::PointLightComponent),
+			.Size = alignedSize,
+			.bBindless = true,
+			.Name = "Scene Lighting Buffer" });
+
+		mapSize = static_cast<usize>(pScene->PointLights.size() * sizeof(ecs::PointLightComponent));
+		VERIFY_D3D12_RESULT(pScene->LightBuffer->GetHandle()->Map(0, nullptr, &pScene->LightBuffer->GetBufferDesc().Data));
+		std::memcpy(pScene->LightBuffer->GetBufferDesc().Data, pScene->PointLights.data(), mapSize);
 
 	}
 

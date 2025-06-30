@@ -1,6 +1,8 @@
 #include "Asset/ShaderCompiler.hpp"
 #include "D3D12/D3D12Utility.hpp"
 #include "LightPass.hpp"
+#include "ECS/Components/LightComponent.hpp"
+
 
 namespace Luden
 {
@@ -47,10 +49,28 @@ namespace Luden
 
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-		commandList->SetRenderTarget(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
+		commandList->SetRenderTargets(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
 		commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, DefaultClearColor);
 
 		// Push Constants here
+		struct pushConstants
+		{
+			uint32 LightBufferIndex;
+			uint32 NumLights;
+			uint32 BaseColorIndex;
+			uint32 NormalIndex;
+			uint32 MRIndex;
+			uint32 EmissiveIndex;
+		} constants{
+			.LightBufferIndex = pScene->LightBuffer->ShaderResourceView.Index,
+			.NumLights = static_cast<uint32>(pScene->PointLights.size()),
+			.BaseColorIndex = m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
+			.NormalIndex = m_GeometryPass->Normal.ShaderResourceHandle.Index,
+			.MRIndex = m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
+			.EmissiveIndex = m_GeometryPass->Emissive.ShaderResourceHandle.Index,
+		};
+
+		commandList->PushConstants(2, 6, &constants);
 
 		// Draw screen space quad.
 		commandList->Draw(4);

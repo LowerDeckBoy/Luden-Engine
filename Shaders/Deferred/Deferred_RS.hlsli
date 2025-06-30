@@ -7,7 +7,7 @@
 	"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
 	"CBV(b0, space=0), "\
 	"CBV(b1, space=0), "\
-	"RootConstants(num32BitConstants=4, b2), "\
+	"RootConstants(num32BitConstants=6, b2), "\
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_WRAP, "\
 		"addressV = TEXTURE_ADDRESS_WRAP, "\
