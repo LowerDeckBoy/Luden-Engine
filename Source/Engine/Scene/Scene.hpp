@@ -22,6 +22,20 @@ namespace Luden
 
 	};
 
+	struct SceneConstants
+	{
+		DirectX::XMMATRIX World{};
+		DirectX::XMMATRIX View{};
+		DirectX::XMMATRIX Projection{};
+		DirectX::XMMATRIX InversedView{};
+		DirectX::XMMATRIX InversedProjection{};
+		DirectX::XMMATRIX InversedViewProjection{};
+		DirectX::XMFLOAT3 CameraPosition{};
+		uint32 pad = 0;
+		DirectX::XMFLOAT4 Planes[6];
+
+	};
+
 	class Scene
 	{
 	public:
@@ -61,6 +75,13 @@ namespace Luden
 		// TODO NOW
 		std::vector<Material> Materials;
 		D3D12Buffer* MaterialBuffer = nullptr;
+
+		// TODO:
+		D3D12Buffer* LightBuffer = nullptr;
+
+		D3D12ConstantBuffer* SceneDataBuffer = nullptr;
+		SceneConstants SceneData{};
+		void UpdateSceneBufferData(SceneCamera* pCamera);
 
 	private:
 		Filepath m_Filepath;

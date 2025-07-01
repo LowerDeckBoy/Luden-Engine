@@ -2,7 +2,7 @@
 #include "Renderer/Renderer.hpp"
 #include "Scene.hpp"
 #include "ECS/Components/LightComponent.hpp"
-#define _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
+
 namespace Luden
 {
 	Scene::Scene()
@@ -20,6 +20,9 @@ namespace Luden
 		: m_World(new World()), m_AssetImporter(pAssetImporter)
 	{
 		m_AssetImporter->Device = pDevice;
+
+		SceneDataBuffer = new D3D12ConstantBuffer(pDevice, &SceneData, sizeof(SceneData));
+
 	}
 
 	Scene::~Scene()
@@ -36,6 +39,8 @@ namespace Luden
 			return;
 		}
 		
+		SceneDataBuffer = new D3D12ConstantBuffer(pDevice, &SceneData, sizeof(SceneData));
+
 		for (auto& model : Models)
 		{
 			model->Create(pDevice);
@@ -54,6 +59,12 @@ namespace Luden
 		{
 			delete MaterialBuffer;
 			MaterialBuffer = nullptr;
+		}
+
+		if (LightBuffer)
+		{
+			delete LightBuffer;
+			LightBuffer = nullptr;
 		}
 
 		Models.clear();
@@ -130,6 +141,31 @@ namespace Luden
 		entity.AddComponent<ecs::PointLightComponent>();
 
 		PointLights.push_back(entity);
+
+		const usize mapSize = PointLights.size() * sizeof(ecs::PointLightComponent);
+		std::memcpy(LightBuffer->GetBufferDesc().Data, PointLights.data(), mapSize);
+
+	}
+
+	void Scene::UpdateSceneBufferData(SceneCamera* pCamera)
+	{
+		SceneData.View					= pCamera->GetView();
+		SceneData.Projection			= pCamera->GetProjection();
+		SceneData.InversedView			= pCamera->GetInversedView();
+		SceneData.InversedProjection	= pCamera->GetInversedProjection();
+		//SceneData.InversedViewProjection = DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection()));
+		//SceneData.InversedViewProjection = DirectX::XMMatrixTranspose(DirectX::XMMatrixMultiply(pCamera->GetInversedView(), pCamera->GetInversedProjection()));
+		SceneData.InversedViewProjection = (DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection()));
+		SceneData.CameraPosition		= pCamera->Position;
+
+		SceneData.Planes[0]				= pCamera->Frustum.Planes[0];
+		SceneData.Planes[1]				= pCamera->Frustum.Planes[1];
+		SceneData.Planes[2]				= pCamera->Frustum.Planes[2];
+		SceneData.Planes[3]				= pCamera->Frustum.Planes[3];
+		SceneData.Planes[4]				= pCamera->Frustum.Planes[4];
+		SceneData.Planes[5]				= pCamera->Frustum.Planes[5];
+
+		SceneDataBuffer->Update(&SceneData);
 	}
 
 } // namespace Luden

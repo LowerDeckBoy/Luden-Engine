@@ -118,7 +118,10 @@ namespace Luden
 		if (!Config::Get().bRaytracing)
 		{
 			GBuffer->Render(ActiveScene, Camera, *frame);
-			LightingPass->Render(ActiveScene, *frame);
+			//frame->GraphicsCommandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
+			LightingPass->Render(ActiveScene, *frame, Camera);
+			//frame->GraphicsCommandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			//LightingPass->Render(ActiveScene, *frame);
 		}
 		else
 		{
@@ -491,6 +494,8 @@ namespace Luden
 		//m_D3D12RHI->MeshCommandSignature->CreateCommandsBuffer(desc);
 
 		//InitializeRaytracingResources();
+
+		pScene->SceneDataBuffer = new D3D12ConstantBuffer(GetRHI()->Device, &pScene->SceneData, sizeof(pScene->SceneData));
 
 		// Material buffer
 

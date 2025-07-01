@@ -16,6 +16,7 @@ namespace Luden
 		void Initialize(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, GeometryPass* pGeometryPass, uint32 Width, uint32 Height);
 
 		void Render(Scene* pScene, Frame& CurrentFrame);
+		void Render(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera);
 
 		void Resize(uint32 Width, uint32 Height) override;
 		void Release() override;
