@@ -2,6 +2,7 @@
 #define DEFERRED_HLSL
 
 #include "Deferred_RS.hlsli"
+#include "../PBR.hlsli"
 #include "../Common/Light.hlsli"
 #include "../Common/Common.hlsli"
 
@@ -13,6 +14,8 @@ struct PushConstants
 	uint NormalIndex;
 	uint MRIndex;
 	uint EmissiveIndex;
+	uint WorldPositionIndex;
+	uint padding;
 };
 
 ConstantBuffer<PushConstants> Constants : register(b2);
@@ -31,34 +34,6 @@ struct SceneConstants
 };
 
 ConstantBuffer<SceneConstants> Scene : register(b1);
-
-float3 GetWorldPosition(float Depth, float2 UV, row_major float4x4 InvView, row_major float4x4 InvProjection)
-{
-	const float z = Depth * 2.0f - 1.0f;
-	
-	float4 clipSpacePos = float4(UV, Depth, 1.0f);
-	float4 viewSpacePos = mul(InvProjection, clipSpacePos);
-	//float4 viewSpacePos = mul(clipSpacePos, InvProjection);
-	viewSpacePos.xyz /= viewSpacePos.w;
-	//return viewSpacePos.xyz;
-	float4 worldSpacePosition = mul(InvView, viewSpacePos);
-	//float4 worldSpacePosition = mul(viewSpacePos, InvView);
-
-	return worldSpacePosition.xyz;
-}
-
-float3 GetWorldPosition(float Depth, float2 UV,  float4x4 InvViewProj)
-{
-	const float z = Depth;
-	
-	float4 clipPos = float4(UV, z, 1.0);
-
-	//float4 worldPos = mul(InvViewProj, clipPos);
-	float4 worldPos = mul(clipPos, InvViewProj);
-	worldPos.xyz /= worldPos.w;
-
-	return worldPos.xyz;
-}
 
 struct ScreenQuadOutput
 {
@@ -80,49 +55,67 @@ ScreenQuadOutput VSMain(uint VertexID : SV_VertexID)
 [RootSignature(ROOT_SIG)]
 float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 {
-	float3 output = float3(0.0f, 0.0f, 0.0f);
-
 	const float2 uv = pin.Position.xy;
 	
-	Texture2D texBaseColor	= ResourceDescriptorHeap[Constants.BaseColorIndex];
-	Texture2D texNormal		= ResourceDescriptorHeap[Constants.NormalIndex];
-	Texture2D texMR			= ResourceDescriptorHeap[Constants.MRIndex];
-	Texture2D texEmissive	= ResourceDescriptorHeap[Constants.EmissiveIndex];
+	Texture2D<float4> texBaseColor		= ResourceDescriptorHeap[Constants.BaseColorIndex];
+	Texture2D<float4> texNormal			= ResourceDescriptorHeap[Constants.NormalIndex];
+	Texture2D<float4> texMR				= ResourceDescriptorHeap[Constants.MRIndex];
+	Texture2D<float4> texEmissive		= ResourceDescriptorHeap[Constants.EmissiveIndex];
+	Texture2D<float4> texWorldPositon	= ResourceDescriptorHeap[Constants.WorldPositionIndex];
 	
-	float4 baseColor				= texBaseColor.Load(int3(uv, 0.0f));
+	const float4 baseColor			= texBaseColor.Load(int3(uv, 0.0f));
 	const float4 normal				= texNormal.Load(int3(uv, 0.0f));
 	const float3 metallicRoughness	= texMR.Load(int3(uv, 0.0f)).rgb;
 	const float3 emissive			= texEmissive.Load(int3(uv, 0.0f)).rgb;
+	const float3 worldPosition		= texWorldPositon.Load(int3(uv, 0.0f)).rgb;
 	
 	const float metalness			= metallicRoughness.b;
 	const float roughness			= metallicRoughness.g;
 	
 	StructuredBuffer<PointLight> PointLights = ResourceDescriptorHeap[Constants.LightBufferIndex];
 	
+	float3 N = normal.rgb;
+	const float  depth = normal.w;
 	
+	const float3 V = normalize(Scene.CameraPosition - worldPosition);
+	const float NdotV = max(dot(N, V), Epsilon);
 	
-	for (uint lightIdx = 0; lightIdx < Constants.NumLights; ++lightIdx)
+	const float3 Fdielectric = float3(0.04f, 0.04f, 0.04f);
+	const float3 F0 = lerp(Fdielectric, baseColor.rgb, float3(metalness, metalness, metalness));
+
+	float3 F = FresnelSchlick(NdotV, F0);
+	float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
+
+	float3 ambient = float3(0.03f, 0.03f, 0.03f) * baseColor.rgb * float3(1.0f, 1.0f, 1.0f);
+	float3 output = ambient;
+
+	for (uint lightIdx = 0; lightIdx < Constants.NumLights; lightIdx++)
 	{
 		PointLight light = PointLights[lightIdx];
 		
-		//const float L = light.Position;
+		float3 L = normalize(light.Position - worldPosition);
+		float3 H = normalize(V + L);
 		
-		//const float NdotL = max(dot())
+		float NdotL = max(dot(N, L), Epsilon);
+		float NdotH = max(dot(N, H), Epsilon);
+		float HdotV = max(dot(H, V), Epsilon);
 		
-		//baseColor += float3(0.25f, 0.0f, 0.0f);
-		baseColor.x += 0.25f;
-		baseColor.y += 0.1f;
-		baseColor.z += 0.11f;
+		float distance = length(light.Position - worldPosition);
+		float attenuation = 1.0f / (distance * distance + 1.0f);
+		float3 radiance = attenuation * light.Ambient * saturate(1.0f - distance / light.Range);
+		
+		float NDF = DistributionGGX(N, H, roughness);
+		float G = GeometrySmith(NdotV, NdotL, roughness);
 
+		float3 numerator = NDF * G * F;
+		float denominator = 4.0f * NdotL * NdotV;
+		float3 specular = numerator / (denominator + Epsilon);
+		float3 diffuse = kD * baseColor.rgb / PI;
+			
+		output += (diffuse + specular) * NdotL * radiance * light.Ambient;
 	}
-	
-	//float3 worldPosition = GetWorldPosition(normal.w, uv, Scene.InversedView, Scene.InversedProjection);
-	//float3 worldPosition = GetWorldPosition(normal.w, uv, Scene.InversedViewProjection);
-	float3 worldPosition = float3(normal.w, normal.w, normal.w);
-	
-	return float4(worldPosition, 1.0f);
-	//return float4(baseColor.rgb, 1.0f);
-	//return float4(pin.TexCoord, 0.0f, 1.0f);
+
+	return float4(output.rgb, 1.0f);
 }
 
 #endif // DEFERRED_HLSL
