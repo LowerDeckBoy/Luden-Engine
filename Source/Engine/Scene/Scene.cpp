@@ -55,6 +55,12 @@ namespace Luden
 			model->Release();
 		}
 
+		if (SceneDataBuffer)
+		{
+			delete SceneDataBuffer;
+			SceneDataBuffer = nullptr;
+		}
+
 		if (MaterialBuffer)
 		{
 			delete MaterialBuffer;
@@ -138,12 +144,20 @@ namespace Luden
 		CreateEntity(entity);
 
 		entity.AddComponent<ecs::NameComponent>(std::format("Point Light {}", PointLights.size()));
-		entity.AddComponent<ecs::PointLightComponent>();
+		//entity.AddComponent<ecs::PointLightComponent>();
+		//entity.AddComponent<ecs::PointLightComponent>(DirectX::XMFLOAT3(0.0, 2.0f, 2.0f));
+
+		ecs::PointLightComponent light;
+		entity.AddComponent<ecs::PointLightComponent>(light);
 
 		PointLights.push_back(entity);
 
-		const usize mapSize = PointLights.size() * sizeof(ecs::PointLightComponent);
-		std::memcpy(LightBuffer->GetBufferDesc().Data, PointLights.data(), mapSize);
+		//const usize mapSize = PointLights.size() * sizeof(ecs::PointLightComponent);
+		//std::memcpy(LightBuffer->GetBufferDesc().Data, PointLights.data(), mapSize);
+
+		//PointLightsStorage.push_back(light);
+		//const usize mapSize = PointLightsStorage.size() * sizeof(ecs::PointLightComponent);
+		//std::memcpy(LightBuffer->GetBufferDesc().Data, PointLightsStorage.data(), mapSize);
 
 	}
 
@@ -166,6 +180,22 @@ namespace Luden
 		SceneData.Planes[5]				= pCamera->Frustum.Planes[5];
 
 		SceneDataBuffer->Update(&SceneData);
+
+		//const usize mapSize = PointLightsStorage.size() * sizeof(ecs::PointLightComponent);
+		//std::memcpy(LightBuffer->GetBufferDesc().Data, PointLightsStorage.data(), mapSize);
+		//const usize mapSize = static_cast<usize>(PointLights.size() * sizeof(ecs::PointLightComponent));
+		//std::memcpy(LightBuffer->GetBufferDesc().Data, PointLights.data(), mapSize);
+
+		std::vector<ecs::PointLightComponent> lights;
+		const auto& lightsView = GetRegistry()->view<ecs::NameComponent, ecs::PointLightComponent>();
+		for (auto [handle, name, light] : lightsView.each())
+		{
+			lights.push_back(light);
+		}
+
+		const usize mapSize = lights.size() * sizeof(ecs::PointLightComponent);
+		std::memcpy(LightBuffer->GetBufferDesc().Data, lights.data(), mapSize);
+
 	}
 
 } // namespace Luden

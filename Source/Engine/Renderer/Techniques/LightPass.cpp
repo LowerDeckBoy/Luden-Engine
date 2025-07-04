@@ -22,7 +22,8 @@ namespace Luden
 		m_RHI = pD3D12RHI;
 		m_GeometryPass = pGeometryPass;
 
-		RenderTexture.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor, "Light Pass Render Target");
+		RenderTexture.Create(m_RHI->Device, Width, Height, pD3D12RHI->SwapChain->GetSwapChainFormat(), DefaultClearColor, "Light Pass Render Target");
+		//RenderTexture.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor, "Light Pass Render Target");
 
 		Pipeline.Vertex = pShaderCompiler->CompileVS("../../Shaders/Deferred/Deferred.hlsl", false);
 		Pipeline.Pixel = pShaderCompiler->CompilePS("../../Shaders/Deferred/Deferred.hlsl", true);
@@ -40,54 +41,6 @@ namespace Luden
 
 	}
 
-	void LightPass::Render(Scene* pScene, Frame& CurrentFrame)
-	{
-		auto commandList = CurrentFrame.GraphicsCommandList;
-
-		commandList->SetRootSignature(&Pipeline.RootSignature);
-		commandList->SetPipelineState(&Pipeline.PipelineState);
-
-		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-		commandList->SetRenderTargets(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
-		commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, DefaultClearColor);
-
-		// Push Constants here
-		struct pushConstants
-		{
-			uint32 LightBufferIndex;
-			uint32 NumLights;
-			uint32 BaseColorIndex;
-			uint32 NormalIndex;
-			uint32 MRIndex;
-			uint32 EmissiveIndex;
-		} constants{
-			.LightBufferIndex = pScene->LightBuffer->ShaderResourceView.Index,
-			.NumLights = static_cast<uint32>(pScene->PointLights.size()),
-			.BaseColorIndex = m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
-			.NormalIndex = m_GeometryPass->Normal.ShaderResourceHandle.Index,
-			.MRIndex = m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
-			.EmissiveIndex = m_GeometryPass->Emissive.ShaderResourceHandle.Index,
-		};
-
-		commandList->PushConstants(2, 6, &constants);
-
-		struct scenceConsts
-		{
-			DirectX::XMFLOAT3 Camera;
-			float pad = 0;
-		} scene
-		{
-			//.Camera = pScene->
-		};
-
-		// Draw screen space quad.
-		commandList->Draw(4);
-
-		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
-
-	}
-
 	void LightPass::Render(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera)
 	{
 		auto commandList = CurrentFrame.GraphicsCommandList;
@@ -99,6 +52,9 @@ namespace Luden
 
 		commandList->SetRenderTargets(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
 		commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, DefaultClearColor);
+
+		pScene->UpdateSceneBufferData(pCamera);
+
 		// Push Constants here
 		struct pushConstants
 		{
@@ -108,6 +64,8 @@ namespace Luden
 			uint32 NormalIndex;
 			uint32 MRIndex;
 			uint32 EmissiveIndex;
+			uint32 WorldPositionIndex;
+			uint32 padding = 0;
 		} constants{
 			.LightBufferIndex = pScene->LightBuffer->ShaderResourceView.Index,
 			.NumLights = static_cast<uint32>(pScene->PointLights.size()),
@@ -115,11 +73,11 @@ namespace Luden
 			.NormalIndex = m_GeometryPass->Normal.ShaderResourceHandle.Index,
 			.MRIndex = m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
 			.EmissiveIndex = m_GeometryPass->Emissive.ShaderResourceHandle.Index,
+			.WorldPositionIndex = m_GeometryPass->WorldPosition.ShaderResourceHandle.Index
 		};
 
-		commandList->PushConstants(2, 6, &constants);
+		commandList->PushConstants(2, 8, &constants);
 		
-		pScene->UpdateSceneBufferData(pCamera);
 		commandList->SetConstantBuffer(1, pScene->SceneDataBuffer);
 
 		// Draw screen space quad.

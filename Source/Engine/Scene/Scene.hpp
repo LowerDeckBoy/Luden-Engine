@@ -5,6 +5,7 @@
 #include "SceneCamera.hpp"
 #include <Core/File.hpp>
 #include <Core/String.hpp>
+#include <ECS/Components/LightComponent.hpp>
 
 namespace Luden
 {
@@ -69,6 +70,7 @@ namespace Luden
 
 		std::vector<Entity> DirectionalLights;
 		std::vector<Entity> PointLights;
+		//std::vector<ecs::PointLightComponent> PointLightsStorage;
 
 		std::vector<std::unique_ptr<Model>> Models;
 

@@ -52,6 +52,7 @@ ScreenQuadOutput VSMain(uint VertexID : SV_VertexID)
 	return output;
 }
 
+[earlydepthstencil]
 [RootSignature(ROOT_SIG)]
 float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 {
@@ -63,7 +64,7 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	Texture2D<float4> texEmissive		= ResourceDescriptorHeap[Constants.EmissiveIndex];
 	Texture2D<float4> texWorldPositon	= ResourceDescriptorHeap[Constants.WorldPositionIndex];
 	
-	const float4 baseColor			= texBaseColor.Load(int3(uv, 0.0f));
+	const float4 baseColor			= pow(texBaseColor.Load(int3(uv, 0.0f)), 2.2f);
 	const float4 normal				= texNormal.Load(int3(uv, 0.0f));
 	const float3 metallicRoughness	= texMR.Load(int3(uv, 0.0f)).rgb;
 	const float3 emissive			= texEmissive.Load(int3(uv, 0.0f)).rgb;
@@ -74,7 +75,7 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	
 	StructuredBuffer<PointLight> PointLights = ResourceDescriptorHeap[Constants.LightBufferIndex];
 	
-	float3 N = normal.rgb;
+	const float3 N = normalize(normal.rgb);
 	const float  depth = normal.w;
 	
 	const float3 V = normalize(Scene.CameraPosition - worldPosition);
@@ -82,38 +83,44 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	
 	const float3 Fdielectric = float3(0.04f, 0.04f, 0.04f);
 	const float3 F0 = lerp(Fdielectric, baseColor.rgb, float3(metalness, metalness, metalness));
-
-	float3 F = FresnelSchlick(NdotV, F0);
-	float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
-
-	float3 ambient = float3(0.03f, 0.03f, 0.03f) * baseColor.rgb * float3(1.0f, 1.0f, 1.0f);
-	float3 output = ambient;
-
+	
+	float3 output = float3(0.0f, 0.0f, 0.0f);
+	//output += emissive;
+	
+	float3 Lo = float3(0.0f, 0.0f, 0.0f);
+	
 	for (uint lightIdx = 0; lightIdx < Constants.NumLights; lightIdx++)
 	{
 		PointLight light = PointLights[lightIdx];
 		
-		float3 L = normalize(light.Position - worldPosition);
-		float3 H = normalize(V + L);
+		const float3 L = normalize(light.Position - worldPosition);
+		const float3 H = normalize(V + L);
 		
-		float NdotL = max(dot(N, L), Epsilon);
-		float NdotH = max(dot(N, H), Epsilon);
-		float HdotV = max(dot(H, V), Epsilon);
+		const float NdotL = max(dot(N, L), Epsilon);
+		const float NdotH = max(dot(N, H), Epsilon);
+		const float HdotV = max(dot(H, V), Epsilon);
 		
-		float distance = length(light.Position - worldPosition);
-		float attenuation = 1.0f / (distance * distance + 1.0f);
-		float3 radiance = attenuation * light.Ambient * saturate(1.0f - distance / light.Range);
+		const float distance = length(light.Position - worldPosition);
+		const float attenuation = (1.0f / (distance * distance + 1.0f)) * (saturate(1.0f - distance / light.Range));
+		const float3 radiance = attenuation * NdotL * light.Ambient * light.Range;
 		
-		float NDF = DistributionGGX(N, H, roughness);
-		float G = GeometrySmith(NdotV, NdotL, roughness);
-
-		float3 numerator = NDF * G * F;
-		float denominator = 4.0f * NdotL * NdotV;
-		float3 specular = numerator / (denominator + Epsilon);
-		float3 diffuse = kD * baseColor.rgb / PI;
+		const float NDF = DistributionGGX(N, H, roughness);
+		const float G = GeometrySmith(NdotV, NdotL, roughness);
+		const float3 F = FresnelSchlick(HdotV, F0);
+		const float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
+		
+		const float3 numerator = NDF * G * F;
+		const float denominator = 4.0f * NdotL * NdotV;
+		
+		const float3 diffuse = kD * (baseColor.rgb + emissive) / PI;
+		const float3 specular = numerator / (denominator + Epsilon);
 			
-		output += (diffuse + specular) * NdotL * radiance * light.Ambient;
+		Lo += ((diffuse + specular) * NdotL) * radiance;
 	}
+	
+	output += Lo;
+	output = output / (output + float3(1.0f, 1.0f, 1.0f));
+	output = lerp(output, pow(output, 1.0f / 2.2f), 0.4f);
 
 	return float4(output.rgb, 1.0f);
 }
