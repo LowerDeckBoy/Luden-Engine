@@ -53,7 +53,7 @@ ScreenQuadOutput VSMain(uint VertexID : SV_VertexID)
 }
 
 [earlydepthstencil]
-[RootSignature(ROOT_SIG)]
+[RootSignature(DEFERRED_ROOT_SIG)]
 float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 {
 	const float2 uv = pin.Position.xy;
@@ -85,8 +85,7 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	const float3 F0 = lerp(Fdielectric, baseColor.rgb, float3(metalness, metalness, metalness));
 	
 	float3 output = float3(0.0f, 0.0f, 0.0f);
-	//output += emissive;
-	
+
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
 	
 	for (uint lightIdx = 0; lightIdx < Constants.NumLights; lightIdx++)
@@ -101,26 +100,28 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 		const float HdotV = max(dot(H, V), Epsilon);
 		
 		const float distance = length(light.Position - worldPosition);
-		const float attenuation = (1.0f / (distance * distance + 1.0f)) * (saturate(1.0f - distance / light.Range));
-		const float3 radiance = attenuation * NdotL * light.Ambient * light.Range;
+		const float attenuation = (1.0f / (distance * distance + 1.0f)) * (saturate(1.0f - distance / light.Radius));
+		const float3 radiance = attenuation * pow(light.Ambient, 2.2f) * light.Radius;
 		
 		const float NDF = DistributionGGX(N, H, roughness);
-		const float G = GeometrySmith(NdotV, NdotL, roughness);
-		const float3 F = FresnelSchlick(HdotV, F0);
+		const float G	= GeometrySmith(NdotV, NdotL, roughness);
+		const float3 F	= FresnelSchlick(HdotV, F0);
 		const float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
 		
 		const float3 numerator = NDF * G * F;
-		const float denominator = 4.0f * NdotL * NdotV;
+		const float denominator = 4.0f * NdotL * NdotV + Epsilon;
 		
-		const float3 diffuse = kD * (baseColor.rgb + emissive) / PI;
-		const float3 specular = numerator / (denominator + Epsilon);
-			
-		Lo += ((diffuse + specular) * NdotL) * radiance;
+		const float3 diffuse = kD * (baseColor.rgb) / PI;
+		const float3 specular = numerator / denominator;
+
+		Lo += (diffuse + specular) * radiance * NdotL;
 	}
 	
 	output += Lo;
-	output = output / (output + float3(1.0f, 1.0f, 1.0f));
-	output = lerp(output, pow(output, 1.0f / 2.2f), 0.4f);
+	output += emissive;
+	output /= (output + float3(1.0f, 1.0f, 1.0f));
+	output = pow(output, 1.0f / 2.2f);
+	//output = lerp(output, pow(output, 1.0f / 2.2f), 0.4f);
 
 	return float4(output.rgb, 1.0f);
 }

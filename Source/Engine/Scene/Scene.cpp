@@ -144,32 +144,27 @@ namespace Luden
 		CreateEntity(entity);
 
 		entity.AddComponent<ecs::NameComponent>(std::format("Point Light {}", PointLights.size()));
-		//entity.AddComponent<ecs::PointLightComponent>();
-		//entity.AddComponent<ecs::PointLightComponent>(DirectX::XMFLOAT3(0.0, 2.0f, 2.0f));
-
-		ecs::PointLightComponent light;
-		entity.AddComponent<ecs::PointLightComponent>(light);
+		
+		entity.AddComponent<ecs::PointLightComponent>();
 
 		PointLights.push_back(entity);
-
-		//const usize mapSize = PointLights.size() * sizeof(ecs::PointLightComponent);
-		//std::memcpy(LightBuffer->GetBufferDesc().Data, PointLights.data(), mapSize);
-
-		//PointLightsStorage.push_back(light);
-		//const usize mapSize = PointLightsStorage.size() * sizeof(ecs::PointLightComponent);
-		//std::memcpy(LightBuffer->GetBufferDesc().Data, PointLightsStorage.data(), mapSize);
 
 	}
 
 	void Scene::UpdateSceneBufferData(SceneCamera* pCamera)
 	{
+		Consts.Planes[0]				= pCamera->Frustum.Planes[0]; // Right
+		Consts.Planes[1]				= pCamera->Frustum.Planes[1]; // Left
+		Consts.Planes[2]				= pCamera->Frustum.Planes[2]; // Top
+		Consts.Planes[3]				= pCamera->Frustum.Planes[3]; // Bottom
+		Consts.Planes[4]				= pCamera->Frustum.Planes[4]; // Far
+		Consts.Planes[5]				= pCamera->Frustum.Planes[5]; // Near
+
 		SceneData.View					= pCamera->GetView();
 		SceneData.Projection			= pCamera->GetProjection();
 		SceneData.InversedView			= pCamera->GetInversedView();
 		SceneData.InversedProjection	= pCamera->GetInversedProjection();
-		//SceneData.InversedViewProjection = DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection()));
-		//SceneData.InversedViewProjection = DirectX::XMMatrixTranspose(DirectX::XMMatrixMultiply(pCamera->GetInversedView(), pCamera->GetInversedProjection()));
-		SceneData.InversedViewProjection = (DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection()));
+		SceneData.InversedViewProjection = DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection());
 		SceneData.CameraPosition		= pCamera->Position;
 
 		SceneData.Planes[0]				= pCamera->Frustum.Planes[0];
@@ -181,14 +176,10 @@ namespace Luden
 
 		SceneDataBuffer->Update(&SceneData);
 
-		//const usize mapSize = PointLightsStorage.size() * sizeof(ecs::PointLightComponent);
-		//std::memcpy(LightBuffer->GetBufferDesc().Data, PointLightsStorage.data(), mapSize);
-		//const usize mapSize = static_cast<usize>(PointLights.size() * sizeof(ecs::PointLightComponent));
-		//std::memcpy(LightBuffer->GetBufferDesc().Data, PointLights.data(), mapSize);
-
+		// Works for now. Can't keep it this way, tho.
 		std::vector<ecs::PointLightComponent> lights;
-		const auto& lightsView = GetRegistry()->view<ecs::NameComponent, ecs::PointLightComponent>();
-		for (auto [handle, name, light] : lightsView.each())
+		const auto& lightsView = GetRegistry()->view<ecs::PointLightComponent>();
+		for (auto [handle, light] : lightsView.each())
 		{
 			lights.push_back(light);
 		}

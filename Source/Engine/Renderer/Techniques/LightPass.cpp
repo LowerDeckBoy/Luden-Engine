@@ -39,6 +39,15 @@ namespace Luden
 
 		VERIFY_D3D12_RESULT(builder.Build(Pipeline.PipelineState));
 
+		// Test
+		// Compute PSO
+		ComputePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/Deferred/Deferred_CS.hlsl", true);
+		D3D12ComputePipelineStateBuilder csBuilder(m_RHI->Device);
+		csBuilder.SetComputeShader(&ComputePSO.Compute);
+		VERIFY_D3D12_RESULT(ComputePSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &ComputePSO.Compute, PipelineType::Compute));
+		csBuilder.SetRootSignature(&ComputePSO.RootSignature);
+		VERIFY_D3D12_RESULT(csBuilder.Build(m_RHI->Device, ComputePSO));
+
 	}
 
 	void LightPass::Render(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera)

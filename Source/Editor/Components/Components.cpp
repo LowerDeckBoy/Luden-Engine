@@ -1,6 +1,7 @@
 #include "../Colors.hpp"
 #include "Components.hpp"
 #include <ImGui/imgui_stdlib.h>
+#include <FontAwsome6/IconsFontAwesome6.h>
 
 namespace Luden::gui
 {
@@ -110,6 +111,11 @@ namespace Luden::gui
 		}
 	}
 
+	void Math::EditColor3(std::string_view Label, DirectX::XMFLOAT3& Float3)
+	{
+		ImGui::ColorEdit3("##editColor", (float*)&Float3);
+	}
+
 	void DrawTransformComponent(ecs::TransformComponent& Component)
 	{
 		if (ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen))
@@ -158,6 +164,52 @@ namespace Luden::gui
 			{
 				Component.Name = last;
 			}
+		}
+	}
+
+	void DrawPointLightComponent(ecs::PointLightComponent& Component)
+	{
+		if (ImGui::BeginTable("##pointLight", 2, ImGuiTableFlags_Resizable))
+		{
+			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Position");
+			ImGui::TableNextColumn();
+			Math::DrawFloat3("Position", Component.Position);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Ambient");
+			ImGui::TableNextColumn();
+			Math::EditColor3("Ambient", Component.Ambient);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Radius");
+			ImGui::TableNextColumn();
+			ImGui::DragFloat("##radius", &Component.Radius, 1.0f, 1.0f, 0.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+			ImGui::EndTable();
+		}
+	}
+
+	void AddOrRemoveComponent(Entity& Target)
+	{ 
+		// Add/Remove components via editor
+		if (ImGui::Button(ICON_FA_PLUS"Add"))
+		{
+			
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button(ICON_FA_MINUS"Remove"))
+		{
+			//Target.RemoveComponent<T>();
 		}
 	}
 
