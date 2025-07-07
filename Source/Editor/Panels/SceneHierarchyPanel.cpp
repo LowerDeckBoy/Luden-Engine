@@ -60,6 +60,49 @@ namespace Luden::Panel
 				ImGui::TreePop();
 			}
 
+			if (ImGui::TreeNodeEx("Lights", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
+			{
+				for (usize i = 0; i < m_ActiveScene->PointLights.size(); ++i)
+				{
+					
+					//Entity entity(m_ActiveScene->GetWorld(), handle);
+					Entity entity(m_ActiveScene->GetWorld(), m_ActiveScene->PointLights.at(i).GetHandle());
+
+					ImGuiTreeNodeFlags flags =
+						((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
+						ImGuiTreeNodeFlags_Leaf;
+
+					//ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, name.Name.data());
+					ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, std::format("Point light {}", i).c_str());
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+					{
+						m_SelectedEntity = entity;
+					}
+					ImGui::TreePop();
+				}
+
+				/*
+				// Lights
+				const auto& lightsView = m_ActiveScene->GetRegistry()->view<ecs::NameComponent, ecs::PointLightComponent>();
+				for (auto [handle, name, light] : lightsView.each())
+				{
+					Entity entity(m_ActiveScene->GetWorld(), handle);
+
+					ImGuiTreeNodeFlags flags =
+						((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
+						ImGuiTreeNodeFlags_Leaf;
+
+					ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, name.Name.data());
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+					{
+						m_SelectedEntity = entity;
+					}
+					ImGui::TreePop();
+				}
+				*/
+				ImGui::TreePop();
+			}
+
 			ImGui::TreePop();
 		}
 	}

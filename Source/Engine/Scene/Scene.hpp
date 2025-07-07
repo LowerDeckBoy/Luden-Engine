@@ -25,16 +25,19 @@ namespace Luden
 
 	struct SceneConstants
 	{
-		DirectX::XMMATRIX World{};
 		DirectX::XMMATRIX View{};
 		DirectX::XMMATRIX Projection{};
 		DirectX::XMMATRIX InversedView{};
 		DirectX::XMMATRIX InversedProjection{};
 		DirectX::XMMATRIX InversedViewProjection{};
 		DirectX::XMFLOAT3 CameraPosition{};
-		uint32 pad = 0;
+		float pad = 0;
 		DirectX::XMFLOAT4 Planes[6];
 
+		DirectX::XMFLOAT3 DirectionalPosition;
+		float pad2 = 0;
+		DirectX::XMFLOAT3 DirectionalAmbient;
+		float pad3 = 0;
 	};
 
 	class Scene
@@ -48,6 +51,8 @@ namespace Luden
 		GlobalConstants Consts;
 
 		std::string Name;
+
+		void Update();
 
 		// Initialize Scene and create resources for scene content.
 		void Build(D3D12Device* pDevice);
@@ -81,6 +86,8 @@ namespace Luden
 		D3D12ConstantBuffer* SceneDataBuffer = nullptr;
 		SceneConstants SceneData{};
 		void UpdateSceneBufferData(SceneCamera* pCamera);
+
+		Entity SkyLight;
 
 	private:
 		Filepath m_Filepath;

@@ -30,6 +30,11 @@ namespace Luden
 		Release();
 	}
 
+	void Scene::Update()
+	{
+		
+	}
+
 	void Scene::Build(D3D12Device* pDevice)
 	{
 		if (IsEmpty())
@@ -173,6 +178,11 @@ namespace Luden
 		SceneData.Planes[3]				= pCamera->Frustum.Planes[3];
 		SceneData.Planes[4]				= pCamera->Frustum.Planes[4];
 		SceneData.Planes[5]				= pCamera->Frustum.Planes[5];
+
+		//
+		auto& directional = SkyLight.GetComponent<ecs::DirectionalLightComponent>();
+		SceneData.DirectionalPosition = directional.Direction;
+		SceneData.DirectionalAmbient  = directional.Ambient;
 
 		SceneDataBuffer->Update(&SceneData);
 

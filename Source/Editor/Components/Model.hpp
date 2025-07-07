@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Graphics/Model.hpp>
+#include "Components.hpp"
 //#include <ImGui/imgui_internal.h>
 
 namespace Luden::gui
@@ -18,12 +19,8 @@ namespace Luden::gui
         // Put a table with child nodes / meshes here
 
         // TODO:
-        // Add/Remove components via editor
-        ImGui::Button(ICON_FA_PLUS"Add");
-        ImGui::SameLine();
-        ImGui::Button(ICON_FA_MINUS"Remove");
-
-        //entt::view
+        // Add/Remove components via editor layer
+        AddOrRemoveComponent(InModel);
 
         if (ImGui::TreeNodeEx("Hierarchy", ImGuiTreeNodeFlags_FramePadding))
         {

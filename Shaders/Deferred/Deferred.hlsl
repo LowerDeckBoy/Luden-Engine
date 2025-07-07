@@ -22,15 +22,19 @@ ConstantBuffer<PushConstants> Constants : register(b2);
 
 struct SceneConstants
 {
-	row_major float4x4 World;
-	row_major float4x4 View;
-	row_major float4x4 Projection;
-	row_major float4x4 InversedView;
-	row_major float4x4 InversedProjection;
-	row_major float4x4 InversedViewProjection;
-	float3 CameraPosition;
-	float pad;
-	float4 Planes[6];
+	row_major float4x4	View;
+	row_major float4x4	Projection;
+	row_major float4x4	InversedView;
+	row_major float4x4	InversedProjection;
+	row_major float4x4	InversedViewProjection;
+	float3				CameraPosition;
+	float				pad;
+	float4				Planes[6];
+	
+	float3				DirectionalPosition;
+	float				pad2;
+	float3				DirectionalAmbient;
+	float				pad3;
 };
 
 ConstantBuffer<SceneConstants> Scene : register(b1);
@@ -88,6 +92,31 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
 	
+	// Single directional lighting.
+	{
+		const float3 L = normalize(-Scene.DirectionalPosition);
+		const float3 H = normalize(V + L);
+		
+		const float NdotL = max(dot(N, L), Epsilon);
+		const float NdotH = max(dot(N, H), Epsilon);
+		const float HdotV = max(dot(H, V), Epsilon);
+		
+		const float NDF = DistributionGGX(N, H, roughness);
+		const float G = GeometrySmith(NdotV, NdotL, roughness);
+		const float3 F = FresnelSchlick(HdotV, F0);
+		const float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
+		
+		const float3 numerator = NDF * G * F;
+		const float denominator = 4.0f * NdotL * NdotV + Epsilon;
+		
+		const float3 diffuse = kD * (baseColor.rgb) / PI;
+		//const float3 diffuse = kD * float3(float3(0.03f, 0.03f, 0.03f) * baseColor.rgb) / PI;
+		const float3 specular = numerator / denominator;
+
+		Lo += (diffuse + specular) * pow(Scene.DirectionalAmbient, 2.2f) * NdotL;
+	}
+	
+	// Point lights
 	for (uint lightIdx = 0; lightIdx < Constants.NumLights; lightIdx++)
 	{
 		PointLight light = PointLights[lightIdx];
@@ -99,9 +128,9 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 		const float NdotH = max(dot(N, H), Epsilon);
 		const float HdotV = max(dot(H, V), Epsilon);
 		
-		const float distance = length(light.Position - worldPosition);
+		const float distance	= length(light.Position - worldPosition);
 		const float attenuation = (1.0f / (distance * distance + 1.0f)) * (saturate(1.0f - distance / light.Radius));
-		const float3 radiance = attenuation * pow(light.Ambient, 2.2f) * light.Radius;
+		const float3 radiance	= attenuation * pow(light.Ambient, 2.2f) * light.Radius;
 		
 		const float NDF = DistributionGGX(N, H, roughness);
 		const float G	= GeometrySmith(NdotV, NdotL, roughness);
@@ -120,8 +149,7 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	output += Lo;
 	output += emissive;
 	output /= (output + float3(1.0f, 1.0f, 1.0f));
-	output = pow(output, 1.0f / 2.2f);
-	//output = lerp(output, pow(output, 1.0f / 2.2f), 0.4f);
+	output = lerp(output, pow(output, 1.0f / 2.2f), 0.4f);
 
 	return float4(output.rgb, 1.0f);
 }

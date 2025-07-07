@@ -198,6 +198,30 @@ namespace Luden::gui
 		}
 	}
 
+	void DrawDirectionalLightComponent(ecs::DirectionalLightComponent& Component)
+	{
+		if (ImGui::BeginTable("##directionalLight", 2, ImGuiTableFlags_Resizable))
+		{
+			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Position");
+			ImGui::TableNextColumn();
+			Math::DrawFloat3("Position", Component.Direction);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Ambient");
+			ImGui::TableNextColumn();
+			Math::EditColor3("Ambient", Component.Ambient);
+
+			ImGui::EndTable();
+		}
+	}
+
 	void AddOrRemoveComponent(Entity& Target)
 	{ 
 		// Add/Remove components via editor

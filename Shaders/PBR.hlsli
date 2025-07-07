@@ -16,10 +16,13 @@
 // a^2 / PI((N dot H)^2 * (a^2 - 1) + 1)^2 
 float DistributionGGX(float3 N, float3 H, float Roughness)
 {
-	float a2 = Roughness * Roughness;
-	float NdotHSq = pow(max(dot(N, H), 0.0f), 2);
+	float a = Roughness * Roughness;
+	float a2 = a * a;
+	float NdotH = max(dot(N, H), 0.0f);
+	float NdotHSq = NdotH * NdotH;
 	
-	return a2 / (PI * pow((NdotHSq * (a2 - 1.0f) + 1), 2));
+	float denom = NdotHSq * (a2 - 1.0f) + 1.0f;
+	return a2 / (PI * denom * denom);
 }
 
 // SchlickGGX - microfacet overshading geometry function.
@@ -28,7 +31,7 @@ float DistributionGGX(float3 N, float3 H, float Roughness)
 // N dot V / (N dot V)(1 - Kd) + Kd
 float GeometrySchlickGGX(float NdotV, float Roughness)
 {
-	float Kd = pow((Roughness + 1.0f), 2) / 8.0f;
+	float Kd = pow(Roughness + 1.0f, 2) / 8.0f;
 
 	return NdotV / (NdotV * (1.0f - Kd) + Kd);
 }
@@ -39,9 +42,9 @@ float GeometrySchlickGGX(float NdotV, float Roughness)
 // N dot V / (N dot V)(1 - Kd) + Kd
 float GeometrySchlickGGX_IBL(float NdotV, float Roughness)
 {
-	float Kd = pow((Roughness), 2) / 2.0f;
+	float Kd = pow((Roughness), 2.0f) / 2.0f;
 
-	return NdotV / (NdotV * (1 - Kd) + Kd);
+	return NdotV / (NdotV * (1.0f - Kd) + Kd);
 }
 
 // Returns GeometrySchlickGGX(N, V, Roughness) * GeometrySchlickGGX(N, L, Roughness)
@@ -62,5 +65,9 @@ float GeometrySmith_IBL(float NdotV, float NdotL, float Roughness)
 	return ggx1 * ggx2;
 }
 
+float3 FresnelSchlick(float NdotV, float3 F0)
+{
+	return F0 + (1.0f - F0) * pow(1.0f - NdotV, 5.0f);
+}
 
 #endif // PBR_HLSLI
