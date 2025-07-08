@@ -78,6 +78,9 @@ namespace Luden
 
 		std::vector<std::unique_ptr<Model>> Models;
 
+		D3D12Buffer* TransformsBuffer = nullptr;
+		std::vector<ecs::TransformComponent> Transforms;
+
 		std::vector<Material> Materials;
 		D3D12Buffer* MaterialBuffer = nullptr;
 

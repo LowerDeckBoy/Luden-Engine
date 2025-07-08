@@ -26,7 +26,8 @@ namespace Luden
 		void Release();
 
 		std::vector<StaticMesh>		Meshes;
-		std::vector<Material>		Materials;
+		std::vector<StaticMesh>		OpaqueMeshes;
+		std::vector<StaticMesh>		BlendMeshes;
 
 		std::vector<D3D12Texture*>	Textures;
 
@@ -34,7 +35,7 @@ namespace Luden
 		Constants::ObjectTranforms cbObjectTransforms{};
 
 		// TODO:
-		void SetMaterial();
+		//void SetMaterial();
 
 		INLINE Filepath GetFilepath()
 		{

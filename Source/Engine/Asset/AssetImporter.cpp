@@ -8,7 +8,7 @@
 
 namespace Luden
 {
-	bool AssetImporter::ImportStaticMesh(Filepath Path, Model& OutModel)
+	bool AssetImporter::ImportStaticMesh(Scene* pScene, Filepath Path, Model& OutModel)
 	{
 		if (!File::Exists(Path.string()))
 		{
@@ -16,9 +16,6 @@ namespace Luden
 
 			return false;
 		}
-
-		return ImportAssimpModel(Path, OutModel);
-
 		//if (File::GetExtension(Path) == ".gltf")
 		//{
 		//	return ImportFastglftModel(Path, OutModel);
@@ -28,11 +25,6 @@ namespace Luden
 		//	return ImportAssimpModel(Path, OutModel);
 		//}
 
-		//return false;
-	}
-
-	bool AssetImporter::ImportStaticMesh(Scene* pScene, Filepath Path, Model& OutModel)
-	{
 		return ImportAssimpModel(pScene, Path, OutModel);
 	}
 

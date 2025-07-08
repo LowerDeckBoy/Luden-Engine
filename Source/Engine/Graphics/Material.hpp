@@ -32,5 +32,7 @@ namespace Luden
 		uint32	MetallicRoughnessIndex	= 0xFFFFFFFF;
 		uint32	EmissiveIndex			= 0xFFFFFFFF;
 
+		bool IsTransparent() const { return AlphaMode == EAlphaMode::Blend; }
+
 	};
 } // namespace Luden

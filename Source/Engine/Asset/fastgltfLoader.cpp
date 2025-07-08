@@ -133,7 +133,7 @@ namespace Luden
 		OutModel.SetFilepath(Path);
 
 		OutModel.Meshes = std::move(loadData.Meshes);
-		OutModel.Materials = std::move(loadData.Materials);
+		//OutModel.Materials = std::move(loadData.Materials);
 
 		return true;
 	}
@@ -215,7 +215,7 @@ namespace Luden
 									});
 							}
 
-							meshData.MaterialId = (uint32)primitive->materialIndex.value();
+							//meshData.MaterialID = (uint32)primitive->materialIndex.value();
 
 							DirectX::XMVector4TransformStream(
 								positions.data(), sizeof(DirectX::XMFLOAT4),
@@ -242,7 +242,7 @@ namespace Luden
 								meshData.Vertices.push_back(vertex);
 							}
 
-							meshData.MaterialId = (primitive->materialIndex.has_value() ? static_cast<uint32>(primitive->materialIndex.value()) : 0xFFFFFFFF);
+							meshData.MaterialID = (primitive->materialIndex.has_value() ? static_cast<uint32>(primitive->materialIndex.value()) : 0xFFFFFFFF);
 
 							SceneData.Meshes.push_back(meshData);
 						}

@@ -11,8 +11,8 @@
 
 namespace Luden
 {
-	constexpr uint32 MeshletMaxTriangles	= 124;
-	constexpr uint32 MeshletMaxVertices		= 64;
+	constexpr uint32 MeshletMaxTriangles = 124;
+	constexpr uint32 MeshletMaxVertices = 64;
 
 	struct Material;
 
@@ -32,6 +32,7 @@ namespace Luden
 		std::vector<DirectX::XMFLOAT2> TexCoords;
 		std::vector<DirectX::XMFLOAT3> Normals;
 		std::vector<DirectX::XMFLOAT3> Tangents;
+		std::vector<DirectX::XMFLOAT3> Bitangents;
 	};
 
 	struct FRaytracingInstanceDesc
@@ -49,17 +50,20 @@ namespace Luden
 		DirectX::XMFLOAT3	Center;
 		f32					Radius;
 
-		DirectX::XMFLOAT3	ConeApex[3];
-		DirectX::XMFLOAT3	ConeAxis[3];
+		DirectX::XMFLOAT3	ConeApex;
+		uint32 pad = 0;
+		DirectX::XMFLOAT3	ConeAxis;
 		f32					ConeCutoff; /* = cos(angle/2) */
+		DirectX::XMFLOAT4	pad2{};
 	};
-
 
 	struct StaticMesh
 	{
 		std::string Name;
 
-		uint32 MaterialId = 0xffffffff;
+		// Test
+		uint32 TransformID = 0xffffffff;
+		uint32 MaterialID  = 0xffffffff;
 
 		std::vector<uint32>	Indices;
 		std::vector<Vertex>	Vertices;
@@ -71,13 +75,15 @@ namespace Luden
 
 		ecs::BoundingBoxComponent		BoundingBox;
 		ecs::TransformComponent			Transform;
+		// Test
+		DirectX::BoundingSphere			BoundingSphere;
 
 		EAlphaMode AlphaMode;
 
 		uint32 VertexBuffer;
 		uint32 IndexBuffer;
 
-		D3D12_INDEX_BUFFER_VIEW IndexBufferView;
+		//D3D12_INDEX_BUFFER_VIEW IndexBufferView;
 
 		// Used for TLAS building.
 		FRaytracingInstanceDesc RaytracingInstanceDesc{};
@@ -89,11 +95,11 @@ namespace Luden
 
 		uint32 BLASBuffer;
 
-		uint32 NumVertices	= 0;
-		uint32 NumIndices	= 0;
-		uint32 NumMeshlets	= 0;
-		uint32 NumMeshletVertices  = 0;
-		uint32 NumMeshletTriangles = 0;
+		uint32 NumVertices			= 0;
+		uint32 NumIndices			= 0;
+		uint32 NumMeshlets			= 0;
+		uint32 NumMeshletVertices	= 0;
+		uint32 NumMeshletTriangles	= 0;
 
 	};
 

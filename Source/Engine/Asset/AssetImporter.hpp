@@ -30,7 +30,7 @@ namespace Luden
 		AssetImporter() = default;
 		~AssetImporter() = default;
 		
-		bool ImportStaticMesh(Filepath Path, Model& OutModel);
+		// Gotta rework this.
 		bool ImportStaticMesh(Scene* pScene, Filepath Path, Model& OutModel);
 
 		D3D12Texture* LoadTexture(Filepath Path);
@@ -47,8 +47,8 @@ namespace Luden
 		//void GenerateTangents();
 
 		// For non glTF models.
-		bool ImportAssimpModel(Filepath Path, Model& OutModel);
 		bool ImportAssimpModel(Scene* pScene, Filepath Path, Model& OutModel);
+		bool ImportAssimpModel_TEST(Scene* pScene, Filepath Path, Model& OutModel);
 
 		// for glTF 2.0 models only.
 		bool ImportFastglftModel(Filepath Path, Model& OutModel);

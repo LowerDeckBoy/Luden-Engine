@@ -38,6 +38,7 @@ namespace Luden
 	{
 		ConstantBuffer = m_ParentDevice->CreateConstantBuffer(&cbObjectTransforms, sizeof(cbObjectTransforms));
 
+		//for (auto& mesh : OpaqueMeshes)
 		for (auto& mesh : Meshes)
 		{
 			mesh.VertexBuffer = m_ParentDevice->CreateBuffer({
@@ -58,11 +59,11 @@ namespace Luden
 				.Name = mesh.Name + " Index Buffer"
 				});
 
-			mesh.IndexBufferView = D3D12_INDEX_BUFFER_VIEW{
-				.BufferLocation = m_ParentDevice->Buffers.at(mesh.IndexBuffer)->GetHandleRaw()->GetGPUVirtualAddress(),
-				.SizeInBytes = mesh.NumIndices * (uint32)sizeof(uint32),
-				.Format = DXGI_FORMAT_R32_UINT
-			};
+			//mesh.IndexBufferView = D3D12_INDEX_BUFFER_VIEW{
+			//	.BufferLocation = m_ParentDevice->Buffers.at(mesh.IndexBuffer)->GetHandleRaw()->GetGPUVirtualAddress(),
+			//	.SizeInBytes = mesh.NumIndices * (uint32)sizeof(uint32),
+			//	.Format = DXGI_FORMAT_R32_UINT
+			//};
 
 			mesh.MeshletsBuffer = m_ParentDevice->CreateBuffer({
 				.BufferUsage = BufferUsageFlag::Structured,
@@ -135,6 +136,16 @@ namespace Luden
 			D3D12UploadContext::UploadBuffer(m_ParentDevice->Buffers.at(mesh.MeshletTrianglesBuffer),	meshletTrianglesRepacked.size() * sizeof(uint32));
 			D3D12UploadContext::UploadBuffer(m_ParentDevice->Buffers.at(mesh.MeshletBoundsBuffer),		mesh.MeshletBounds.size()		* sizeof(mesh.MeshletBounds.at(0)));
 
+			OpaqueMeshes.push_back(std::move(mesh));
+			//if (!Materials.at(mesh.MaterialId).IsTransparent())
+			//{
+			//	OpaqueMeshes.push_back(std::move(mesh));
+			//}
+			//else
+			//{
+			//	OpaqueMeshes.push_back(std::move(mesh));
+			//	//BlendMeshes.push_back(std::move(mesh));
+			//}
 		}
 
 	}

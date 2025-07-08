@@ -24,6 +24,9 @@ namespace Luden
 			std::vector<StaticMesh>		OpaqueMeshes;
 			std::vector<StaticMesh>		BlendMeshes;
 
+			// Test
+			std::vector<ecs::TransformComponent> Transforms;
+
 			std::vector<Material>		UniqueMaterials;
 			std::vector<D3D12Texture*>	ModelTextures;
 
@@ -41,113 +44,6 @@ namespace Luden
 	// Process Assimp node recursively.
 	// Get information about it's meshes, matrix transformation and material.
 	static void TraverseNode(assimp::FAssimpLoadingData& SceneData, aiNode* pNode);
-
-	bool AssetImporter::ImportAssimpModel(Filepath Path, Model& OutModel)
-	{
-		constexpr int32 loadFlags =
-			aiProcess_ConvertToLeftHanded |
-			aiProcess_Triangulate |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_RemoveRedundantMaterials |
-			aiProcess_FindInstances |
-			aiProcess_GenSmoothNormals |
-			aiProcess_CalcTangentSpace |
-			aiProcess_GenBoundingBoxes;
-
-		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(Path.string(), (uint32)loadFlags);
-
-		if (!scene || !scene->mRootNode || !scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
-		{
-			LOG_WARNING("\n\tFailed to load model: {0}, reason: {1}", scene->GetShortFilename(Path.string().c_str()), importer.GetErrorString());
-
-			importer.FreeScene();
-
-			return false;
-		}
-
-		OutModel.Meshes.reserve(scene->mNumMeshes);
-		OutModel.Materials.reserve(scene->mNumMaterials);
-
-		assimp::FAssimpLoadingData data{};
-		data.Scene = scene;
-		data.Path = Path;
-
-		LoadMaterials(data);
-		TraverseNode(data, scene->mRootNode);
-
-		for (auto& texture : data.TexturesToLoad)
-		{
-			const auto& materialId  = texture.first;
-			const auto& texturePath = texture.second.first;
-			const auto& textureType = texture.second.second;
-
-			if (!IsTextureLoaded(data, texturePath))
-			{
-				D3D12Texture* tex2D = LoadTexture(texturePath);
-				
-				switch (textureType)
-				{
-				case ETextureType::BaseColor:
-					data.UniqueMaterials.at(materialId).BaseColorIndex = tex2D->ShaderResourceHandle.Index;
-					break;
-				case ETextureType::Normal:
-					data.UniqueMaterials.at(materialId).NormalIndex = tex2D->ShaderResourceHandle.Index;
-					break;
-				case ETextureType::MetallicRoughness:
-					data.UniqueMaterials.at(materialId).MetallicRoughnessIndex = tex2D->ShaderResourceHandle.Index;
-					break;
-				case ETextureType::Emissive:
-					data.UniqueMaterials.at(materialId).EmissiveIndex = tex2D->ShaderResourceHandle.Index;
-					break;
-				}
-
-				tex2D->SetFilepath(texturePath);
-				data.LoadedPaths.push_back(texturePath.string());
-				data.ModelTextures.push_back(std::move(tex2D));
-			}
-			else
-			{
-				auto textureIndex = FindTextureWithPath(data.ModelTextures, texturePath);
-
-				switch (textureType)
-				{
-				case ETextureType::BaseColor:
-					data.UniqueMaterials.at(materialId).BaseColorIndex = data.ModelTextures.at(textureIndex)->ShaderResourceHandle.Index;
-					break;
-				case ETextureType::Normal:
-					data.UniqueMaterials.at(materialId).NormalIndex = data.ModelTextures.at(textureIndex)->ShaderResourceHandle.Index;
-					break;
-				case ETextureType::MetallicRoughness:
-					data.UniqueMaterials.at(materialId).MetallicRoughnessIndex = data.ModelTextures.at(textureIndex)->ShaderResourceHandle.Index;
-					break;
-				case ETextureType::Emissive:
-					data.UniqueMaterials.at(materialId).EmissiveIndex = data.ModelTextures.at(textureIndex)->ShaderResourceHandle.Index;
-					break;
-				}
-			}
-		}
-
-		for (auto& mesh : data.Meshes)
-		{
-			BuildMesh(mesh);
-		}
-
-		// test
-		//for (auto& material : data.UniqueMaterials)
-		//{
-		//
-		//}
-
-		OutModel.Meshes		= std::move(data.Meshes);
-		OutModel.Materials	= std::move(data.UniqueMaterials);
-		OutModel.Textures	= std::move(data.ModelTextures);
-
-		OutModel.SetFilepath(Path);
-		importer.FreeScene();
-
-		return true;
-	}
 
 	bool AssetImporter::ImportAssimpModel(Scene* pScene, Filepath Path, Model& OutModel)
 	{
@@ -167,14 +63,12 @@ namespace Luden
 		if (!scene || !scene->mRootNode || !scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
 		{
 			LOG_WARNING("\n\tFailed to load model: {0}, reason: {1}", scene->GetShortFilename(Path.string().c_str()), importer.GetErrorString());
-
 			importer.FreeScene();
 
 			return false;
 		}
 
 		OutModel.Meshes.reserve(scene->mNumMeshes);
-		OutModel.Materials.reserve(scene->mNumMaterials);
 
 		assimp::FAssimpLoadingData data{};
 		data.Scene = scene;
@@ -239,19 +133,16 @@ namespace Luden
 		{
 			BuildMesh(mesh);
 
-			const uint32 handle = static_cast<uint32>(pScene->Materials.size());
-			pScene->Materials.push_back(data.UniqueMaterials.at(mesh.MaterialId));
-			mesh.MaterialId = handle;
+			const uint32 materialHandle = static_cast<uint32>(pScene->Materials.size());
+			pScene->Materials.push_back(data.UniqueMaterials.at(mesh.MaterialID));
+			mesh.MaterialID = materialHandle;
+
+			const uint32 transformHandle = static_cast<uint32>(pScene->Transforms.size());
+			//pScene->Transforms.push_back()
+			mesh.TransformID = transformHandle;
 		}
 
-		// test
-		//for (auto& material : data.UniqueMaterials)
-		//{
-		//	pScene->Materials.p
-		//}
-
 		OutModel.Meshes = std::move(data.Meshes);
-		//OutModel.Materials = std::move(data.UniqueMaterials);
 		OutModel.Textures = std::move(data.ModelTextures);
 
 		OutModel.SetFilepath(Path);
@@ -295,6 +186,9 @@ namespace Luden
 			StaticMesh meshData{};
 			meshData.Name = mesh->mName.C_Str();
 			meshData.Transform.WorldMatrix = transform;
+
+			// Test
+			ecs::TransformComponent transformComponent{};
 
 			meshData.BoundingBox.Min = *(DirectX::XMFLOAT3*)(&mesh->mAABB.mMin);
 			meshData.BoundingBox.Max = *(DirectX::XMFLOAT3*)(&mesh->mAABB.mMax);
@@ -402,8 +296,11 @@ namespace Luden
 			meshData.RaytracingInstanceDesc.InstanceID = 0;
 			meshData.RaytracingInstanceDesc.InstanceMask = 1;
 
+			//SceneData.Transforms.push_back(transformComponent);
+			//meshData.TransformID = 
+
 			// Assign index to unique material to reuse already loaded materials without duplicates.
-			meshData.MaterialId = mesh->mMaterialIndex;
+			meshData.MaterialID = mesh->mMaterialIndex;
 
 			SceneData.Meshes.push_back(meshData);
 		}
