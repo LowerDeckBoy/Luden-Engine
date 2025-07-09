@@ -27,12 +27,15 @@ namespace Luden
 		BaseColor.Create(pRHI->Device, Width, Height, swapChainFormat, RenderTargetClearColor, "GBuffer BaseColor");
 		Normal.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT, RenderTargetClearColor, "GBuffer Normal");
 		MetallicRoughness.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, RenderTargetClearColor, "GBuffer MetallicRoughness");
-		Emissive.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, RenderTargetClearColor, "GBuffer Emissive");
+		//Emissive.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM, RenderTargetClearColor, "GBuffer Emissive");
+		Emissive.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT, RenderTargetClearColor, "GBuffer Emissive");
+		WorldPosition.Create(pRHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT, RenderTargetClearColor, "GBuffer WorldPosition");
 
 		m_RenderTargetHandles.push_back(&BaseColor.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&Normal.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&MetallicRoughness.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&Emissive.RenderTargetHandle);
+		m_RenderTargetHandles.push_back(&WorldPosition.RenderTargetHandle);
 
 	}
 
@@ -57,11 +60,13 @@ namespace Luden
 			builder.SetAlphaModeOpaque(1);
 			builder.SetAlphaModeOpaque(2);
 			builder.SetAlphaModeOpaque(3);
+			builder.SetAlphaModeOpaque(4);
 			builder.SetRenderTargetFormats({
 				BaseColor.GetFormat(),
 				Normal.GetFormat(),
 				MetallicRoughness.GetFormat(),
-				Emissive.GetFormat()
+				Emissive.GetFormat(),
+				WorldPosition.GetFormat(),
 				});
 
 			VERIFY_D3D12_RESULT(builder.Build(Pipeline.PipelineState));
@@ -102,6 +107,7 @@ namespace Luden
 		Normal.Release();
 		MetallicRoughness.Release();
 		Emissive.Release();
+		WorldPosition.Release();
 
 		m_RenderTargetHandles.clear();
 		m_RenderTargetHandles.shrink_to_fit();
@@ -114,6 +120,7 @@ namespace Luden
 		Normal.Resize(Width, Height);
 		MetallicRoughness.Resize(Width, Height);
 		Emissive.Resize(Width, Height);
+		WorldPosition.Resize(Width, Height);
 	}
 	
 	void GeometryPass::Render(Frame& CurrentFrame, std::function<void()> const& DrawFunction)
@@ -127,7 +134,9 @@ namespace Luden
 			{ &BaseColor,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &Normal,				D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_RENDER_TARGET },
-			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
+			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET },
+			{ &WorldPosition,		D3D12_RESOURCE_STATE_RENDER_TARGET },
+		});
 
 		commandList->SetRenderTargets(m_RenderTargetHandles, m_RHI->SceneDepthBuffer->DepthStencilHandle);
 		commandList->ClearRenderTargets(m_RenderTargetHandles, RenderTargetClearColor);
@@ -138,7 +147,9 @@ namespace Luden
 			{ &BaseColor,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &Normal,				D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ } });
+			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
+			{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ },
+		});
 	}
 
 	void GeometryPass::Render(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame)
@@ -151,7 +162,9 @@ namespace Luden
 			{ &BaseColor,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &Normal,				D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_RENDER_TARGET },
-			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
+			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET }, 
+			{ &WorldPosition,		D3D12_RESOURCE_STATE_RENDER_TARGET },
+		});
 
 		commandList->SetRenderTargets(m_RenderTargetHandles, m_RHI->SceneDepthBuffer->DepthStencilHandle);
 		commandList->ClearRenderTargets(m_RenderTargetHandles, RenderTargetClearColor);
@@ -161,31 +174,20 @@ namespace Luden
 		commandList->SetRootSignature(&Pipeline.RootSignature);
 		commandList->SetPipelineState(&Pipeline.PipelineState);
 
-		commandList->PushConstants(3, 28, &pScene->Consts);
+		commandList->PushConstants(1, 28, &pScene->Consts);
 
 		// Draw all opaque objects.
 		for (auto& model : pScene->Models)
 		{
 			if (model->OpaqueMeshes.empty()) continue;
 
-			auto& transform = model->GetComponent<ecs::TransformComponent>();
-			transform.Update();
-
-			auto* constantBuffer = device->ConstantBuffers.at(model->ConstantBuffer);
-
-			model->cbObjectTransforms.WVP = DirectX::XMMatrixTranspose(transform.WorldMatrix * pCamera->GetViewProjection());
-			model->cbObjectTransforms.World = DirectX::XMMatrixTranspose(transform.WorldMatrix);
-			constantBuffer->Update(&model->cbObjectTransforms);
-
-			CurrentFrame.GraphicsCommandList->SetConstantBuffer(0, constantBuffer);
-			
 			for (auto& mesh : model->OpaqueMeshes)
 			{
-				uint32 vertexBuffer = device->Buffers.at(mesh.VertexBuffer)->ShaderResourceView.Index;
-				uint32 meshletBuffer = device->Buffers.at(mesh.MeshletsBuffer)->ShaderResourceView.Index;
-				uint32 meshletVerticesBuffer = device->Buffers.at(mesh.MeshletVerticesBuffer)->ShaderResourceView.Index;
-				uint32 meshletTrianglesBuffer = device->Buffers.at(mesh.MeshletTrianglesBuffer)->ShaderResourceView.Index;
-				uint32 meshletBoundsBuffer = device->Buffers.at(mesh.MeshletBoundsBuffer)->ShaderResourceView.Index;
+				uint32 vertexBuffer				= device->Buffers.at(mesh.VertexBuffer)->ShaderResourceView.Index;
+				uint32 meshletBuffer			= device->Buffers.at(mesh.MeshletsBuffer)->ShaderResourceView.Index;
+				uint32 meshletVerticesBuffer	= device->Buffers.at(mesh.MeshletVerticesBuffer)->ShaderResourceView.Index;
+				uint32 meshletTrianglesBuffer	= device->Buffers.at(mesh.MeshletTrianglesBuffer)->ShaderResourceView.Index;
+				uint32 meshletBoundsBuffer		= device->Buffers.at(mesh.MeshletBoundsBuffer)->ShaderResourceView.Index;
 
 				struct
 				{
@@ -197,8 +199,10 @@ namespace Luden
 					uint32 bDrawMeshlets;
 					uint32 bMeshletCulling;
 					uint32 bAlphaMask;
+					uint32 transformsBuffer;
 					uint32 materialBuffer;
 					uint32 materialID;
+					uint32 transformID;
 				} buffers
 				{
 					.vertex				= vertexBuffer,
@@ -209,21 +213,23 @@ namespace Luden
 					.bDrawMeshlets		= (uint32)Config::Get().bDrawMeshlets,
 					.bMeshletCulling	= (uint32)Config::Get().bMeshletCulling,
 					.bAlphaMask			= (uint32)Config::Get().bAlphaMask,
+					.transformsBuffer	= pScene->TransformsBuffer->ShaderResourceView.Index,
 					.materialBuffer		= pScene->MaterialBuffer->ShaderResourceView.Index,
-					.materialID			= mesh.MaterialId,
+					.materialID			= mesh.MaterialID,
+					.transformID		= model->TransformID,
 				};
 			
-				CurrentFrame.GraphicsCommandList->PushConstants(1, 10 , &buffers);
-				//CurrentFrame.GraphicsCommandList->PushConstants(2, 20, &material);
+				CurrentFrame.GraphicsCommandList->PushConstants(0, 12 , &buffers);
 
 				CurrentFrame.GraphicsCommandList->DispatchMesh(Math::RoundUp<uint32>(mesh.NumMeshlets / 32), 1, 1);
 			}	
 		}
 
-		commandList->SetRootSignature(&BlendPipelineState.RootSignature);
-		commandList->SetPipelineState(&BlendPipelineState.PipelineState);
+		//commandList->SetRootSignature(&BlendPipelineState.RootSignature);
+		//commandList->SetPipelineState(&BlendPipelineState.PipelineState);
 
 		// Draw all blend/transparent objects.
+		/*
 		for (auto& model : pScene->Models)
 		{
 			if (model->BlendMeshes.empty()) continue;
@@ -276,17 +282,21 @@ namespace Luden
 				};
 
 				CurrentFrame.GraphicsCommandList->PushConstants(1, 8, &buffers);
-				CurrentFrame.GraphicsCommandList->PushConstants(2, 20, &material);
+				//CurrentFrame.GraphicsCommandList->PushConstants(2, 20, &material);
 
 				CurrentFrame.GraphicsCommandList->DispatchMesh(ROUND_UP(mesh.NumMeshlets / 32), 1, 1);
 			}
 		}
+		*/
 
 		commandList->ResourceTransition({
 			{ &BaseColor,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &Normal,				D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ } });
+			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
+			{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ }
+		});
+
 	}
 
 } // namespace Luden

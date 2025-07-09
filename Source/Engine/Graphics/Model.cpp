@@ -36,9 +36,6 @@ namespace Luden
 
 	void Model::CreateResources()
 	{
-		ConstantBuffer = m_ParentDevice->CreateConstantBuffer(&cbObjectTransforms, sizeof(cbObjectTransforms));
-
-		//for (auto& mesh : OpaqueMeshes)
 		for (auto& mesh : Meshes)
 		{
 			mesh.VertexBuffer = m_ParentDevice->CreateBuffer({

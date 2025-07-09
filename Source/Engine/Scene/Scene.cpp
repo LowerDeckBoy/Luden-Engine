@@ -59,27 +59,34 @@ namespace Luden
 		{
 			model->Release();
 		}
+		Models.clear();
+		Models.shrink_to_fit();
 
 		if (SceneDataBuffer)
 		{
 			delete SceneDataBuffer;
-			SceneDataBuffer = nullptr;
+		}
+
+		if (TransformsBuffer)
+		{
+			delete TransformsBuffer;
+			Transforms.clear();
+			Transforms.shrink_to_fit();
 		}
 
 		if (MaterialBuffer)
 		{
 			delete MaterialBuffer;
-			MaterialBuffer = nullptr;
+			Materials.clear();
+			Materials.shrink_to_fit();
 		}
 
 		if (LightBuffer)
 		{
 			delete LightBuffer;
-			LightBuffer = nullptr;
 		}
 
-		Models.clear();
-
+		
 		GetWorld()->Clear();
 	}
 
@@ -123,6 +130,9 @@ namespace Luden
 			const usize mapSize = static_cast<usize>(Materials.size() * sizeof(Material));
 			std::memcpy(MaterialBuffer->GetBufferDesc().Data, Materials.data(), mapSize);
 		}
+
+		//VERIFY_D3D12_RESULT(TransformsBuffer->GetHandle()->Map(0, nullptr, &TransformsBuffer->GetBufferDesc().Data));
+		//std::memcpy(TransformsBuffer->GetBufferDesc().Data, Transforms.data(), (Transforms.size() * sizeof(ecs::ObjectTransforms)));
 
 		return true;
 	}

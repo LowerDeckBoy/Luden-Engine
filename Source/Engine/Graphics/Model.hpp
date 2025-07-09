@@ -32,7 +32,7 @@ namespace Luden
 		std::vector<D3D12Texture*>	Textures;
 
 		uint32 ConstantBuffer;
-		Constants::ObjectTranforms cbObjectTransforms{};
+		uint32 TransformID;
 
 		// TODO:
 		//void SetMaterial();

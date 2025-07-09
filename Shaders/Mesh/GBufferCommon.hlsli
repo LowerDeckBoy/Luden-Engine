@@ -28,7 +28,6 @@ struct CameraConsts
 	float3 Position;
 	uint pad;
 	float4 Planes[6];
-
 };
 
 // Indices to buffers.
@@ -42,8 +41,10 @@ struct PushConstants
 	uint bDrawMeshlets;
 	uint bMeshletCulling;
 	uint bAlphaMask;
+	uint TransformBuffer;
 	uint MaterialBuffer;
 	uint MaterialID;
+	uint TransformID;
 };
 
 struct Vertex
@@ -64,25 +65,27 @@ struct VertexOut
 	uint MeshletIndex : COLOR0;
 };
 
-ConstantBuffer<Transform> Transforms : register(b0);
-ConstantBuffer<PushConstants> Constants : register(b1);
-ConstantBuffer<FMaterial> Material : register(b2);
-ConstantBuffer<CameraConsts> CameraConstants : register(b3);
+ConstantBuffer<PushConstants>	Constants		: register(b1);
+ConstantBuffer<CameraConsts>	CameraConstants : register(b2);
 
 VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 {
 	VertexOut vout;
 	
-	vout.Position = mul(Transforms.WVP, float4(InVertex.Position, 1.0f));
-	vout.WorldPosition = mul(Transforms.World, float4(InVertex.Position, 1.0f));
-	vout.TexCoord = InVertex.TexCoord;
+	StructuredBuffer<Transform> transformBuffer = ResourceDescriptorHeap[Constants.TransformBuffer];
+	Transform transform = transformBuffer[Constants.TransformID];
 	
-	float3 N = normalize(mul((float3x3) Transforms.World, InVertex.Normal));
-	float3 T = normalize(mul((float3x3) Transforms.World, InVertex.Tangent));
-	float3 B = normalize(mul((float3x3) Transforms.World, InVertex.Bitangent));
+	vout.Position		= mul(transform.WVP,   float4(InVertex.Position, 1.0f));
+	vout.WorldPosition  = mul(transform.World, float4(InVertex.Position, 1.0f));
+
+	vout.TexCoord		= InVertex.TexCoord;
+	
+	float3 N = normalize(mul((float3x3)transform.World, InVertex.Normal));
+	float3 T = normalize(mul((float3x3)transform.World, InVertex.Tangent));
+	float3 B = normalize(mul((float3x3)transform.World, InVertex.Bitangent));
 
 	vout.TBN = float3x3(T, B, N);
-	vout.TBN = mul((float3x3) Transforms.World, transpose(vout.TBN));
+	vout.TBN = mul((float3x3) transform.World, transpose(vout.TBN));
 
 	vout.MeshletIndex = MeshletIndex;
 	

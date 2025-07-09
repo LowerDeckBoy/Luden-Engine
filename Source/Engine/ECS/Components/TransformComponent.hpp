@@ -5,6 +5,12 @@
 
 namespace Luden::ecs
 {
+	struct ObjectTransforms
+	{
+		DirectX::XMMATRIX WVP;
+		DirectX::XMMATRIX World;
+	};
+
 	// Use to convert object's rotation from degrees to radians.
 	// Mostly for editor usage.
 	const DirectX::XMVECTOR RadiansVector = DirectX::XMVectorSet(Math::Deg2Rad, Math::Deg2Rad, Math::Deg2Rad, 1.0);
@@ -45,8 +51,7 @@ namespace Luden::ecs
 				DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMVectorMultiply((XMLoadFloat4(&Rotation)), RadiansVector)) *
 				DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&Translation));
 
-			bDirty = false;
-			
+			//bDirty = false;
 		}
 
 		void Decompose(DirectX::XMMATRIX Matrix)

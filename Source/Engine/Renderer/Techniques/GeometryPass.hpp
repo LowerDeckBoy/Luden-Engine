@@ -30,6 +30,7 @@ namespace Luden
 		D3D12RenderTexture Normal;
 		D3D12RenderTexture MetallicRoughness;
 		D3D12RenderTexture Emissive;
+		D3D12RenderTexture WorldPosition;
 
 	private:
 		// For internal use only.

@@ -39,8 +39,11 @@ void ASMain(
 	{
 		StructuredBuffer<MeshletBound> MeshletBoundsBuffer = ResourceDescriptorHeap[Constants.MeshletBoundsIndex];
 		MeshletBound bounds = MeshletBoundsBuffer[DispatchThreadID];
-
-		bool visible = IsVisible(bounds, Transforms.World, CameraConstants.Position);
+		
+		StructuredBuffer<Transform> transformBuffer = ResourceDescriptorHeap[Constants.TransformBuffer];
+		Transform transform = transformBuffer[Constants.TransformID];
+		
+		bool visible = IsVisible(bounds, transform.World, CameraConstants.Position);
 
 		if (visible)
 		{

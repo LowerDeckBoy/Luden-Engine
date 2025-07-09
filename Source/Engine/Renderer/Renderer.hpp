@@ -47,9 +47,6 @@ namespace Luden
 
 		void Resize();
 
-		// Draw given scene to Geometry Buffer.
-		void DrawScene(Scene* pScene, Frame& CurrentFrame);
-
 		void BuildScene(Scene* pScene);
 
 		static SceneRenderTargets SceneTextures;
@@ -90,7 +87,6 @@ namespace Luden
 
 		D3D12RootSignature* RaytracingRS;
 		D3D12Texture* RaytracingOutput;
-		D3D12Texture* RaytracingOutputSR;
 		void DispatchRayTracing(Frame& CurrentFrame);
 
 	};

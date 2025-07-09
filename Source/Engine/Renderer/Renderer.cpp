@@ -41,7 +41,6 @@ namespace Luden
 		{
 			delete RaytracingBVH;
 			delete RaytracingOutput;
-			delete RaytracingOutputSR;
 			delete RaytracingRS;
 			delete RaytracingPSO;
 			delete RaytracingShaderTable;
@@ -87,82 +86,74 @@ namespace Luden
 	{
 		Camera->Tick(DeltaTime);
 
-		ActiveScene->Consts.Position  = Camera->Position;
-		ActiveScene->Consts.Planes[0] = Camera->Frustum.Planes[0]; // Right
-		ActiveScene->Consts.Planes[1] = Camera->Frustum.Planes[1]; // Left
-		ActiveScene->Consts.Planes[2] = Camera->Frustum.Planes[2]; // Top
-		ActiveScene->Consts.Planes[3] = Camera->Frustum.Planes[3]; // Bottom
-		ActiveScene->Consts.Planes[4] = Camera->Frustum.Planes[4]; // Far
-		ActiveScene->Consts.Planes[5] = Camera->Frustum.Planes[5]; // Near
-		
+		ActiveScene->UpdateSceneBufferData(Camera);
+
+		for (auto& model : ActiveScene->Models)
+		{
+			auto& transformComponent = model->GetComponent<ecs::TransformComponent>();
+
+			if (transformComponent.bDirty)
+			{
+				transformComponent.Update();
+				transformComponent.bDirty = false;
+			}
+
+			auto& transform = ActiveScene->Transforms.at(model->TransformID);
+			transform.WVP = DirectX::XMMatrixTranspose(transformComponent.WorldMatrix * Camera->GetViewProjection());
+			transform.World = DirectX::XMMatrixTranspose(transformComponent.WorldMatrix);
+		}
+
+		std::memcpy(ActiveScene->TransformsBuffer->GetBufferDesc().Data, ActiveScene->Transforms.data(), (ActiveScene->Transforms.size() * sizeof(ecs::ObjectTransforms)));
+
 	}
 
 	void Renderer::Render(Scene* /* pScene */)
 	{
 		auto* frame = &m_D3D12RHI->Frames.at(BackBufferIndex);
 		auto& backbuffer = m_D3D12RHI->SwapChain->BackBuffers.at(BackBufferIndex);
+		auto* commandList = frame->GraphicsCommandList;
 
 		auto& depthStencilView = m_D3D12RHI->SceneDepthBuffer->DepthStencilHandle;
 
-		frame->GraphicsCommandList->ClearDepthStencilView(depthStencilView);
+		commandList->ClearDepthStencilView(depthStencilView);
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3D12RHI->SwapChain->GetSwapChainDescriptorHeap().GetCpuStartHandle(), BackBufferIndex, m_D3D12RHI->SwapChain->GetSwapChainDescriptorHeap().GetDescriptorIncrementSize());
 		
-
-		//frame->GraphicsCommandList->GetHandleRaw()->OMSetRenderTargets(1, &rtvHandle, FALSE, &depthStencilView.CpuHandle);
-		//frame->GraphicsCommandList->ResourceTransition(&SceneTextures.Scene, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		//frame->GraphicsCommandList->GetHandleRaw()->ClearRenderTargetView(SceneTextures.Scene.RenderTargetHandle.CpuHandle, DefaultClearColor.data(), 0, nullptr);
-
-		frame->GraphicsCommandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		if (!Config::Get().bRaytracing)
 		{
 			GBuffer->Render(ActiveScene, Camera, *frame);
-			//frame->GraphicsCommandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
 			LightingPass->Render(ActiveScene, *frame, Camera);
-			//frame->GraphicsCommandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-			//LightingPass->Render(ActiveScene, *frame);
 		}
 		else
 		{
-			//frame->GraphicsCommandList->ResourceTransition(RaytracingOutputSR, D3D12_RESOURCE_STATE_GENERIC_READ);
+			commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			DispatchRayTracing(*frame);
-
-			frame->GraphicsCommandList->ResourceTransition({
-				{ RaytracingOutput, D3D12_RESOURCE_STATE_COPY_SOURCE },
-				{ &GBuffer->BaseColor, D3D12_RESOURCE_STATE_COPY_DEST }
-				//{ RaytracingOutputSR, D3D12_RESOURCE_STATE_COPY_DEST }
-				});
-			//frame->GraphicsCommandList->CopyResource(RaytracingOutput, RaytracingOutputSR);
-			frame->GraphicsCommandList->CopyResource(RaytracingOutput, &GBuffer->BaseColor);
-			frame->GraphicsCommandList->ResourceTransition({
-				{ RaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS },
-				{ &GBuffer->BaseColor, D3D12_RESOURCE_STATE_GENERIC_READ   }
-				//{ RaytracingOutputSR, D3D12_RESOURCE_STATE_GENERIC_READ   }
-			});
-
+			commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_GENERIC_READ);
 		}
 
-		//frame->GraphicsCommandList->ResourcesTransition({
+		//commandList->ResourcesTransition({
 		//	{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ },
 		//	{ &backbuffer,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
 		
-		frame->GraphicsCommandList->ResourceTransition(&backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		frame->GraphicsCommandList->GetHandleRaw()->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
-		frame->GraphicsCommandList->GetHandleRaw()->ClearRenderTargetView(rtvHandle, DefaultClearColor.data(), 0, nullptr);
+		commandList->ResourceTransition(&backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		commandList->GetHandleRaw()->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+		commandList->GetHandleRaw()->ClearRenderTargetView(rtvHandle, DefaultClearColor.data(), 0, nullptr);
 
 		// Debug usage only
-		//if (Config::Get().bHideEditor)
-		//{
-		//	frame->GraphicsCommandList->ResourcesTransition({
-		//		{ &GBuffer->BaseColor,	D3D12_RESOURCE_STATE_COPY_SOURCE },
-		//		{ &backbuffer,			D3D12_RESOURCE_STATE_COPY_DEST } });
-		//	//frame->GraphicsCommandList->CopyResource(&GBuffer->BaseColor, &backbuffer);
-		//	frame->GraphicsCommandList->CopyResource(RaytracingOutputSR, &backbuffer);
-		//	frame->GraphicsCommandList->ResourcesTransition({
-		//		{ &GBuffer->BaseColor,	D3D12_RESOURCE_STATE_GENERIC_READ },
-		//		{ &backbuffer,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
-		//}
+		if (Config::Get().bHideEditor)
+		{
+			commandList->ResourceTransition({
+				{ &GBuffer->BaseColor,	D3D12_RESOURCE_STATE_COPY_SOURCE },
+				{ &backbuffer,			D3D12_RESOURCE_STATE_COPY_DEST } });
+			//commandList->CopyResource(&GBuffer->BaseColor, &backbuffer);
+			//commandList->CopyResource(RaytracingOutputSR, &backbuffer);
+			commandList->CopyResource(&LightingPass->RenderTexture, &backbuffer);
+			commandList->ResourceTransition({
+				{ &GBuffer->BaseColor,	D3D12_RESOURCE_STATE_GENERIC_READ },
+				{ &backbuffer,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
+		}
 
 	}
 
@@ -196,7 +187,6 @@ namespace Luden
 		if (RaytracingBVH != nullptr)
 		{
 			RaytracingOutput->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
-			RaytracingOutputSR->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
 		}
 
 		std::vector<D3D12CommandList*> lists;
@@ -210,228 +200,6 @@ namespace Luden
 
 		Camera->Resize();
 
-	}
-
-	/*
-	void Renderer::Draw(Scene* pScene, Frame& CurrentFrame)
-	{
-		if (!pScene || pScene->Models.empty())
-		{
-			return;
-		}
-		
-		CulledVertices = 0;
-
-		auto* device = m_D3D12RHI->Device;
-		
-		if (Config::Get().bMeshShading)
-		{
-			CurrentFrame.GraphicsCommandList->SetRootSignature(&MeshCullRS);
-			CurrentFrame.GraphicsCommandList->SetPipelineState(&MeshCullPSO);
-
-			for (auto& model : pScene->Models)
-			{
-				auto& transform = model->GetComponent<ecs::TransformComponent>();
-				transform.Update();
-				
-				auto* constantBuffer = device->ConstantBuffers.at(model->ConstantBuffer);
-				CurrentFrame.GraphicsCommandList->SetConstantBuffer(0, constantBuffer);
-				
-				for (auto& mesh : model->Meshes)
-				{
-					if (!Camera->IsInsideFrustum(mesh.BoundingBox))
-					{
-						CulledVertices += mesh.NumVertices;
-						//continue;
-					}
-
-					mesh.Transform.Update();
-					model->cbObjectTransforms.WVP	= DirectX::XMMatrixTranspose(mesh.Transform.WorldMatrix * transform.WorldMatrix * Camera->GetViewProjection());
-					model->cbObjectTransforms.World	= DirectX::XMMatrixTranspose(mesh.Transform.WorldMatrix * transform.WorldMatrix);
-					constantBuffer->Update(&model->cbObjectTransforms);
-
-					uint32 vertexBuffer				= device->Buffers.at(mesh.VertexBuffer)->ShaderResourceView.Index;
-					uint32 meshletBuffer			= device->Buffers.at(mesh.MeshletsBuffer)->ShaderResourceView.Index;
-					uint32 meshletVerticesBuffer	= device->Buffers.at(mesh.MeshletVerticesBuffer)->ShaderResourceView.Index;
-					uint32 meshletTrianglesBuffer	= device->Buffers.at(mesh.MeshletTrianglesBuffer)->ShaderResourceView.Index;
-					uint32 meshletBoundsBuffer		= device->Buffers.at(mesh.MeshletBoundsBuffer)->ShaderResourceView.Index;
-
-					auto& material = model->Materials.at(mesh.MaterialId);
-
-					struct
-					{
-						uint32 vertex;
-						uint32 meshlet;
-						uint32 meshletVertices;
-						uint32 meshletTriangles;
-						uint32 meshletBounds;
-						uint32 bDrawMeshlets;
-						uint32 bAlphaMask;
-					} buffers
-					{
-						.vertex = vertexBuffer,
-						.meshlet = meshletBuffer,
-						.meshletVertices = meshletVerticesBuffer,
-						.meshletTriangles = meshletTrianglesBuffer,
-						.meshletBounds = meshletBoundsBuffer,
-						.bDrawMeshlets = (uint32)Config::Get().bDrawMeshlets,
-						.bAlphaMask = (uint32)Config::Get().bAlphaMask
-					};
-
-					CurrentFrame.GraphicsCommandList->PushConstants(1, 7, &buffers);
-					CurrentFrame.GraphicsCommandList->PushConstants(2, 20, &material);
-
-					//CurrentFrame.GraphicsCommandList->DispatchMesh(mesh.NumMeshlets, 1, 1);
-					CurrentFrame.GraphicsCommandList->DispatchMesh(ROUND_UP(mesh.NumMeshlets / 32), 1, 1);
-				}
-			}
-		}
-		else
-		{
-			CurrentFrame.GraphicsCommandList->SetRootSignature(&VertexRS);
-			CurrentFrame.GraphicsCommandList->SetPipelineState(&VertexPSO);
-			
-			for (auto& model : pScene->Models)
-			{
-				auto& transform = model->GetComponent<ecs::TransformComponent>();
-				transform.Update();
-		
-				auto* constantBuffer = device->ConstantBuffers.at(model->ConstantBuffer);
-				CurrentFrame.GraphicsCommandList->SetConstantBuffer(0, constantBuffer);
-		
-				for (auto& mesh : model->Meshes)
-				{
-					//if (!Camera->IsInsideFrustum(mesh.BoundingBox))
-					//{
-					//	CulledVertices += mesh.NumVertices;
-					//	//continue;
-					//}
-
-					//mesh.Transform.Update();
-					model->cbObjectTransforms.WVP	= DirectX::XMMatrixTranspose(mesh.Transform.WorldMatrix * transform.WorldMatrix * Camera->GetViewProjection());
-					model->cbObjectTransforms.World	= DirectX::XMMatrixTranspose(mesh.Transform.WorldMatrix * transform.WorldMatrix);
-					constantBuffer->Update(&model->cbObjectTransforms);
-
-					auto* vertexBuffer = device->Buffers.at(mesh.VertexBuffer);
-		
-					CurrentFrame.GraphicsCommandList->PushConstants(1, 1, &vertexBuffer->ShaderResourceView.Index);
-		
-					if (mesh.NumIndices != 0)
-					{
-						CurrentFrame.GraphicsCommandList->SetIndexBuffer(mesh.IndexBufferView);
-						CurrentFrame.GraphicsCommandList->DrawIndexed(mesh.NumIndices, 0, 0);
-					}
-				}
-			}
-		}
-
-	}
-	*/
-
-	void Renderer::DrawScene(Scene* pScene, Frame& CurrentFrame)
-	{
-		if (!pScene || pScene->Models.empty())
-		{
-			return;
-		}
-
-		auto device = m_D3D12RHI->Device;
-
-		for (auto& model : pScene->Models)
-		{
-			auto& transform = model->GetComponent<ecs::TransformComponent>();
-			transform.Update();
-
-			auto* constantBuffer = device->ConstantBuffers.at(model->ConstantBuffer);
-
-			model->cbObjectTransforms.WVP = DirectX::XMMatrixTranspose(transform.WorldMatrix * Camera->GetViewProjection());
-			model->cbObjectTransforms.World = DirectX::XMMatrixTranspose(transform.WorldMatrix);
-			constantBuffer->Update(&model->cbObjectTransforms);
-
-			CurrentFrame.GraphicsCommandList->SetConstantBuffer(0, constantBuffer);
-
-			// Draw all opaque objects.
-			for (auto& mesh : model->OpaqueMeshes)
-			{
-				uint32 vertexBuffer				= device->Buffers.at(mesh.VertexBuffer)->ShaderResourceView.Index;
-				uint32 meshletBuffer			= device->Buffers.at(mesh.MeshletsBuffer)->ShaderResourceView.Index;
-				uint32 meshletVerticesBuffer	= device->Buffers.at(mesh.MeshletVerticesBuffer)->ShaderResourceView.Index;
-				uint32 meshletTrianglesBuffer	= device->Buffers.at(mesh.MeshletTrianglesBuffer)->ShaderResourceView.Index;
-				uint32 meshletBoundsBuffer		= device->Buffers.at(mesh.MeshletBoundsBuffer)->ShaderResourceView.Index;
-
-				auto& material = model->Materials.at(mesh.MaterialId);
-
-				struct
-				{
-					uint32 vertex;
-					uint32 meshlet;
-					uint32 meshletVertices;
-					uint32 meshletTriangles;
-					uint32 meshletBounds;
-					uint32 bDrawMeshlets;
-					uint32 bAlphaMask;
-					uint32 pad = 0;
-				} buffers
-				{
-					.vertex				= vertexBuffer,
-					.meshlet			= meshletBuffer,
-					.meshletVertices	= meshletVerticesBuffer,
-					.meshletTriangles	= meshletTrianglesBuffer,
-					.meshletBounds		= meshletBoundsBuffer,
-					.bDrawMeshlets		= (uint32)Config::Get().bDrawMeshlets,
-					.bAlphaMask			= (uint32)Config::Get().bAlphaMask
-				};
-
-				CurrentFrame.GraphicsCommandList->PushConstants(1, 7, &buffers);
-				CurrentFrame.GraphicsCommandList->PushConstants(2, 20, &material);
-
-				//CurrentFrame.GraphicsCommandList->DispatchMesh(ROUND_UP(mesh.NumMeshlets / 32), 1, 1);
-			}
-
-			if (model->BlendMeshes.empty())
-			{
-				return;
-			}
-
-			// Draw all transparent objects.
-			for (auto& mesh : model->BlendMeshes)
-			{
-				uint32 vertexBuffer = device->Buffers.at(mesh.VertexBuffer)->ShaderResourceView.Index;
-				uint32 meshletBuffer = device->Buffers.at(mesh.MeshletsBuffer)->ShaderResourceView.Index;
-				uint32 meshletVerticesBuffer = device->Buffers.at(mesh.MeshletVerticesBuffer)->ShaderResourceView.Index;
-				uint32 meshletTrianglesBuffer = device->Buffers.at(mesh.MeshletTrianglesBuffer)->ShaderResourceView.Index;
-				uint32 meshletBoundsBuffer = device->Buffers.at(mesh.MeshletBoundsBuffer)->ShaderResourceView.Index;
-
-				auto& material = model->Materials.at(mesh.MaterialId);
-
-				struct
-				{
-					uint32 vertex;
-					uint32 meshlet;
-					uint32 meshletVertices;
-					uint32 meshletTriangles;
-					uint32 meshletBounds;
-					uint32 bDrawMeshlets;
-					uint32 bAlphaMask;
-				} buffers
-				{
-					.vertex = vertexBuffer,
-					.meshlet = meshletBuffer,
-					.meshletVertices = meshletVerticesBuffer,
-					.meshletTriangles = meshletTrianglesBuffer,
-					.meshletBounds = meshletBoundsBuffer,
-					.bDrawMeshlets = (uint32)Config::Get().bDrawMeshlets,
-					.bAlphaMask = (uint32)Config::Get().bAlphaMask
-				};
-
-				CurrentFrame.GraphicsCommandList->PushConstants(1, 7, &buffers);
-				CurrentFrame.GraphicsCommandList->PushConstants(2, 20, &material);
-
-				//CurrentFrame.GraphicsCommandList->DispatchMesh(mesh.NumMeshlets, 1, 1);
-				CurrentFrame.GraphicsCommandList->DispatchMesh(ROUND_UP(mesh.NumMeshlets / 32), 1, 1);
-			}
-
-		}
 	}
 
 	void Renderer::BuildScene(Scene* pScene)
@@ -497,15 +265,35 @@ namespace Luden
 
 		pScene->SceneDataBuffer = new D3D12ConstantBuffer(GetRHI()->Device, &pScene->SceneData, sizeof(pScene->SceneData));
 
-		// Material buffer
+		// Transforms buffer
+		if (pScene->TransformsBuffer != nullptr)
+		{
+			delete pScene->TransformsBuffer;
+			pScene->TransformsBuffer = nullptr;
+		}
 
+		uint64 alignedSize = Math::Align<uint64>(sizeof(ecs::ObjectTransforms) * 8192, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+
+		pScene->TransformsBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{
+			.BufferUsage = BufferUsageFlag::Storage,
+			.Data = pScene->Transforms.data(),
+			.NumElements = 8192,
+			.Stride = sizeof(ecs::ObjectTransforms),
+			.Size = alignedSize,
+			.bBindless = true,
+			.Name = "Scene Transforms Buffer" });
+
+		VERIFY_D3D12_RESULT(pScene->TransformsBuffer->GetHandle()->Map(0, nullptr, &pScene->TransformsBuffer->GetBufferDesc().Data));
+		std::memcpy(pScene->TransformsBuffer->GetBufferDesc().Data, pScene->Transforms.data(), (pScene->Transforms.size() * sizeof(ecs::ObjectTransforms)));
+
+		// Material buffer
 		if (pScene->MaterialBuffer != nullptr)
 		{
 			delete pScene->MaterialBuffer;
 			pScene->MaterialBuffer = nullptr;
 		}
 
-		uint64 alignedSize = Math::Align<uint64>(sizeof(Material) * 4096, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+		alignedSize = Math::Align<uint64>(sizeof(Material) * 4096, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
 		pScene->MaterialBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{ 
 			.BufferUsage = BufferUsageFlag::Storage,
@@ -540,9 +328,13 @@ namespace Luden
 			.bBindless = true,
 			.Name = "Scene Lighting Buffer" });
 
-		mapSize = static_cast<usize>(pScene->PointLights.size() * sizeof(ecs::PointLightComponent));
+		//mapSize = static_cast<usize>(pScene->PointLightsStorage.size() * sizeof(ecs::PointLightComponent));
 		VERIFY_D3D12_RESULT(pScene->LightBuffer->GetHandle()->Map(0, nullptr, &pScene->LightBuffer->GetBufferDesc().Data));
-		std::memcpy(pScene->LightBuffer->GetBufferDesc().Data, pScene->PointLights.data(), mapSize);
+		//std::memcpy(pScene->LightBuffer->GetBufferDesc().Data, pScene->PointLightsStorage.data(), mapSize);
+
+		pScene->CreateEntity(pScene->SkyLight);
+		pScene->SkyLight.AddComponent<ecs::NameComponent>("Directional Light");
+		pScene->SkyLight.AddComponent<ecs::DirectionalLightComponent>();
 
 	}
 
@@ -600,25 +392,23 @@ namespace Luden
 		RaytracingBVH->CreateTLAS();
 
 		TextureDesc textureDesc{};
-		textureDesc.Width = m_ParentWindow->Width;
-		textureDesc.Height = m_ParentWindow->Height;
-		textureDesc.Format = m_D3D12RHI->SwapChain->GetSwapChainFormat();
-		textureDesc.Usage = TextureUsageFlag::UnorderedAccess;
-		RaytracingOutput = new D3D12Texture(m_D3D12RHI->Device, textureDesc);
+		textureDesc.Width	= m_ParentWindow->Width;
+		textureDesc.Height	= m_ParentWindow->Height;
+		textureDesc.Format	= m_D3D12RHI->SwapChain->GetSwapChainFormat();
+		textureDesc.Usage	= TextureUsageFlag::UnorderedAccess;
+		RaytracingOutput	= new D3D12Texture(m_D3D12RHI->Device, textureDesc);
 		RaytracingOutput->SetDebugName("D3D12 Raytracing Output Texture");
-		RaytracingOutputSR = new D3D12Texture(m_D3D12RHI->Device, textureDesc);
-		RaytracingOutputSR->SetDebugName("D3D12 Raytracing Output Texture SR");
 	
-		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl", false, "RayGen"));
-		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl", false, "Miss"));
+		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl",		false, "RayGen"));
+		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl",		false, "Miss"));
 		ClosestHitShader	= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/ClosestHit.hlsl", false, "ClosestHit"));
 
 		RaytracingRS = new D3D12RootSignature();
 		//RaytracingRS->AddCBV(0, 1);
-		RaytracingRS->AddConstants(52, 0, 1);
-		RaytracingRS->AddSRV(0, 1);
+		RaytracingRS->AddConstants(53, 0, 0);
+		RaytracingRS->AddSRV(0, 0);
+		//RaytracingRS->AddUAV(0, 1);
 		RaytracingRS->AddStaticSampler(0, 0, D3D12_FILTER_COMPARISON_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_COMPARISON_FUNC_ALWAYS);
-		//RaytracingRS->SetGlobal();
 		VERIFY_D3D12_RESULT(RaytracingRS->Build(m_D3D12RHI->Device, PipelineType::Compute));
 
 		D3D12StateObjectBuilder builder;
@@ -631,9 +421,9 @@ namespace Luden
 		//builder.SetGlobalRootSignature(RaytracingRS, { L"RayGen" });
 		
 		FHitGroup hitGroup{};
-		hitGroup.Name = "HitGroup";
+		hitGroup.Name			= "HitGroup";
 		hitGroup.ClosestHitName = "ClosestHit";
-		hitGroup.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
+		hitGroup.Type			= D3D12_HIT_GROUP_TYPE_TRIANGLES;
 
 		builder.AddHitGroup(hitGroup);
 
@@ -650,8 +440,8 @@ namespace Luden
 			.pDescriptorHeap = reinterpret_cast<uint64*>(m_D3D12RHI->Device->ShaderResourceHeap->GetGpuStartHandlePtr())
 		};
 
-		FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")));
-		//FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")), &args, sizeof(globalArgs));
+		//FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")));
+		FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")), &args, sizeof(globalArgs));
 		RaytracingShaderTable->RayGenTable.AddRecord(raygenRecord);
 
 		FShaderTableRecord missRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"Miss")));
@@ -663,18 +453,14 @@ namespace Luden
 		RaytracingShaderTable->Create(m_D3D12RHI->Device);
 		RaytracingShaderTable->m_StorageBuffer->SetDebugName("D3D12 STB Storage");
 
-		
-
 	}
 
 	void Renderer::DispatchRayTracing(Frame& CurrentFrame)
 	{
 		auto* commandList = CurrentFrame.GraphicsCommandList;
 
-		//commandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
 		commandList->SetRootSignature(RaytracingRS);
 		commandList->SetPipelineState1(RaytracingPSO);
-		commandList->GetHandle()->SetComputeRootShaderResourceView(1, RaytracingBVH->TLAS->AccelerationStructure->GetGpuAddress());
 
 		struct constData
 		{
@@ -683,22 +469,26 @@ namespace Luden
 			DirectX::XMMATRIX ViewProjection;
 			DirectX::XMFLOAT3 CameraPosition;
 			uint32 RaytracingImage;
+			uint32 RaytracingTopLevel;
 		} consts{
-			.View				= DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, Camera->GetView())),
-			.Projection			= DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, Camera->GetProjection())),
+			.View				= Camera->GetView(),
+			.Projection			= Camera->GetProjection(),
 			.ViewProjection		= DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, Camera->GetViewProjection())),
 			.CameraPosition		= Camera->Position,
-			.RaytracingImage	= RaytracingOutput->UnorderedAccessHandle.Index
+			.RaytracingImage	= RaytracingOutput->UnorderedAccessHandle.Index,
+			.RaytracingTopLevel = RaytracingBVH->TLAS->AccelerationStructure->ShaderResourceView.Index
 			//.RaytracingImage = RaytracingOutput->ShaderResourceHandle.Index
 		};
-		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 52, &consts, 0);
+		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 53, &consts, 0);
+		//commandList->GetHandle()->SetComputeRootShaderResourceView(1, RaytracingBVH->TLAS->AccelerationStructure->GetGpuAddress());
+		//commandList->GetHandle()->SetComputeRootUnorderedAccessView(2, RaytracingOutput->GetGpuAddress());
 
 		D3D12_DISPATCH_RAYS_DESC desc{};
 		desc.Width  = static_cast<uint32>(RaytracingOutput->GetDesc().Width);
 		desc.Height = RaytracingOutput->GetDesc().Height;
 
 		desc.RayGenerationShaderRecord.StartAddress = RaytracingShaderTable->m_StorageBuffer->GetGpuAddress() + RaytracingShaderTable->RayGenOffset;
-		desc.RayGenerationShaderRecord.SizeInBytes = RaytracingShaderTable->RayGenTable.GetSizeInBytes();
+		desc.RayGenerationShaderRecord.SizeInBytes  = RaytracingShaderTable->RayGenTable.GetSizeInBytes();
 
 		desc.MissShaderTable.StartAddress	= desc.RayGenerationShaderRecord.StartAddress + RaytracingShaderTable->MissOffset;
 		desc.MissShaderTable.SizeInBytes	= RaytracingShaderTable->MissTable.GetSizeInBytes();

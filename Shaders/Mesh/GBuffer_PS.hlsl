@@ -12,6 +12,7 @@ struct GBuffers
 	float4 Normal;
 	float4 MetallicRoughness;
 	float4 Emissive;
+	float4 WorldPosition;
 };
 
 int IsIndexValid(uint Index)
@@ -27,9 +28,11 @@ int IsIndexValid(uint Index)
 Texture2D GetTexture(in uint Index)
 {
 	Texture2D output = ResourceDescriptorHeap[Index];
+	
 	return output;
 }
 
+[earlydepthstencil]
 [RootSignature(GBUFFER_ROOT_SIG)]
 GBuffers PSMain(VertexOut pin) : SV_TARGET
 {
@@ -37,6 +40,8 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 
 	StructuredBuffer<FMaterial> materialBuffer = ResourceDescriptorHeap[Constants.MaterialBuffer];
 	FMaterial material = materialBuffer[Constants.MaterialID];
+	
+	output.WorldPosition = float4(pin.WorldPosition.xyz, 0.0f);
 	
 	if (IsIndexValid(material.EmissiveIndex))
 	{
@@ -60,13 +65,8 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 			}
 		}
 		
-		//output.BaseColor = float4(baseColor.rgb, 1.0f);
-		output.BaseColor = float4(baseColor.rgb + output.Emissive.rgb, 1.0f);
+		output.BaseColor = float4(baseColor.rgb, 1.0f);
 	}
-	
-	// Saving depth into unused Normal's W component.
-	const float z = 1.0f - (pin.Position.z / pin.Position.w);
-	output.Normal.w = z;
 	
 	if (Constants.bDrawMeshlets)
 	{
@@ -75,7 +75,7 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 		output.BaseColor = float4(meshletColor, 1.0f);
 	}
 	
-	output.Normal = float4(0.0f, 1.0f, 0.0f, 1.0f);
+	output.Normal = float4(0.0f, 1.0f, 0.0f, 0.0f);
 	if (IsIndexValid(material.NormalIndex))
 	{
 		Texture2D normalTexture = ResourceDescriptorHeap[material.NormalIndex];
@@ -83,6 +83,10 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 		float4 n = float4(normalize(mul(pin.TBN, normalMap.xyz)), normalMap.w);
 		output.Normal = float4(n.rgb, normalMap.w);
 	}
+	
+	// Saving depth into unused Normal's W component.
+	const float z = 1.0f - (pin.Position.z / pin.Position.w);
+	output.Normal.w = z;
 	
 	output.MetallicRoughness = float4(0.0f, material.Roughness, material.Metallic, 1.0f);
 	if (IsIndexValid(material.MetallicRoughnessIndex))
