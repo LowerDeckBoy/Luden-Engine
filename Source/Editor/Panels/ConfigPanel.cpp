@@ -84,9 +84,7 @@ namespace Luden::Panel
 			ImGui::TableNextColumn();
 			ImGui::Checkbox("##Meshlet culling", &config.bMeshletCulling);
 
-			// Temporarly
-
-			// Row 2;
+			// Row 3;
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 			
@@ -105,28 +103,15 @@ namespace Luden::Panel
 			ImGui::TableNextColumn();
 			ImGui::Checkbox("##bAlphaMask", &config.bAlphaMask);
 
-			/*
-			ImGui::BeginDisabled();
-			// Row 3;
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text("Draw sky: ");
+			ImGui::Text("Draw Indirect: ");
+			//gui::OnItemHover("Check to enable alpha mask cutoff in pixel shaders.");
 			ImGui::TableNextColumn();
-			ImGui::Checkbox("##drawSky", &config.bDrawSky);
+			ImGui::Checkbox("##bDrawIndirect", &config.bDrawIndirect);
 
-			// Row 4;
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-
-			ImGui::AlignTextToFramePadding();
-			ImGui::Text("Draw grid: ");
-			ImGui::TableNextColumn();
-			ImGui::Checkbox("##drawGrid", &config.bDrawGrid);
-
-			ImGui::EndDisabled();
-			*/
 			ImGui::EndTable();
 		}
 
@@ -159,7 +144,7 @@ namespace Luden::Panel
 					DisplayImageAddress = m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle.GpuHandle.ptr;
 					break;
 				case 6:
-					DisplayImageAddress = m_Renderer->RaytracingOutputSR->ShaderResourceHandle.GpuHandle.ptr;
+					DisplayImageAddress = m_Renderer->RaytracingOutput->ShaderResourceHandle.GpuHandle.ptr;	
 					break;
 				}
 			}
