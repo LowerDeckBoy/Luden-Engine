@@ -1,7 +1,9 @@
 #include "../Components/Components.hpp"
 #include <Engine/ECS/Entity.hpp>
+#include <Engine/Graphics/Model.hpp>
 #include "PropertyPanel.hpp"
-
+#include <ImGui/imgui.h>
+#include <Engine/ECS/Components/LightComponent.hpp>
 
 namespace Luden::Panel
 {
@@ -17,11 +19,31 @@ namespace Luden::Panel
 
 	void PropertyPanel::DrawEntity(Entity& Target)
 	{
-		// Drawable entites should always have Name and Transform components.
-		DrawComponent<ecs::NameComponent>(Target, [&](auto& component) { gui::DrawNameComponent(component); });
-		DrawComponent<ecs::TransformComponent>(Target, [&](auto& component) { gui::DrawTransformComponent(component); });
+		// Drawable entites should always have Name component.
+		DrawComponent<ecs::NameComponent>(Target, [&](auto& component) { 
+				gui::DrawNameComponent(component); 
+			});
 		
-		// Recursively draw
+		if (Target.HasComponent<ecs::TransformComponent>())
+		{
+			DrawComponent<ecs::TransformComponent>(Target, [&](auto& component) { 
+				gui::DrawTransformComponent(component); 
+			});
+		}
+
+		if (Target.HasComponent<ecs::PointLightComponent>())
+		{
+			DrawComponent<ecs::PointLightComponent>(Target, [&](auto& component) { 
+				gui::DrawPointLightComponent(component); 
+				});
+		}
+
+		if (Target.HasComponent<ecs::DirectionalLightComponent>())
+		{
+			DrawComponent<ecs::DirectionalLightComponent>(Target, [&](auto& component) {
+				gui::DrawDirectionalLightComponent(component);
+				});
+		}
 
 	}
 } // namespace Luden::Panel

@@ -3,6 +3,7 @@
 namespace Luden
 {
 	class Entity;
+	class Scene;
 } // namespace Luden
 
 namespace Luden::Panel
@@ -30,6 +31,7 @@ namespace Luden::Panel
 		}
 
 	private:
+		Scene* m_ActiveScene = nullptr;
 
 	};
 } // namespace Luden::Panel
