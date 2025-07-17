@@ -21,6 +21,7 @@ namespace Luden::gui::Color
 
 	constexpr ImVec4 BackgroundDark = RGBA(32, 32, 32);
 	constexpr ImVec4 BackgroundDarkActive = BackgroundDark;
+	constexpr ImVec4 BackgroundDarkBorder = RGBA(60, 20, 40);
 
 	constexpr ImVec4 HeaderDark		= ImVec4(0.097f, 0.097f, 0.097f, 1.0f);
 

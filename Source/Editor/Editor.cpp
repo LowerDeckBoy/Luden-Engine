@@ -1,6 +1,6 @@
+#include <Engine/Renderer/Renderer.hpp>
 #include "Editor.hpp"
 #include "Theme.hpp"
-#include <Engine/Renderer/Renderer.hpp>
 #include <FontAwsome6/IconsFontAwesome6.h>
 #include <Platform/FileDialog.hpp>
 #include <Platform/Utility.hpp>
@@ -10,15 +10,15 @@
 
 namespace Luden
 {
-	D3D12Texture* Editor::EditorDirectoryTexture = nullptr;
-	D3D12Texture* Editor::EditorFileTexture = nullptr;
-	D3D12Texture* Editor::EditorGLTFTexture = nullptr;
-	D3D12Texture* Editor::EditorGLBTexture = nullptr;
-	D3D12Texture* Editor::EditorOBJTexture = nullptr;
-	D3D12Texture* Editor::EditorPNGTexture = nullptr;
-	D3D12Texture* Editor::EditorJPGTexture = nullptr;
-	D3D12Texture* Editor::EditorJPEGTexture = nullptr;
-	D3D12Texture* Editor::EditorBINTexture = nullptr;
+	D3D12Texture* Editor::EditorDirectoryTexture	= nullptr;
+	D3D12Texture* Editor::EditorFileTexture			= nullptr;
+	D3D12Texture* Editor::EditorGLTFTexture			= nullptr;
+	D3D12Texture* Editor::EditorGLBTexture			= nullptr;
+	D3D12Texture* Editor::EditorOBJTexture			= nullptr;
+	D3D12Texture* Editor::EditorPNGTexture			= nullptr;
+	D3D12Texture* Editor::EditorJPGTexture			= nullptr;
+	D3D12Texture* Editor::EditorJPEGTexture			= nullptr;
+	D3D12Texture* Editor::EditorBINTexture			= nullptr;
 
 	Editor::Editor(Platform::Window* pParentWindow, Renderer* pRenderer, Core::Timer* pApplicationTimer)
 	{
@@ -105,6 +105,9 @@ namespace Luden
 		Importer.Device = pRenderer->GetRHI()->Device;
 		CreateEditorResources();
 
+		//m_EditorCommandList = new D3D12CommandList(pRenderer->GetRHI()->Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+		//m_EditorCommandQueue = new D3D12CommandQueue(pRenderer->GetRHI()->Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+
 	}
 
 	void Editor::Begin()
@@ -137,6 +140,43 @@ namespace Luden
 		}
 
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetRHI()->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandleRaw());
+	}
+
+	void Editor::Render()
+	{
+		//if (!m_EditorCommandList->IsOpen())
+		//{
+		//	m_EditorCommandList->Open();
+		//}
+		m_EditorCommandList->Open();
+		m_EditorCommandList->SetDescriptorHeap(m_Renderer->GetRHI()->Device->ShaderResourceHeap);
+
+		ImGui_ImplWin32_NewFrame();
+		ImGui_ImplDX12_NewFrame();
+
+		ImGui::NewFrame();
+
+		ImGui::PushFont(m_MainFont);
+
+		m_MainViewport = ImGui::GetMainViewport();
+		ImGui::DockSpaceOverViewport(m_MainViewport->ID, m_MainViewport);
+
+		DrawEditorLayer();
+
+		ImGui::PopFont();
+
+		ImGui::EndFrame();
+		ImGui::Render();
+
+		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+		}
+
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_EditorCommandList->GetHandleRaw());
+		m_EditorCommandQueue->Execute({ m_EditorCommandList });
+
 	}
 
 	void Editor::SetActiveScene(Scene* pScene)

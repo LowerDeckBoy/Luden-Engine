@@ -113,6 +113,8 @@ namespace Luden::gui
 
 	void Math::EditColor3(std::string_view Label, DirectX::XMFLOAT3& Float3)
 	{
+		ImGui::Text(Label.data());
+		ImGui::SameLine();
 		ImGui::ColorEdit3("##editColor", (float*)&Float3);
 	}
 
@@ -129,21 +131,30 @@ namespace Luden::gui
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Position");
 				ImGui::TableNextColumn();
-				Math::DrawFloat3("Position", Component.Translation);
+				if (Math::DrawFloat3("Position", Component.Translation))
+				{
+					Component.bDirty = true;
+				}
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Rotation");
 				ImGui::TableNextColumn();
-				Math::DrawFloat3("Rotation", *(DirectX::XMFLOAT3*)&Component.Rotation);
+				if (Math::DrawFloat3("Rotation", *(DirectX::XMFLOAT3*)&Component.Rotation))
+				{
+					Component.bDirty = true;
+				}
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Scale");
 				ImGui::TableNextColumn();
-				Math::DrawFloat3("Scale", Component.Scale);
+				if (Math::DrawFloat3("Scale", Component.Scale))
+				{
+					Component.bDirty = true;
+				}
 
 				ImGui::EndTable();
 			}	
@@ -222,7 +233,7 @@ namespace Luden::gui
 		}
 	}
 
-	void AddOrRemoveComponent(Entity& Target)
+	void AddOrRemoveComponent(Entity& /* Target */)
 	{ 
 		// Add/Remove components via editor
 		if (ImGui::Button(ICON_FA_PLUS"Add"))

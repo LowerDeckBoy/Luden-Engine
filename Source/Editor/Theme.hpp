@@ -14,17 +14,21 @@ namespace Luden::gui
 		InStyle.FrameBorderSize		= 0.0f;
 		InStyle.ChildBorderSize		= 0.0f;
 
+		InStyle.AntiAliasedFill = true;
+		InStyle.AntiAliasedLines = true;
+
 		// Tooltip
-		InStyle.PopupBorderSize		= 0.15f;
+		InStyle.PopupBorderSize		= 1.0f;
 		InStyle.PopupRounding		= 1.0f;
 
 		InStyle.Colors[ImGuiCol_Text]				= Color::White;
 		InStyle.Colors[ImGuiCol_WindowBg]			= Color::BackgroundDark;
 		InStyle.Colors[ImGuiCol_MenuBarBg]			= Color::BackgroundDark;
 		InStyle.Colors[ImGuiCol_DockingEmptyBg]		= Color::BackgroundDark;
-		InStyle.Colors[ImGuiCol_Border]				= Color::BackgroundDark;
-		InStyle.Colors[ImGuiCol_BorderShadow]		= Color::BackgroundDark;
+		InStyle.Colors[ImGuiCol_Border]				= Color::Gray;
+		InStyle.Colors[ImGuiCol_BorderShadow]		= Color::Coral;
 		InStyle.Colors[ImGuiCol_PopupBg]			= Color::BackgroundDark;
+		InStyle.Colors[ImGuiCol_ChildBg]			= Color::BackgroundDark;
 
 		InStyle.Colors[ImGuiCol_TitleBg]			= Color::BackgroundDark;
 		InStyle.Colors[ImGuiCol_TitleBgActive]		= Color::BackgroundDarkActive;
@@ -60,11 +64,11 @@ namespace Luden::gui
 		InStyle.Colors[ImGuiCol_SliderGrab]			= Color::White;
 		InStyle.Colors[ImGuiCol_SliderGrabActive]	= Color::White;
 
-		InStyle.Colors[ImGuiCol_CheckMark]			= Color::Coral;
+		InStyle.Colors[ImGuiCol_CheckMark]			= Color::White;
 		InStyle.Colors[ImGuiCol_NavHighlight]		= Color::CoralActive;
 
 		InStyle.Colors[ImGuiCol_TableRowBg]			= Color::Gray;
-		
+
 		InStyle.SeparatorTextBorderSize = 0.25f;
 		InStyle.SeparatorTextAlign = ImVec2(0.5f, 0.5f);
 	}

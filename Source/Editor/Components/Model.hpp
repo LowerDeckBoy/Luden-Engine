@@ -45,21 +45,30 @@ namespace Luden::gui
                 ImGui::AlignTextToFramePadding();
                 ImGui::Text("Position");
                 ImGui::TableNextColumn();
-                gui::Math::DrawFloat3("Position", transformComponent.Translation);
+                if (gui::Math::DrawFloat3("Position", transformComponent.Translation))
+                {
+                    transformComponent.bDirty = true;
+                }
 
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
                 ImGui::Text("Rotation");
                 ImGui::TableNextColumn();
-                gui::Math::DrawFloat3("Rotation", *(DirectX::XMFLOAT3*)&transformComponent.Rotation);
+                if (gui::Math::DrawFloat3("Rotation", *(DirectX::XMFLOAT3*)&transformComponent.Rotation))
+                {
+                    transformComponent.bDirty = true;
+                }
 
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
                 ImGui::Text("Scale");
                 ImGui::TableNextColumn();
-                gui::Math::DrawFloat3("Scale", transformComponent.Scale);
+                if (gui::Math::DrawFloat3("Scale", transformComponent.Scale))
+                {
+                    transformComponent.bDirty = true;
+                }
 
                 ImGui::EndTable();
             }

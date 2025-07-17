@@ -23,11 +23,11 @@ namespace Luden
 
 		static AssetImporter Importer;
 
-		Scene* MainScene;
+		Scene* MainScene = nullptr;
 
 		std::map<std::string, Scene*> Scenes;
 
-		SceneCamera* Camera;
+		SceneCamera* Camera = nullptr;
 
 	protected:
 		Platform::Window Window;

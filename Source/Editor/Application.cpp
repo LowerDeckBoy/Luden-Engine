@@ -45,15 +45,14 @@ namespace Luden
 
 		MainScene = new Scene(&Importer);
 
-		SceneSerializer::Load(&Importer, MainScene, "Scenes/scene_test.json");
+		SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_test.json");
 
-		//m_Renderer->BuildScene(MainScene);
-		MainScene->Build(m_D3D12RHI->Device);
+		m_Renderer->BuildScene(MainScene);
 		m_Renderer->ActiveScene = MainScene;
 
 		m_Editor = std::make_unique<Editor>(&Window, m_Renderer, &m_Timer);
 		m_Editor->SetActiveScene(MainScene);
-
+		
 		m_Renderer->Resize();
 
 		bIsResizing = false;
@@ -66,7 +65,27 @@ namespace Luden
 
 		while (!Window.bShouldClose)
 		{
-			Window.ProcessMessages();
+			//Window.ProcessMessages();
+			::MSG msg{};
+
+			if (::PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE))
+			{
+				::TranslateMessage(&msg);
+				::DispatchMessageA(&msg);
+
+				if (msg.message == WM_QUIT)
+				{
+					Window.bShouldClose = true;
+				}
+
+				continue;
+			}
+
+			// If Window is minimized skip rendering.
+			if (Window.IsMinimized())
+			{
+				continue;
+			}
 
 			// Need to rework request handling.
 			// Gets the job done, but is ugly.
@@ -87,16 +106,10 @@ namespace Luden
 				} 
 				
 				SceneSerializer::Load(&Importer, MainScene, m_Renderer->SceneToLoad);
-				MainScene->Build(m_D3D12RHI->Device);
-				//m_Renderer->BuildScene(MainScene);
+				m_Renderer->BuildScene(MainScene);
 				m_Renderer->ActiveScene = MainScene;
 				m_Renderer->SceneToLoad = "";
 				m_Editor->SetActiveScene(MainScene);
-			}
-
-			// If Window is minimized skip rendering.
-			if (Window.IsMinimized())
-			{
 				continue;
 			}
 
@@ -112,7 +125,7 @@ namespace Luden
 			
 			if (Config::Get().bAllowFixedFrameRate)
 			{
-				if (m_Timer.FrameTime <= (1000.0 / (f64)m_Timer.FrameLimit))
+				if (m_Timer.FrameTime < (1000.0 / (f64)m_Timer.FrameLimit))
 				{
 					continue;
 				}
@@ -122,11 +135,21 @@ namespace Luden
 
 			m_Renderer->Update(m_Timer.DeltaTime);
 
-			m_Renderer->BeginFrame();
-			m_Editor->Begin();
-			m_Renderer->Render(MainScene);
-			m_Editor->End();
-			m_Renderer->EndFrame();
+			if (!Config::Get().bHideEditor)
+			{
+				m_Renderer->BeginFrame();
+				m_Editor->Begin();
+				m_Renderer->Render(MainScene);
+				m_Editor->End();
+				m_Renderer->EndFrame();
+				//m_Editor->Render();
+			}
+			else
+			{
+				m_Renderer->BeginFrame();
+				m_Renderer->Render(MainScene);
+				m_Renderer->EndFrame();
+			}
 
 			m_Renderer->Present(Config::Get().SyncInterval);
 
@@ -192,6 +215,10 @@ namespace Luden
 			{
 				::PostQuitMessage(0);
 			}
+			else if (wParam == VK_F2)
+			{
+				Config::Get().bHideEditor = !Config::Get().bHideEditor;
+			}
 			break;
 		}
 		case WM_QUIT:
@@ -199,7 +226,7 @@ namespace Luden
 		case WM_DESTROY:
 		{
 			::PostQuitMessage(0);
-			break;
+			return 0;
 		}
 		}
 
