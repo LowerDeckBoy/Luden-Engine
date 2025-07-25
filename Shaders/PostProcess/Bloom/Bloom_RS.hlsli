@@ -1,9 +1,10 @@
 #ifndef BLOOM_RS_HLSLI
 #define BLOOM_RS_HLSLI
 
-// TODO:
-// Add RootConstants and StaticSampler for each PSO to avoid rebouding RootSignatures.
 #define BLOOM_ROOT_SIG "RootFlags(CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |"\
+	"DENY_AMPLIFICATION_SHADER_ROOT_ACCESS |"\
+	"DENY_MESH_SHADER_ROOT_ACCESS |"\
+	"DENY_PIXEL_SHADER_ROOT_ACCESS |"\
 	"DENY_HULL_SHADER_ROOT_ACCESS |"\
 	"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
 	"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
@@ -11,6 +12,6 @@
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_CLAMP,"\
 		"addressV = TEXTURE_ADDRESS_CLAMP,"\
-		"filter = FILTER_MIN_MAG_MIP_LINEAR )"
+		"filter = FILTER_MIN_MAG_LINEAR_MIP_POINT ),"
 
 #endif // BLOOM_RS_HLSLI

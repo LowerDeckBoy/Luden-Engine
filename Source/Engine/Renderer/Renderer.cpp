@@ -1,7 +1,7 @@
 #include <Asset/AssetImporter.hpp>
 #include "Renderer.hpp"
 #include "D3D12/D3D12Utility.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 #include <Core/Math/Math.hpp>
 #include "ECS/Components/LightComponent.hpp"
 
@@ -25,8 +25,9 @@ namespace Luden
 
 		Camera = new SceneCamera(pParentWindow);
 
-		GBuffer = new GeometryPass(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
-		LightingPass = new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, pParentWindow->Width, pParentWindow->Height);
+		GBuffer			= new GeometryPass(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
+		LightingPass	= new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, pParentWindow->Width, pParentWindow->Height);
+		BloomPass		= new Bloom(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
 
 		//SceneTextures.ImageToDisplay = &SceneTextures.Scene.ShaderResourceHandle;
 		SceneTextures.ImageToDisplay = &GBuffer->BaseColor.ShaderResourceHandle;
@@ -49,6 +50,7 @@ namespace Luden
 			delete ClosestHitShader;
 		}
 		
+		delete BloomPass;
 		delete LightingPass;
 		delete GBuffer;
 
@@ -78,7 +80,9 @@ namespace Luden
 
 		frame->GraphicsCommandList->ResourceTransition(&backbuffer, D3D12_RESOURCE_STATE_PRESENT);
 
-		m_D3D12RHI->GraphicsQueue->Execute({ frame->GraphicsCommandList });
+		m_D3D12RHI->GraphicsQueue->Execute({ frame->GraphicsCommandList, frame->ComputeCommandList });
+		//m_D3D12RHI->ComputeQueue->Execute({ frame->ComputeCommandList });
+		//m_D3D12RHI->GraphicsQueue->Execute({ frame->GraphicsCommandList });
 		
 	}
 
@@ -95,7 +99,6 @@ namespace Luden
 			if (transformComponent.bDirty)
 			{
 				transformComponent.Update();
-				transformComponent.bDirty = false;
 			}
 
 			auto& transform = ActiveScene->Transforms.at(model->TransformID);
@@ -123,17 +126,63 @@ namespace Luden
 
 		if (!Config::Get().bRaytracing)
 		{
-			GBuffer->Render(ActiveScene, Camera, *frame);
-			LightingPass->Render(ActiveScene, *frame, Camera);
+			if (!Config::Get().bDrawIndirect)
+			{
+				GBuffer->Render(ActiveScene, Camera, *frame);
+			}
+			// Not used for now.
+			//else
+			//{
+			//	GBuffer->RenderIndirect(ActiveScene, Camera, *frame);
+			//}
+
+			if (!Config::Get().bLightPassCompute)
+			{
+				LightingPass->Render(ActiveScene, *frame, Camera);
+			}
+			else
+			{
+				LightingPass->RenderCompute(ActiveScene, *frame, Camera);
+			}
+
+			// Open ComputeCommandList before dispatching Post-Processes and set DescriptorHeap once.
+			if (!frame->ComputeCommandList->IsOpen())
+			{
+				frame->ComputeCommandList->Open();
+			}
+
+			frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
+			
+			frame->ComputeCommandList->ResourceTransition({
+				{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_COPY_SOURCE },
+				{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_COPY_DEST }
+				});
+			frame->ComputeCommandList->CopyResource(&LightingPass->RenderTexture, &SceneTextures.Scene);
+			frame->ComputeCommandList->ResourceTransition({
+				{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_GENERIC_READ },
+				{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_GENERIC_READ }
+				});
+
+			BloomPass->Render(*frame, GBuffer->Emissive.RenderTargetHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
+			BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->BaseColor.ShaderResourceHandle.Index);
+
 		}
 		else
 		{
-			commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			//commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			DispatchRayTracing(*frame);
-			commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_GENERIC_READ);
+			//commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_GENERIC_READ);
+
+			commandList->ResourceTransition({
+				{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_COPY_DEST },
+				{ RaytracingOutput,		D3D12_RESOURCE_STATE_COPY_SOURCE } });
+			commandList->CopyResource(RaytracingOutput, &SceneTextures.Scene);
+			commandList->ResourceTransition({
+				{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ },
+				{ RaytracingOutput,		D3D12_RESOURCE_STATE_UNORDERED_ACCESS } });
 		}
 
-		//commandList->ResourcesTransition({
+		//commandList->ResourceTransition({
 		//	{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ },
 		//	{ &backbuffer,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
 		
@@ -141,15 +190,13 @@ namespace Luden
 		commandList->GetHandleRaw()->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
 		commandList->GetHandleRaw()->ClearRenderTargetView(rtvHandle, DefaultClearColor.data(), 0, nullptr);
 
-		// Debug usage only
+		// Debug use only
 		if (Config::Get().bHideEditor)
 		{
 			commandList->ResourceTransition({
 				{ &GBuffer->BaseColor,	D3D12_RESOURCE_STATE_COPY_SOURCE },
 				{ &backbuffer,			D3D12_RESOURCE_STATE_COPY_DEST } });
-			//commandList->CopyResource(&GBuffer->BaseColor, &backbuffer);
-			//commandList->CopyResource(RaytracingOutputSR, &backbuffer);
-			commandList->CopyResource(&LightingPass->RenderTexture, &backbuffer);
+			commandList->CopyResource(&SceneTextures.Scene, &backbuffer);
 			commandList->ResourceTransition({
 				{ &GBuffer->BaseColor,	D3D12_RESOURCE_STATE_GENERIC_READ },
 				{ &backbuffer,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
@@ -183,6 +230,7 @@ namespace Luden
 		SceneTextures.Scene.Resize(m_ParentWindow->Width, m_ParentWindow->Height);
 		GBuffer->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
 		LightingPass->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
+		BloomPass->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
 
 		if (RaytracingBVH != nullptr)
 		{
@@ -200,6 +248,8 @@ namespace Luden
 
 		Camera->Resize();
 
+		LOG_DEBUG("Resized to {}x{}", m_ParentWindow->Width, m_ParentWindow->Height);
+
 	}
 
 	void Renderer::BuildScene(Scene* pScene)
@@ -212,56 +262,6 @@ namespace Luden
 		{
 			return;
 		}
-
-		if (m_D3D12RHI->MeshCommandSignature != nullptr)
-		{
-			m_D3D12RHI->MeshCommandSignature->Release();
-			m_D3D12RHI->MeshCommandSignature = nullptr;
-		}
-
-		m_D3D12RHI->MeshCommandSignature = new D3D12CommandSignature(m_D3D12RHI->Device);
-		
-		std::vector<FDispatchMeshCommand> drawCommands;
-
-		for (auto& model : pScene->Models)
-		{
-			// Initialize resources.
-			model->Create(m_D3D12RHI->Device);
-			
-			// Gather indirect arguments.
-			/*
-			for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
-			{
-				m_D3D12RHI->MeshCommandSignature->AddDispatchMeshCommand();
-			
-				auto& mesh = model->Meshes.at(meshIdx);
-			
-				FDispatchMeshCommand command{};
-				command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
-				command.Argument.ThreadGroupCountY	= 1;
-				command.Argument.ThreadGroupCountZ	= 1;
-			
-				command.MeshletBufferIndex			= mesh.MeshletsBuffer;
-				command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
-				command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
-				command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
-			
-				drawCommands.push_back(command);
-			}
-			*/
-		}
-		
-		// To finish:
-		//BufferDesc desc{};
-		//desc.Data			= drawCommands.data();
-		//desc.NumElements	= static_cast<uint32>(drawCommands.size());
-		//desc.Stride			= sizeof(FDispatchMeshCommand);
-		//desc.Size			= desc.NumElements * desc.Stride;
-		//desc.BufferUsage	= BufferUsageFlag::IndirectArgument;
-		//desc.Name			= "D3D12 Command Signature Indirect Buffer";
-		//m_D3D12RHI->MeshCommandSignature->CreateCommandsBuffer(desc);
-
-		//InitializeRaytracingResources();
 
 		pScene->SceneDataBuffer = new D3D12ConstantBuffer(GetRHI()->Device, &pScene->SceneData, sizeof(pScene->SceneData));
 
@@ -336,6 +336,71 @@ namespace Luden
 		pScene->SkyLight.AddComponent<ecs::NameComponent>("Directional Light");
 		pScene->SkyLight.AddComponent<ecs::DirectionalLightComponent>();
 
+
+
+		if (GBuffer->IndirectSignature != nullptr)
+		{
+			GBuffer->IndirectSignature->Release();
+			GBuffer->IndirectSignature = nullptr;
+
+			if (GBuffer->IndirectArgumentsBuffer != nullptr)
+			{
+				GBuffer->IndirectArgumentsBuffer->Release();
+				GBuffer->IndirectArgumentsBuffer = nullptr;
+			}
+		}
+
+		GBuffer->IndirectSignature = new D3D12CommandSignature(m_D3D12RHI->Device);
+
+		std::vector<FDispatchMeshCommand> drawCommands;
+
+		for (auto& model : pScene->Models)
+		{
+			// Initialize resources.
+			model->Create(m_D3D12RHI->Device);
+
+			GBuffer->IndirectSignature->AddDispatchMeshCommand();
+
+			// Gather indirect arguments.
+			for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
+			{
+				auto& mesh = model->Meshes.at(meshIdx);
+
+				FDispatchMeshCommand command{};
+				command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
+				command.Argument.ThreadGroupCountY	= 1;
+				command.Argument.ThreadGroupCountZ	= 1;
+
+				command.MeshletBufferIndex			= mesh.MeshletsBuffer;
+				command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
+				command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
+				command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
+
+				command.TransformsBufferIndex		= pScene->TransformsBuffer->ShaderResourceView.Index;
+				command.MaterialsBufferIndex		= pScene->MaterialBuffer->ShaderResourceView.Index;
+				command.TransformID					= model->TransformID;
+				command.MaterialID					= mesh.MaterialID;
+
+				drawCommands.push_back(command);
+			}
+		}
+
+		// To finish:
+		BufferDesc desc{};
+		desc.Data			= drawCommands.data();
+		desc.NumElements	= static_cast<uint32>(drawCommands.size());
+		desc.Stride			= sizeof(FDispatchMeshCommand);
+		desc.Size			= static_cast<uint64>(desc.NumElements * desc.Stride);
+		desc.BufferUsage	= BufferUsageFlag::IndirectArgument;
+		desc.Name			= "D3D12 Command Signature Indirect Buffer";
+		GBuffer->IndirectArgumentsBuffer = new D3D12Buffer(m_D3D12RHI->Device, desc);
+		VERIFY_D3D12_RESULT(GBuffer->IndirectSignature->Build(m_D3D12RHI->Device, &GBuffer->IndirectPipelineState.RootSignature));
+		//GBuffer->IndirectSignature->CreateCommandsBuffer(desc);
+
+
+		//InitializeRaytracingResources();
+
+
 	}
 
 	void Renderer::ReleaseActiveScene()
@@ -396,18 +461,22 @@ namespace Luden
 		textureDesc.Height	= m_ParentWindow->Height;
 		textureDesc.Format	= m_D3D12RHI->SwapChain->GetSwapChainFormat();
 		textureDesc.Usage	= TextureUsageFlag::UnorderedAccess;
+		
 		RaytracingOutput	= new D3D12Texture(m_D3D12RHI->Device, textureDesc);
+		RaytracingOutput->Subresource.RowPitch = textureDesc.Width;
+		RaytracingOutput->Subresource.SlicePitch = 4 * RaytracingOutput->Subresource.RowPitch;
 		RaytracingOutput->SetDebugName("D3D12 Raytracing Output Texture");
-	
+		
+		D3D12UploadContext::UploadTexture(RaytracingOutput);
+		D3D12UploadContext::Upload();
+
 		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl",		false, "RayGen"));
 		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl",		false, "Miss"));
 		ClosestHitShader	= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/ClosestHit.hlsl", false, "ClosestHit"));
 
 		RaytracingRS = new D3D12RootSignature();
-		//RaytracingRS->AddCBV(0, 1);
-		RaytracingRS->AddConstants(53, 0, 0);
+		RaytracingRS->AddConstants(54, 0, 0);
 		RaytracingRS->AddSRV(0, 0);
-		//RaytracingRS->AddUAV(0, 1);
 		RaytracingRS->AddStaticSampler(0, 0, D3D12_FILTER_COMPARISON_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_COMPARISON_FUNC_ALWAYS);
 		VERIFY_D3D12_RESULT(RaytracingRS->Build(m_D3D12RHI->Device, PipelineType::Compute));
 
@@ -417,13 +486,13 @@ namespace Luden
 		builder.AddMiss(MissShader, { L"Miss" });
 		builder.AddClosestHit(ClosestHitShader, { L"ClosestHit" });
 		builder.SetPayloadSize(16);
-		builder.SetMaxRayRecursion(1);
+		builder.SetMaxRayRecursion(0);
 		//builder.SetGlobalRootSignature(RaytracingRS, { L"RayGen" });
 		
 		FHitGroup hitGroup{};
 		hitGroup.Name			= "HitGroup";
-		hitGroup.ClosestHitName = "ClosestHit";
 		hitGroup.Type			= D3D12_HIT_GROUP_TYPE_TRIANGLES;
+		hitGroup.ClosestHitName = "ClosestHit";
 
 		builder.AddHitGroup(hitGroup);
 
@@ -442,7 +511,7 @@ namespace Luden
 
 		//FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")));
 		FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")), &args, sizeof(globalArgs));
-		RaytracingShaderTable->RayGenTable.AddRecord(raygenRecord);
+		//RaytracingShaderTable->RayGenTable.AddRecord(raygenRecord);
 
 		FShaderTableRecord missRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"Miss")));
 		RaytracingShaderTable->MissTable.AddRecord(missRecord);
@@ -451,7 +520,7 @@ namespace Luden
 		RaytracingShaderTable->HitTable.AddRecord(hitRecord);
 
 		RaytracingShaderTable->Create(m_D3D12RHI->Device);
-		RaytracingShaderTable->m_StorageBuffer->SetDebugName("D3D12 STB Storage");
+		RaytracingShaderTable->m_StorageBuffer->SetDebugName("D3D12 SBT Storage");
 
 	}
 
@@ -468,18 +537,20 @@ namespace Luden
 			DirectX::XMMATRIX Projection;
 			DirectX::XMMATRIX ViewProjection;
 			DirectX::XMFLOAT3 CameraPosition;
+			uint32 padding = 0;
 			uint32 RaytracingImage;
 			uint32 RaytracingTopLevel;
 		} consts{
 			.View				= Camera->GetView(),
 			.Projection			= Camera->GetProjection(),
-			.ViewProjection		= DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, Camera->GetViewProjection())),
+			.ViewProjection		= DirectX::XMMatrixTranspose(Camera->GetViewProjection()),
+			//.ViewProjection		= DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, Camera->GetViewProjection())),
 			.CameraPosition		= Camera->Position,
 			.RaytracingImage	= RaytracingOutput->UnorderedAccessHandle.Index,
 			.RaytracingTopLevel = RaytracingBVH->TLAS->AccelerationStructure->ShaderResourceView.Index
-			//.RaytracingImage = RaytracingOutput->ShaderResourceHandle.Index
+
 		};
-		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 53, &consts, 0);
+		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 54, &consts, 0);
 		//commandList->GetHandle()->SetComputeRootShaderResourceView(1, RaytracingBVH->TLAS->AccelerationStructure->GetGpuAddress());
 		//commandList->GetHandle()->SetComputeRootUnorderedAccessView(2, RaytracingOutput->GetGpuAddress());
 
@@ -487,6 +558,7 @@ namespace Luden
 		desc.Width  = static_cast<uint32>(RaytracingOutput->GetDesc().Width);
 		desc.Height = RaytracingOutput->GetDesc().Height;
 
+		
 		desc.RayGenerationShaderRecord.StartAddress = RaytracingShaderTable->m_StorageBuffer->GetGpuAddress() + RaytracingShaderTable->RayGenOffset;
 		desc.RayGenerationShaderRecord.SizeInBytes  = RaytracingShaderTable->RayGenTable.GetSizeInBytes();
 
@@ -497,7 +569,19 @@ namespace Luden
 		desc.HitGroupTable.StartAddress		= desc.RayGenerationShaderRecord.StartAddress + RaytracingShaderTable->HitOffset;
 		desc.HitGroupTable.SizeInBytes		= RaytracingShaderTable->HitTable.GetSizeInBytes();
 		desc.HitGroupTable.StrideInBytes	= RaytracingShaderTable->HitTable.GetStride();
+		
+		/*
+		desc.RayGenerationShaderRecord.StartAddress = (UINT64)RaytracingShaderTable->RayGenTable.MappedData + RaytracingShaderTable->RayGenOffset;
+		desc.RayGenerationShaderRecord.SizeInBytes = RaytracingShaderTable->RayGenTable.GetSizeInBytes();
 
+		desc.MissShaderTable.StartAddress = (UINT64)RaytracingShaderTable->MissTable.MappedData;
+		desc.MissShaderTable.SizeInBytes = RaytracingShaderTable->MissTable.GetSizeInBytes();
+		desc.MissShaderTable.StrideInBytes = RaytracingShaderTable->MissTable.GetStride();
+
+		desc.HitGroupTable.StartAddress = (UINT64)RaytracingShaderTable->HitTable.MappedData;
+		desc.HitGroupTable.SizeInBytes = RaytracingShaderTable->HitTable.GetSizeInBytes();
+		desc.HitGroupTable.StrideInBytes = RaytracingShaderTable->HitTable.GetStride();
+		*/
 		desc.Depth = 1;
 
 		CurrentFrame.GraphicsCommandList->GetHandle()->DispatchRays(&desc);

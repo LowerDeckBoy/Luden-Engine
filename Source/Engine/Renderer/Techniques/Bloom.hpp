@@ -6,13 +6,20 @@ namespace Luden
 {
 	class ShaderCompiler;
 
-	//struct BloomConstants
-	//{
-	//	uint32 BaseColor;
-	//	uint32 LightImage;
-	//	uint32 SceneImage;
-	//	uint32 pad;
-	//};
+	struct BloomParameters
+	{
+		// Temp
+		uint32	BaseColor;
+		uint32	LightImage;
+		uint32	SceneImage;
+		float	Threshold	= 1.0f;
+		float	Intensity	= 3.0f;
+		float	Exposure	= 1.0f;
+		// Temp
+		float	Gamma		= 0.6f;
+		// For Down and Up sampling textures.
+		uint32	MipIndex;
+	};
 
 	class Bloom
 	{
@@ -20,18 +27,32 @@ namespace Luden
 		Bloom(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height);
 		~Bloom();
 	
-		void Render(Frame& CurrentFrame, uint32 BaseColorImage, uint32 LightPassImageIndex, uint32 SceneImageIndex);
+		void Render(Frame& CurrentFrame, uint32 LightPassImageIndex, uint32 SceneImageIndex);
 		void Resize(uint32 Width, uint32 Height);
+		
+		void Combine(Frame& CurrentFrame, D3D12RenderTexture* pSceneImage, uint32 ImageIndex);
 
 		D3D12RenderTexture RenderTarget;
 
 		D3D12Pipeline BloomPSO;
+		D3D12Pipeline DownsamplePSO;
+		D3D12Pipeline UpsamplePSO;
 		D3D12Pipeline CombinePSO;
+
+		BloomParameters Parameters{};
+
+		std::vector<D3D12RenderTexture> DownsampleTextures;
+		std::vector<D3D12RenderTexture> UpsampleTextures;
+
+		static constexpr uint32 NumDownsamples	= 5;
+		static constexpr uint32 NumUpsamples	= NumDownsamples + 1;
 
 	private:
 		D3D12RHI* m_D3D12RHI;
 
 		void CreatePipelines(ShaderCompiler* pShaderCompiler);
+
+		void CreateTextures(uint32 Width, uint32 Height);
 
 	};
 } // namespace Luden

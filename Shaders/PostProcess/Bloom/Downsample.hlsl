@@ -1,9 +1,9 @@
 #ifndef BLOOM_DOWNSAMPLE_HLSL
 #define BLOOM_DOWNSAMPLE_HLSL
 
-#include "../Common.hlsli"
+#include "Common.hlsli"
 
-[numthreads(8, 8, 1)]
+[numthreads(DISPATCH_GROUP, DISPATCH_GROUP, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
 	// Temporal index for testing only.
@@ -16,8 +16,6 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	const float2 texelSize = 1.0f / textureSize;
 	const float2 texCoord = (DispatchThreadID.xy + 0.5f) * texelSize;
 	
-	//const float x = textureSize.x;
-	//const float y = textureSize.y;
 	const float x = texelSize.x;
 	const float y = texelSize.y;
 
