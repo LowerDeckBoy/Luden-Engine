@@ -13,7 +13,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID )
 	sceneTexture.GetDimensions(textureSize.x, textureSize.y);
 	
 	const float2 texelSize = 1.0f / textureSize;
-	const float2 texCoord = (DispatchThreadID.xy + 0.5f) * texelSize;
+	const float2 texCoord = (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
 	
 	float3 scene = sceneTexture[DispatchThreadID.xy].rgb;
 	float3 bloom = bloomImage.Sample(linearClampSampler, texCoord).rgb;

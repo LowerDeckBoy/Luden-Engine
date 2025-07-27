@@ -3,28 +3,30 @@
 
 #include "Common.hlsli"
 
+Texture2D<float4> GetTexture2D(uint Index)
+{
+	
+
+	return ResourceDescriptorHeap[Index];
+}
+
 [numthreads(DISPATCH_GROUP, DISPATCH_GROUP, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-	Texture2D<float4> sourceTexture = ResourceDescriptorHeap[Constants.LightImageIndex];
+	//Texture2D<float4> sourceTexture = ResourceDescriptorHeap[Constants.LightImageIndex];
+	Texture2D<float4> sourceTexture = GetTexture2D(Constants.LightImageIndex);
 	RWTexture2D<float4> output = ResourceDescriptorHeap[Constants.MipIndex];
 	
 	float filterRadius = 0.005f;
-	//float filterRadius = 0.04f;
 	
 	float2 textureSize;
 	output.GetDimensions(textureSize.x, textureSize.y);
 
 	const float2 texelSize = 1.0f / textureSize;
-	const float2 texCoord = (DispatchThreadID.xy + 0.5f) / textureSize;
+	const float2 texCoord = (float2(DispatchThreadID.xy) + 0.5f) / textureSize;
 
 	const float x = filterRadius;
 	const float y = filterRadius;
-	
-	//if (DispatchThreadID.x < textureSize.x && DispatchThreadID.y < textureSize.y)
-	//{
-	//	return;
-	//}
 	
 	//		  Texel
 	//	-----------------
@@ -54,9 +56,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	
 	float3 color = output[DispatchThreadID.xy].rgb;
 	
-	output[DispatchThreadID.xy] = float4(lerp(color, result, 1.0f), Constants.Gamma);
-	//output[DispatchThreadID.xy] = float4(lerp(color, result, 1.0f), 1.0f);
-	//output[DispatchThreadID.xy] = float4(result, 1.0f);
+	output[DispatchThreadID.xy] = float4(lerp(color, result, Constants.Gamma), 1.0f);
 	
 }
 
