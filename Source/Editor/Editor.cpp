@@ -98,7 +98,8 @@ namespace Luden
 			LOG_WARNING("Failed to call ImGui_ImplDX12_CreateDeviceObjects()");
 		}
 		
-		SetSceneImage(m_Renderer->GBuffer->BaseColor.ShaderResourceHandle);
+		//SetSceneImage(m_Renderer->GBuffer->BaseColor.ShaderResourceHandle);
+		SetSceneImage(m_Renderer->SceneTextures.Scene.ShaderResourceHandle);
 		
 		m_ConfigPanel.Initialize(m_Renderer, m_Timer);
 
@@ -270,6 +271,57 @@ namespace Luden
 				}
 			}
 
+			ImGui::Separator();
+			if (ImGui::MenuItem(ICON_FA_POWER_OFF" Exit"))
+			{
+				m_ParentWindow->bShouldClose = true;
+			}
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Scene"))
+		{
+			if (ImGui::BeginMenu(ICON_FA_IMAGE" Render Target"))
+			{
+				static const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive", "LightPass", "Raytracing", "Bloom - Test" };
+
+				if (ImGui::MenuItem("Scene"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->SceneTextures.Scene.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Base Color"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->BaseColor.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Normal"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Normal.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Metallic-Roughness"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Emissive"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Emissive.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("LightPass"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Raytracing"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->RaytracingOutput->ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Bloom - Test"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->BloomPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+				}
+
+				ImGui::EndMenu();
+			}
+
 			// Temp
 			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Directional Light"))
 			{
@@ -282,11 +334,6 @@ namespace Luden
 				m_Renderer->ActiveScene->AddPointLight();
 			}
 
-			ImGui::Separator();
-			if (ImGui::MenuItem(ICON_FA_POWER_OFF" Exit"))
-			{
-				m_ParentWindow->bShouldClose = true;
-			}
 
 			ImGui::EndMenu();
 		}

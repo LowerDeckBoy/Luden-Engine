@@ -27,5 +27,13 @@ namespace Luden::Panel
 		Renderer* m_Renderer;
 		Core::Timer* m_Timer;
 
+	private:
+
+		void DrawSceneConfig();
+
+		void DrawSceneCameraConfig();
+
+		void DrawBloomConfig();
+
 	};
 } // namespace Luden::Panel

@@ -12,7 +12,9 @@ namespace Luden::gui
 
 		ImGui::PushID(Label.data());
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
-		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth() * 1.25f);
+		//ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth() * 1.25f);
+		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+		//ImGui::PushMultiItemsWidths(3, ImGui::GetContentRegionAvail().x /3);// * 1.25f);
 
 		ImGui::PushStyleColor(ImGuiCol_Button, Color::Red);
 		if (ImGui::Button("##x")) 

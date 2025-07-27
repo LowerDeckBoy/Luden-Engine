@@ -2,7 +2,7 @@
 #include "Platform/Utility.hpp"
 #include "Scene/SceneSerializer.hpp"
 #include <Core/Assert.hpp>
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 
 extern "C"
 {
@@ -10,7 +10,7 @@ extern "C"
 	__declspec(dllexport) extern const char* D3D12SDKPath		= RHI_D3D12AGILITYSDK_PATH;
 }
 
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 namespace Luden
 {
@@ -52,8 +52,6 @@ namespace Luden
 
 		m_Editor = std::make_unique<Editor>(&Window, m_Renderer, &m_Timer);
 		m_Editor->SetActiveScene(MainScene);
-		
-		m_Renderer->Resize();
 
 		bIsResizing = false;
 		
@@ -65,7 +63,6 @@ namespace Luden
 
 		while (!Window.bShouldClose)
 		{
-			//Window.ProcessMessages();
 			::MSG msg{};
 
 			if (::PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE))
