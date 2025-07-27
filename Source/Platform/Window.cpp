@@ -11,7 +11,7 @@ namespace Luden::Platform
 
 	bool Window::bCursorVisible = true;
 
-	Window::Window(WindowDesc Desc)
+	Window::Window(const WindowDesc& Desc)
 	{
 		Create(Desc);
 	}
@@ -21,7 +21,7 @@ namespace Luden::Platform
 		Shutdown();
 	}
 
-	void Window::Create(WindowDesc Desc)
+	void Window::Create(const WindowDesc& Desc)
 	{
 		if (!Instance)
 		{
@@ -48,7 +48,7 @@ namespace Luden::Platform
 		Height	= Desc.Height;
 
 		::RECT windowRect = { 0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height) };
-		::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
+		//::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
 
 		Width  = static_cast<uint32_t>(windowRect.right  - windowRect.left);
 		Height = static_cast<uint32_t>(windowRect.bottom - windowRect.top);
@@ -103,10 +103,12 @@ namespace Luden::Platform
 	void Window::Resize()
 	{
 		::RECT windowRect{};
-		::GetClientRect(Handle, &windowRect);
+		::GetWindowRect(Handle, &windowRect);
+		//::GetClientRect(Handle, &windowRect);
+		//::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
 
-		Width	= static_cast<uint32_t>(windowRect.right  - windowRect.left);
-		Height	= static_cast<uint32_t>(windowRect.bottom - windowRect.top);
+		Width	= static_cast<uint32_t>(windowRect.right  + windowRect.left);
+		Height	= static_cast<uint32_t>(windowRect.bottom + windowRect.top);
 	}
 
 	void Window::ProcessMessages()
@@ -117,12 +119,19 @@ namespace Luden::Platform
 		{
 			::TranslateMessage(&msg);
 			::DispatchMessageA(&msg);	
+
+			if (msg.message == WM_QUIT)
+			{
+				bShouldClose = true;
+			}
+
+			
 		}
 		
-		if (msg.message == WM_QUIT)
-		{
-			bShouldClose = true;
-		}
+		//if (msg.message == WM_QUIT)
+		//{
+		//	bShouldClose = true;
+		//}
 		
 	}
 

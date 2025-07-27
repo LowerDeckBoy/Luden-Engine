@@ -66,8 +66,6 @@ namespace Luden::Core
 
 			FPS = FrameCount;
 			Miliseconds = FrameTime;
-			//Miliseconds = 1000.0 / FPS;
-			//Miliseconds = (1000.0 / (std::chrono::duration<f64, std::milli>(m_StopTime - m_CurrentTime).count()));
 
 			FrameCount = 0;
 			ElapsedTime += 1.0;

@@ -21,10 +21,10 @@ namespace Luden::Platform
 	{
 	public:
 		Window() = default;
-		explicit Window(WindowDesc Desc);
+		explicit Window(const WindowDesc& Desc);
 		~Window();
 
-		void Create(WindowDesc Desc);
+		void Create(const WindowDesc& Desc);
 
 		void Shutdown();
 

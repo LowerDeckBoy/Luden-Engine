@@ -4,7 +4,8 @@
 #include "String.hpp"
 #include <filesystem>
 
-using Filepath = std::filesystem::path;
+using Filepath			= std::filesystem::path;
+using DirectoryEntry	= std::filesystem::directory_entry;
 
 namespace Luden::File
 {
@@ -21,6 +22,12 @@ namespace Luden::File
 	CORE_API inline std::string GetRelativePath(Filepath Path)
 	{
 		return Path.relative_path().string();
+	}
+	
+
+	CORE_API inline std::string GetRelativePath(Filepath Path, Filepath Base)
+	{
+		return std::filesystem::relative(Path, Base).string();
 	}
 
 	CORE_API inline std::string GetParentPath(Filepath Path)
@@ -39,4 +46,10 @@ namespace Luden::File
 	{
 		return std::string(strrchr(File, '\\') ? strrchr(File, '\\') + 1 : File);
 	}
+
+	CORE_API inline bool IsDirectory(DirectoryEntry Entry)
+	{
+		return Entry.is_directory();
+	}
+
 } // namespace Luden::File

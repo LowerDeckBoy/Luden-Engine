@@ -59,7 +59,6 @@ namespace Luden
 			return InternalRelease();
 		}
 
-
 		T* Get() const
 		{
 			return m_Ptr;
@@ -135,7 +134,6 @@ namespace Luden
 			return *this;
 		}
 
-
 		void Swap(Ref&& Other) noexcept
 		{
 			std::swap(m_Ptr, Other.m_Ptr);
@@ -150,7 +148,6 @@ namespace Luden
 		{
 			return m_RefCount.fetch_add(1);
 		}
-
 
 	protected:
 		void InternalAddRef()

@@ -3,6 +3,7 @@
 #include <shobjidl.h>
 #include "FileDialog.hpp"
 #include <vector>
+#include <print>
 
 namespace Luden::Platform
 {
@@ -14,6 +15,25 @@ namespace Luden::Platform
 		wcstombs_s(nullptr, &narrowed[0], narrowed.size() + 1, Text.data(), Text.size());
 		
 		return narrowed;
+	}
+
+	static void CheckHRESULT(HRESULT hResult)
+	{
+		if (SUCCEEDED(hResult))
+		{
+			return;
+		}
+
+		char hResultErrorMessage[512]{};
+		::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,
+			nullptr,
+			static_cast<DWORD>(hResult),
+			MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+			hResultErrorMessage, (sizeof(hResultErrorMessage) / sizeof(char)),
+			nullptr);
+
+		std::println("HRESULT failed: {}", hResultErrorMessage);
+		
 	}
 
 	static std::vector<COMDLG_FILTERSPEC> ExtensionFilterToTypes(EExtensionFilter Extension)
@@ -72,15 +92,15 @@ namespace Luden::Platform
 
 		const auto extensions = ExtensionFilterToTypes(Options.FilterExtensions);
 
-		pFileOpen->SetFileTypes(static_cast<uint32_t>(extensions.size()), extensions.data());
-		pFileOpen->SetOptions(FOS_DONTADDTORECENT | FOS_FILEMUSTEXIST | FOS_FORCEFILESYSTEM);
-		pFileOpen->SetTitle(std::wstring(Options.Title.begin(), Options.Title.end()).c_str());
+		CheckHRESULT(pFileOpen->SetFileTypes(static_cast<uint32_t>(extensions.size()), extensions.data()));
+		CheckHRESULT(pFileOpen->SetOptions(FOS_DONTADDTORECENT | FOS_FILEMUSTEXIST | FOS_FORCEFILESYSTEM | FOS_STRICTFILETYPES | FOS_PATHMUSTEXIST));
+		CheckHRESULT(pFileOpen->SetTitle(std::wstring(Options.Title.begin(), Options.Title.end()).c_str()));
 
 		std::wstring defaultFolderLocation = std::wstring(Options.OpenLocation.begin(), Options.OpenLocation.end());
 		IShellItem2* pDefaultFolder = nullptr;
-		::SHCreateItemFromParsingName(defaultFolderLocation.c_str(), nullptr, IID_PPV_ARGS(&pDefaultFolder));
+		CheckHRESULT(::SHCreateItemFromParsingName(defaultFolderLocation.c_str(), nullptr, IID_PPV_ARGS(&pDefaultFolder)));
 
-		pFileOpen->SetFolder(pDefaultFolder);
+		CheckHRESULT(pFileOpen->SetFolder(pDefaultFolder));
 
 		if (SUCCEEDED(hResult))
 		{

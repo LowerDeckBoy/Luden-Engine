@@ -101,14 +101,14 @@
   <ItemGroup>
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="Core.cpp" />
-    <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="Logging\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.hpp" />
     <ClInclude Include="Core.hpp" />
     <ClInclude Include="Defines.hpp" />
     <ClInclude Include="Export.hpp" />
-    <ClInclude Include="Logger.hpp" />
+    <ClInclude Include="Logging\Logger.hpp" />
     <ClInclude Include="File.hpp" />
     <ClInclude Include="Math\Math.hpp" />
     <ClInclude Include="Math\Ray.hpp" />

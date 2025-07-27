@@ -4,6 +4,10 @@
 #include "../Types.hpp"
 #include <cmath>
 
+#define ALIGN(Value, Alignment) (Value + (Alignment - 1)) & ~(Alignment - 1)
+
+#define ROUND_UP(Value)	static_cast<uint32>((Value) + 1)
+
 namespace Luden::Math
 {
 	constexpr f32 PI		= 3.1415926535f;
@@ -13,14 +17,16 @@ namespace Luden::Math
 	constexpr f32 Rad2Deg	= 57.29578f;
 	constexpr f32 Deg2Rad	= 0.01745329251f; // PI / 180.0f
 
-	#define ALIGN(Value, Alignment) (Value + (Alignment - 1)) & ~(Alignment - 1)
-
-	#define ROUND_UP(Value)	static_cast<uint32>((Value) + 1)
-
 	template<typename T>
 	constexpr T Align(T Value, T Alignment)
 	{
 		return (Value + (Alignment - 1)) & ~(Alignment - 1);
+	}
+
+	template<typename T>
+	constexpr T RoundUp(T Value)
+	{
+		return static_cast<T>(Value + 1);
 	}
 
 	constexpr f32 ConvertToRadians(f32 Value)
@@ -47,11 +53,5 @@ namespace Luden::Math
 	constexpr f32 Clamp(f32 Value, f32 Min, f32 Max)
 	{
 		return (Value < Min) ? Min : (Value > Max) ? Max : Value;
-	}
-
-	template<typename T>
-	constexpr T RoundUp(T Value)
-	{
-		return static_cast<T>(Value + 0.5f);
 	}
 } // namespace Luden::Math
