@@ -77,6 +77,8 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	const float metalness			= metallicRoughness.b;
 	const float roughness			= metallicRoughness.g;
 	
+	float3 albedo = baseColor.rgb + emissive.rgb;
+	
 	StructuredBuffer<PointLight> PointLights = ResourceDescriptorHeap[Constants.LightBufferIndex];
 	
 	const float3 N = normalize(normal.rgb);
@@ -94,23 +96,27 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	
 	// Single directional lighting.
 	{
-		const float3 L = normalize(-Scene.DirectionalPosition);
+		const float3 L = -Scene.DirectionalPosition;
 		const float3 H = normalize(V + L);
 		
 		const float NdotL = max(dot(N, L), Epsilon);
 		const float NdotH = max(dot(N, H), Epsilon);
 		const float HdotV = max(dot(H, V), Epsilon);
+		/*
+		const float NdotL = max(dot(N, L), 0.0f);
+		const float NdotH = max(dot(N, H), 0.0f);
+		const float HdotV = max(dot(H, V), 0.0f);
+		*/
 		
-		const float NDF = DistributionGGX(N, H, roughness);
+		const float D = DistributionGGX(N, H, roughness);
 		const float G = GeometrySmith(NdotV, NdotL, roughness);
 		const float3 F = FresnelSchlick(HdotV, F0);
 		const float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
 		
-		const float3 numerator = NDF * G * F;
+		const float3 numerator = D * G * F;
 		const float denominator = 4.0f * NdotL * NdotV + Epsilon;
 		
-		const float3 diffuse = kD * (baseColor.rgb) / PI;
-		//const float3 diffuse = kD * float3(float3(0.03f, 0.03f, 0.03f) * baseColor.rgb) / PI;
+		const float3 diffuse = kD * baseColor.rgb * InvPI;
 		const float3 specular = numerator / denominator;
 
 		Lo += (diffuse + specular) * pow(Scene.DirectionalAmbient, 2.2f) * NdotL;
@@ -130,26 +136,29 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 		
 		const float distance	= length(light.Position - worldPosition);
 		const float attenuation = (1.0f / (distance * distance + 1.0f)) * (saturate(1.0f - distance / light.Radius));
-		const float3 radiance	= attenuation * pow(light.Ambient, 2.2f) * light.Radius;
+		//const float3 radiance	= attenuation * pow(light.Ambient, 2.2f) * light.Radius;
+		const float3 radiance	= attenuation * light.Ambient * light.Radius;
 		
-		const float NDF = DistributionGGX(N, H, roughness);
+		const float D   = DistributionGGX(N, H, roughness);
 		const float G	= GeometrySmith(NdotV, NdotL, roughness);
 		const float3 F	= FresnelSchlick(HdotV, F0);
 		const float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
 		
-		const float3 numerator = NDF * G * F;
+		const float3 numerator = D * G * F;
 		const float denominator = 4.0f * NdotL * NdotV + Epsilon;
 		
-		const float3 diffuse = kD * (baseColor.rgb) / PI;
+		const float3 diffuse = kD * baseColor.rgb * InvPI;
 		const float3 specular = numerator / denominator;
 
 		Lo += (diffuse + specular) * radiance * NdotL;
 	}
-	
+
 	output += Lo;
 	output += emissive;
+	// Reinhard
 	output /= (output + float3(1.0f, 1.0f, 1.0f));
-	output = lerp(output, pow(output, 1.0f / 2.2f), 0.4f);
+	// Gamma correction
+	output = lerp(output, pow(output, 0.4545454545F), 0.4f);
 
 	return float4(output.rgb, 1.0f);
 }
