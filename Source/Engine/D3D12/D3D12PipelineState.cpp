@@ -266,11 +266,11 @@ namespace Luden
 	void D3D12MeshPipelineStateBuilder::SetAlphaBlendDepthDesc()
 	{
 		m_DepthDesc.DepthEnable						= true;
-		m_DepthDesc.DepthFunc						= D3D12_COMPARISON_FUNC_LESS;
+		m_DepthDesc.DepthFunc						= D3D12_COMPARISON_FUNC_LESS_EQUAL;
 		m_DepthDesc.DepthWriteMask					= D3D12_DEPTH_WRITE_MASK_ALL;
 		m_DepthDesc.DepthBoundsTestEnable			= false;
 		m_DepthDesc.StencilEnable					= false;
-
+		
 		m_DepthDesc.FrontFace.StencilFailOp			= D3D12_STENCIL_OP_KEEP;
 		m_DepthDesc.FrontFace.StencilDepthFailOp	= D3D12_STENCIL_OP_INCR;
 		m_DepthDesc.FrontFace.StencilPassOp			= D3D12_STENCIL_OP_KEEP;
@@ -292,11 +292,11 @@ namespace Luden
 
 	}
 
-	HRESULT D3D12ComputePipelineStateBuilder::Build(D3D12Device* pDevice, D3D12PipelineState& OutPipeline)
+	HRESULT D3D12ComputePipelineStateBuilder::Build(D3D12Device* pDevice, D3D12Pipeline& OutPipeline)
 	{
 		m_Desc.NodeMask = pDevice->NodeMask;
 		
-		return pDevice->LogicalDevice->CreateComputePipelineState(&m_Desc, IID_PPV_ARGS(&OutPipeline.GetHandle()));
+		return pDevice->LogicalDevice->CreateComputePipelineState(&m_Desc, IID_PPV_ARGS(&OutPipeline.PipelineState.GetHandle()));
 	}
 
 	void D3D12ComputePipelineStateBuilder::SetRootSignature(D3D12RootSignature* pRootSignature)

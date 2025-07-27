@@ -21,7 +21,7 @@ namespace Luden
 		}
 	}
 
-	D3D12BLAS::D3D12BLAS(D3D12Device* pDevice, StaticMesh& Mesh)
+	D3D12BLAS::D3D12BLAS(D3D12Device* pDevice, StaticMesh& /* Mesh */)
 	{
 		Create(pDevice);
 	}
@@ -33,27 +33,9 @@ namespace Luden
 
 	void D3D12BLAS::Create(D3D12Device* pDevice)
 	{
-		/*
-		auto vertexBuffer  = pDevice->Buffers.at(Mesh.VertexBuffer);
-		auto indexBuffer   = pDevice->Buffers.at(Mesh.IndexBuffer);
-
-		GeometryDesc.Type  = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-		GeometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
-
-		GeometryDesc.Triangles.VertexBuffer.StartAddress  = vertexBuffer->GetGpuAddress();
-		GeometryDesc.Triangles.VertexBuffer.StrideInBytes = vertexBuffer->GetBufferDesc().Stride;
-		GeometryDesc.Triangles.VertexCount  = vertexBuffer->GetBufferDesc().NumElements;
-		GeometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-
-		GeometryDesc.Triangles.IndexBuffer  = indexBuffer->GetGpuAddress();
-		GeometryDesc.Triangles.IndexCount   = indexBuffer->GetBufferDesc().NumElements;
-		GeometryDesc.Triangles.IndexFormat  = DXGI_FORMAT_R32_UINT;
-
-		GeometryDesc.Triangles.Transform3x4 = 0;
-		*/
-
 		Inputs.Type  = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-		Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY;
+		//Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY;
+		Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 		Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		Inputs.pGeometryDescs = GeometryDescs.data();
 		Inputs.NumDescs = static_cast<uint32>(GeometryDescs.size());
@@ -66,7 +48,6 @@ namespace Luden
 		UpdateSize  = ALIGN(prebuildInfo.UpdateScratchDataSizeInBytes,	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
 
 		ScratchBuffer = new D3D12Buffer(pDevice, BufferDesc{
-			//.BufferUsage = BufferUsageFlag::AccelerationStructure,
 			.BufferUsage = BufferUsageFlag::UnorderedAccess,
 			.Size = ScratchSize,
 			.bBindless = false,
@@ -83,17 +64,18 @@ namespace Luden
 		BuildDesc.Inputs = Inputs;
 		BuildDesc.ScratchAccelerationStructureData	= ScratchBuffer->GetGpuAddress();
 		BuildDesc.DestAccelerationStructureData		= AccelerationStructure->GetGpuAddress();
+		BuildDesc.SourceAccelerationStructureData	= 0;
 
 	}
 
 	void D3D12BLAS::AddGeometryDesc(D3D12Device* pDevice, StaticMesh& Mesh)
 	{
 		auto vertexBuffer = pDevice->Buffers.at(Mesh.VertexBuffer);
-		auto indexBuffer = pDevice->Buffers.at(Mesh.IndexBuffer);
+		auto indexBuffer  = pDevice->Buffers.at(Mesh.IndexBuffer);
 
 		D3D12_RAYTRACING_GEOMETRY_DESC desc{};
 
-		desc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+		desc.Type  = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
 		desc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
 
 		desc.Triangles.VertexBuffer.StartAddress  = vertexBuffer->GetGpuAddress();
@@ -149,41 +131,24 @@ namespace Luden
 			m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandle()->BuildRaytracingAccelerationStructure(&blas->BuildDesc, 0, nullptr);
 
 			D3D12_RESOURCE_BARRIER uavBarrier{};
-			uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-			uavBarrier.UAV.pResource = blas->AccelerationStructure->GetHandleRaw();
-			uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			uavBarrier.Type				= D3D12_RESOURCE_BARRIER_TYPE_UAV;
+			uavBarrier.UAV.pResource	= blas->AccelerationStructure->GetHandleRaw();
+			uavBarrier.Flags			= D3D12_RESOURCE_BARRIER_FLAG_NONE;
 			m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandle()->ResourceBarrier(1, &uavBarrier);
 		}
 
-		TLAS->Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
-		TLAS->Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
-		TLAS->Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-		TLAS->Inputs.NumDescs = static_cast<uint32>(Instances.size());
-		//TLAS->Inputs.InstanceDescs = Instances.data();
+		TLAS->Inputs.Type			= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+		TLAS->Inputs.Flags			= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+		TLAS->Inputs.DescsLayout	= D3D12_ELEMENTS_LAYOUT_ARRAY;
+		TLAS->Inputs.NumDescs		= static_cast<uint32>(Instances.size());
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo{};
 		m_D3D12RHI->Device->LogicalDevice->GetRaytracingAccelerationStructurePrebuildInfo(&TLAS->Inputs, &prebuildInfo);
-
+		
 		TLAS->ScratchSize		= ALIGN(prebuildInfo.ScratchDataSizeInBytes,	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
 		TLAS->ResultSize		= ALIGN(prebuildInfo.ResultDataMaxSizeInBytes,	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
 		TLAS->InstanceDescsSize = ALIGN(sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * static_cast<uint64>(Instances.size()), D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
 		
-		/*
-		TLAS->ScratchBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{
-			.BufferUsage = BufferUsageFlag::AccelerationStructure,
-			.Size = TLAS->ScratchSize,
-			.bBindless = false,
-			.Name = "TLAS Scratch Buffer",
-			});
-
-		TLAS->AccelerationStructure = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{
-			.BufferUsage = BufferUsageFlag::AccelerationStructure,
-			.Size = TLAS->ResultSize,
-			.bBindless = false,
-			.Name = "TLAS Result Buffer"
-			});
-		*/
-
 		auto heapProps = D3D::HeapPropertiesDefault();
 		
 		TLAS->ScratchBuffer = new D3D12Buffer();
@@ -197,7 +162,7 @@ namespace Luden
 			IID_PPV_ARGS(&TLAS->ScratchBuffer->GetHandle())));
 		
 		TLAS->AccelerationStructure = new D3D12Buffer();
-		auto resultDesc = D3D12Buffer::CreateBufferDesc(TLAS->ResultSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+		auto resultDesc = D3D12Buffer::CreateBufferDesc(TLAS->ResultSize, D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 		VERIFY_D3D12_RESULT(m_D3D12RHI->Device->LogicalDevice->CreateCommittedResource2(
 			&heapProps,
 			D3D12_HEAP_FLAG_NONE,
@@ -217,7 +182,7 @@ namespace Luden
 			nullptr, nullptr,
 			IID_PPV_ARGS(&TLAS->InstanceBuffer->GetHandle())));
 
-		D3D12_RAYTRACING_INSTANCE_DESC* instanceDescs{};
+		D3D12_RAYTRACING_INSTANCE_DESC* instanceDescs = nullptr;
 		VERIFY_D3D12_RESULT(TLAS->InstanceBuffer->GetHandle()->Map(0, nullptr, reinterpret_cast<void**>(&instanceDescs)));
 
 		for (uint32 instanceIdx = 0; instanceIdx < Instances.size(); ++instanceIdx)
@@ -225,7 +190,8 @@ namespace Luden
 			instanceDescs[instanceIdx].AccelerationStructure = Instances.at(instanceIdx).AccelerationStructure;
 			instanceDescs[instanceIdx].Flags = D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE;
 			instanceDescs[instanceIdx].InstanceMask = 0xFF;
-			instanceDescs[instanceIdx].InstanceID = Instances.at(instanceIdx).InstanceID;
+			//instanceDescs[instanceIdx].InstanceID = Instances.at(instanceIdx).InstanceID;
+			instanceDescs[instanceIdx].InstanceID = instanceIdx;
 			instanceDescs[instanceIdx].InstanceContributionToHitGroupIndex = Instances.at(instanceIdx).InstanceContributionToHitGroupIndex;
 
 			DirectX::XMMATRIX matrix = DirectX::XMLoadFloat3x4(&Instances.at(instanceIdx).Transform);
@@ -242,14 +208,21 @@ namespace Luden
 
 		m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandle()->BuildRaytracingAccelerationStructure(&TLAS->BuildDesc, 0, nullptr);
 
-		D3D12_RESOURCE_BARRIER uavBarrier{};
-		uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-		uavBarrier.UAV.pResource = TLAS->AccelerationStructure->GetHandleRaw();
-		uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandle()->ResourceBarrier(1, &uavBarrier);
+		//D3D12_RESOURCE_BARRIER uavBarrier{};
+		//uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		//uavBarrier.UAV.pResource = TLAS->AccelerationStructure->GetHandleRaw();
+		//uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		//m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandle()->ResourceBarrier(1, &uavBarrier);
 
+		m_D3D12RHI->Device->ShaderResourceHeap->Allocate(TLAS->AccelerationStructure->ShaderResourceView);
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.RaytracingAccelerationStructure.Location = TLAS->AccelerationStructure->GetGpuAddress();
+		m_D3D12RHI->Device->LogicalDevice->CreateShaderResourceView(nullptr, &srvDesc, TLAS->AccelerationStructure->ShaderResourceView.CpuHandle);
+		
 		m_D3D12RHI->GraphicsQueue->Execute({ m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList });
-
 
 	}
 

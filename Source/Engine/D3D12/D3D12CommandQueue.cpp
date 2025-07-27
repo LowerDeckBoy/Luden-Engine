@@ -2,7 +2,7 @@
 #include "D3D12CommandList.hpp"
 #include "D3D12CommandQueue.hpp"
 #include "D3D12Utility.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 #include <cassert>
 
 namespace Luden

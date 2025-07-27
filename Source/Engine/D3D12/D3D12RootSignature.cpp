@@ -21,6 +21,11 @@ namespace Luden
 		desc.Desc_1_2.NumStaticSamplers = static_cast<uint32>(m_StaticSamplers.size());
 		desc.Desc_1_2.Flags				= m_RootFlags;
 
+		if (bIsRaytracingLocal)
+		{
+			desc.Desc_1_2.Flags |= D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
+		}
+
 		Ref<ID3DBlob> signature;
 		Ref<ID3DBlob> error;
 
@@ -78,6 +83,18 @@ namespace Luden
 		m_Parameters.emplace_back(parameter);
 	}
 
+	void D3D12RootSignature::AddUAV(uint32 RegisterSlot, uint32 RegisterSpace, D3D12_SHADER_VISIBILITY Visibility)
+	{
+		D3D12_ROOT_PARAMETER1 parameter{};
+		parameter.ParameterType				= D3D12_ROOT_PARAMETER_TYPE_UAV;
+		parameter.Descriptor.ShaderRegister = RegisterSlot;
+		parameter.Descriptor.RegisterSpace	= RegisterSpace;
+		parameter.Descriptor.Flags			= D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC;
+		parameter.ShaderVisibility			= Visibility;
+
+		m_Parameters.emplace_back(parameter);
+	}
+
 	void D3D12RootSignature::AddStaticSampler(uint32 RegisterSlot, uint32 RegisterSpace, D3D12_FILTER Filter, D3D12_TEXTURE_ADDRESS_MODE AddressMode, D3D12_COMPARISON_FUNC ComparisonFunc)
 	{
 		D3D12_STATIC_SAMPLER_DESC1 desc{};
@@ -95,6 +112,11 @@ namespace Luden
 		desc.Flags			= D3D12_SAMPLER_FLAG_NONE;
 		
 		m_StaticSamplers.emplace_back(desc);
+	}
+
+	void D3D12RootSignature::SetRaytracingLocal()
+	{
+		bIsRaytracingLocal = true;
 	}
 
 	static void SerializeRootSignature()

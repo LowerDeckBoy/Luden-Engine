@@ -18,7 +18,7 @@ namespace Luden
 	#define SAFE_RELEASE(Ptr) if (Ptr) { Ptr.Reset(); Ptr = nullptr; }
 
 	// Release raw ID3D12 or IDXGI object pointer.
-	#define SAFE_DELETE(RawPtr) if (RawPtr) { RawPtr->Release(); RawPtr = nullptr; }
+	#define SAFE_DELETE(RawPtr) if (RawPtr != nullptr) { RawPtr->Release(); RawPtr = nullptr; }
 
 	#define NAME_D3D12_OBJECT(D3D12Object, Name) \
 		Luden::Util::NameD3D12Object(D3D12Object, Name)

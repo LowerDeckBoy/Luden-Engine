@@ -16,8 +16,10 @@ namespace Luden
 		Index,
 		Structured,
 		Constant,
+		UnorderedAccess,
 		CopySrc,
 		CopyDest,
+		Storage,
 		IndirectArgument,
 		AccelerationStructure,
 	};
@@ -49,6 +51,7 @@ namespace Luden
 		void Create(D3D12Device* pDevice, BufferDesc Desc);
 
 		D3D12Descriptor ShaderResourceView;
+		D3D12Descriptor UnorderedAccessView;
 
 		BufferDesc& GetBufferDesc()
 		{
@@ -62,7 +65,6 @@ namespace Luden
 		
 	};
 
-	
 	class D3D12ConstantBuffer
 	{
 	public:
@@ -79,7 +81,7 @@ namespace Luden
 
 		void Release();
 
-		std::vector<uint8_t*> pDataBegin{};
+		std::vector<uint8*> pDataBegin{};
 
 	private:
 		std::vector<Ref<ID3D12Resource>> m_Buffers;
@@ -105,6 +107,7 @@ namespace Luden
 
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor DepthStencilHandle;
+		D3D12Descriptor DepthReadHandle;
 		
 	private:
 		D3D12Device* m_Device = nullptr;
@@ -120,4 +123,5 @@ namespace Luden
 			.Format			= DXGI_FORMAT_R32_UINT
 		};
 	}
+
 } // namespace Luden

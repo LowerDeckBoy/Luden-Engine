@@ -2,6 +2,7 @@
 #include "D3D12RootSignature.hpp"
 #include "D3D12CommandSignature.hpp"
 #include "D3D12Utility.hpp"
+#include "D3D12UploadContext.hpp"
 #include <Core/Assert.hpp>
 
 namespace Luden
@@ -9,7 +10,7 @@ namespace Luden
 	HRESULT D3D12CommandSignature::Build(D3D12Device* pDevice, D3D12RootSignature* pRootSignature)
 	{
 		ASSERT(ArgumentDescs.size() > 0 && ByteStride > 0);
-
+		
 		m_ParentDevice = pDevice;
 
 		D3D12_COMMAND_SIGNATURE_DESC desc{};
@@ -18,11 +19,16 @@ namespace Luden
 		desc.NumArgumentDescs	= static_cast<uint32>(ArgumentDescs.size());
 		desc.ByteStride			= ByteStride;
 
-		return pDevice->LogicalDevice->CreateCommandSignature(&desc, pRootSignature->GetHandleRaw(), IID_PPV_ARGS(&m_CommandSignature));
+		return pDevice->LogicalDevice->CreateCommandSignature(&desc, nullptr, IID_PPV_ARGS(m_CommandSignature.GetAddressOf()));
+		//return pDevice->LogicalDevice->CreateCommandSignature(&desc, pRootSignature->GetHandleRaw(), IID_PPV_ARGS(m_CommandSignature.GetAddressOf()));
 	}
 
-	void D3D12CommandSignature::CreateCommandsBuffer()
+	void D3D12CommandSignature::CreateCommandsBuffer(BufferDesc Desc)
 	{
+		
+		m_CommandsBuffer = new D3D12Buffer(m_ParentDevice, Desc);
+		D3D12UploadContext::UploadBuffer(m_CommandsBuffer, Desc.Size);
+
 	}
 
 	void D3D12CommandSignature::AddDrawIndexedCommand()
@@ -81,7 +87,7 @@ namespace Luden
 
 	void D3D12CommandSignature::Release()
 	{
-		m_CommandSignature.Release();
+		SAFE_RELEASE(m_CommandSignature);
 
 		ArgumentDescs.clear();
 		ArgumentDescs.shrink_to_fit();
@@ -91,6 +97,6 @@ namespace Luden
 
 	void D3D12CommandSignature::SetDebugName(std::string_view Name)
 	{
-		NAME_D3D12_OBJECT(m_CommandSignature.Get(), Name);
+		NAME_D3D12_OBJECT(m_CommandSignature, Name);
 	}
 } // namespace Luden

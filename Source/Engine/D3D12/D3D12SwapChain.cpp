@@ -3,7 +3,7 @@
 #include "D3D12SwapChain.hpp"
 #include "D3D12Utility.hpp"
 #include "Config.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 
 namespace Luden
 {
@@ -15,8 +15,6 @@ namespace Luden
 
 		m_ParentDevice = pDevice;
 		m_ParentQueue = pCommandQueue;
-
-		m_ColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 
 		QueryDisplayInfo();
 
@@ -103,7 +101,6 @@ namespace Luden
 
 	void D3D12SwapChain::Present(uint32 SyncInterval)
 	{
-		//VERIFY_D3D12_RESULT();
 		HRESULT present = m_SwapChain->Present(SyncInterval, (SyncInterval == 0) ? DXGI_PRESENT_ALLOW_TEARING : 0);
 		if (present == DXGI_ERROR_DEVICE_REMOVED)
 		{
@@ -113,7 +110,7 @@ namespace Luden
 		{
 			VERIFY_D3D12_RESULT(present);
 		}
-		//BackBufferIndex = (BackBufferIndex + 1) % Config::Get().NumBackBuffers;
+		
 	}
 
 	void D3D12SwapChain::Resize(uint32 Width, uint32 Height)

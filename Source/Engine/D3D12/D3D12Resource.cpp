@@ -17,6 +17,7 @@ namespace Luden
     void D3D12Resource::Release()
     {
         SAFE_RELEASE(m_Resource);
+        SAFE_RELEASE(m_ResourceAllocation);
     }
 
     void D3D12Resource::SetResourceState(D3D12_RESOURCE_STATES State)

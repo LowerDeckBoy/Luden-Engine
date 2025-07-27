@@ -12,7 +12,7 @@
 #include "D3D12PipelineState.hpp"
 
 #include <Platform/Window.hpp>
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 
 // Test
 #include "D3D12UploadContext.hpp"
@@ -23,7 +23,7 @@ namespace Luden
 	struct Frame
 	{
 		D3D12CommandList* GraphicsCommandList;
-		//D3D12CommandList* ComputeCommandList;
+		D3D12CommandList* ComputeCommandList;
 
 	};
 
@@ -64,6 +64,7 @@ namespace Luden
 		D3D12Device* Device;
 
 		D3D12CommandQueue* GraphicsQueue;
+		D3D12CommandQueue* ComputeQueue;
 
 		D3D12SwapChain* SwapChain;
 
@@ -76,7 +77,11 @@ namespace Luden
 
 		std::vector<Frame> Frames;
 
+		// Graphics Queue Syncing.
 		FFrameSync FrameSync;
+		// TODO:
+		// Separate Syncing for Compute only.
+		FFrameSync ComputeFrameSync;
 
 		// Wait for Device to finish it's work.
 		void Wait();
@@ -93,7 +98,7 @@ namespace Luden
 
 		D3D12DepthBuffer CreateDepthBuffer(DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
 
-		D3D12CommandSignature* MeshCommandSignature;
+		D3D12CommandSignature* MeshCommandSignature = nullptr;
 
 	private:
 		Platform::Window* m_ParentWindow;

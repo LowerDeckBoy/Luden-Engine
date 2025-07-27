@@ -16,34 +16,61 @@ namespace Luden
 			std::memcpy(Data, pData, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
 		}
 
-		void* Data = nullptr;
-		//uint32 Size = 0;
+		std::byte* Data;
+		const uint32 SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 	};
 
 	struct FShaderTableRecord
 	{
+		FShaderTableRecord() = default;
+		FShaderTableRecord(const FShaderIdentifier& Identifier) 
+			: Identifier(Identifier), RootArgs(nullptr)
+		{}
+		FShaderTableRecord(const FShaderIdentifier& Identifier, void* pRootArgs, usize ArgsSize) 
+			: Identifier(Identifier), RootArgs(pRootArgs), ArgsSize(static_cast<uint32>(ArgsSize))
+		{
+			TotalSize = Identifier.SizeInBytes + static_cast<uint32>(ArgsSize);
+		}
 
 		FShaderIdentifier Identifier;
+		void* RootArgs;
+		uint32 ArgsSize = 0;
 
 		uint32 TotalSize = 0;
-
 	};
 
 	// https://microsoft.github.io/DirectX-Specs/d3d/Raytracing.html#shader-identifier
+	// Table per shader type.
 	class D3D12ShaderTable
 	{
 	public:
-		D3D12ShaderTable(uint64 NumRecords)
-			: m_Records(NumRecords) { }
+		D3D12ShaderTable() = default;
 
-		//void AddRecord(FShaderTableRecord Record);
+		void Create(D3D12Device* pDevice);
 
-		//void AddRayGenShader(std::string_view Name);
-		//void AddMissShader(std::string_view Name, uint32 RayIndex);
-		//void AddClosestHitShader(std::string_view Name, uint32 HitGroup);
+		void Map(uint8* pDestination)
+		{
+			for (auto& record : m_Records)
+			{
+				//std::memcpy(pDestination, &record, sizeof(record));
+				std::memcpy(pDestination, record.Identifier.Data, record.TotalSize);
+				//pDestination += GetStride();
+				
+			}
+		}
+
+		void AddRecord(const FShaderTableRecord& Record)
+		{
+			m_Records.push_back(Record);
+			//Map(MappedData);
+		}
 
 		//uint64 GetTotalSizeInBytes();
-		//uint64 GetSizeInBytes();
+
+		uint64 GetSizeInBytes()
+		{
+			return m_Records.size() * Math::Align<uint64>(sizeof(FShaderTableRecord), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+		}
 
 		// Clamp to max 4096 bytes?
 		uint64 GetStride() const
@@ -51,6 +78,9 @@ namespace Luden
 			return Math::Align<uint64>(sizeof(FShaderTableRecord), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
 		}
 
+		uint8* MappedData;
+
+		D3D12Resource* StorageBuffer;
 
 	private:
 		uint64 m_TotalSize = 0;
@@ -58,13 +88,35 @@ namespace Luden
 		
 		std::vector<FShaderTableRecord> m_Records;
 
-		std::vector<FShaderTableRecord> m_RayGenRecords;
-		std::vector<FShaderTableRecord> m_MissRecords;
-		std::vector<FShaderTableRecord> m_ClosestHitRecords;
+	};
 
-		D3D12Resource* m_Storage;
+	class D3D12ShaderBindingTable
+	{
+	public:
+		D3D12ShaderBindingTable();
+		~D3D12ShaderBindingTable();
 
+		void Create(D3D12Device* pDevice);
+
+		void WriteRecords(uint8* pDestination);
+
+		D3D12ShaderTable RayGenTable;
+		D3D12ShaderTable MissTable;
+		D3D12ShaderTable HitTable;
+
+		uint64 TotalSizeInBytes = 0;
+
+		uint64 RayGenOffset = 0;
+		uint32 MissOffset = 0;
+		uint32 HitOffset = 0;
+
+
+		D3D12Resource* m_StorageBuffer;
+		D3D12Resource* m_StorageUploadBuffer;
+
+		uint8* m_CpuData;
 
 
 	};
+
 } // namespace Luden

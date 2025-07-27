@@ -11,17 +11,19 @@ namespace Luden
 		Device	= new D3D12Device(Adapter);
 
 		GraphicsQueue = new D3D12CommandQueue(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+		ComputeQueue = new D3D12CommandQueue(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
 		SwapChain = new D3D12SwapChain(Device, GraphicsQueue, m_ParentWindow);
 
-		SceneDepthBuffer = new D3D12DepthBuffer(Device, &SwapChain->GetSwapChainViewport());
+		SceneDepthBuffer = new D3D12DepthBuffer(Device, &SwapChain->GetSwapChainViewport(), DXGI_FORMAT_D32_FLOAT);
 
 		Frames.resize(Config::Get().NumBackBuffers);
 
 		for (auto& frame : Frames)
 		{
 			frame.GraphicsCommandList = new D3D12CommandList(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-
+			frame.ComputeCommandList  = new D3D12CommandList(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+			//frame.ComputeCommandList  = new D3D12CommandList(Device, D3D12_COMMAND_LIST_TYPE_COMPUTE);
 		}
 
 		// Frame sync
@@ -54,6 +56,12 @@ namespace Luden
 		for (auto& frame : Frames)
 		{
 			delete frame.GraphicsCommandList;
+			delete frame.ComputeCommandList;
+		}
+
+		if (MeshCommandSignature != nullptr)
+		{
+			delete MeshCommandSignature;
 		}
 
 		SAFE_RELEASE(FrameSync.GraphicsFence.Fence);
@@ -61,6 +69,8 @@ namespace Luden
 		delete SceneDepthBuffer;
 
 		delete GraphicsQueue;
+		delete ComputeQueue;
+
 		delete SwapChain;
 		delete Adapter;
 		delete Device;

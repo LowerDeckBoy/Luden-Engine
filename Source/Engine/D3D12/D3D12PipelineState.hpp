@@ -50,16 +50,13 @@ namespace Luden
 	public:
 		D3D12Pipeline();
 
-		//void Bind(D3D12CommandList* pCommandList);
-
-		D3D12RootSignature RootSignature;
-
 		D3D12Shader Amplification;
 		D3D12Shader Mesh;
 		D3D12Shader Pixel;
 		D3D12Shader Vertex;
 		D3D12Shader Compute;
 
+		D3D12RootSignature RootSignature;
 		D3D12PipelineState PipelineState;
 
 	private:
@@ -164,10 +161,12 @@ namespace Luden
 	public:
 		D3D12ComputePipelineStateBuilder(D3D12Device* pDevice);
 
-		HRESULT Build(D3D12Device* pDevice, D3D12PipelineState& OutPipeline);
+		HRESULT Build(D3D12Device* pDevice, D3D12Pipeline& OutPipeline);
 
 		void SetRootSignature(D3D12RootSignature* pRootSignature);
 		void SetComputeShader(D3D12Shader* pShader);
+
+		D3D12Shader CS;
 
 	private:
 		D3D12_COMPUTE_PIPELINE_STATE_DESC m_Desc{};

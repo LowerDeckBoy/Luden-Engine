@@ -2,7 +2,7 @@
 #include "D3D12Adapter.hpp"
 #include "D3D12Memory.hpp"
 #include "D3D12Utility.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 #include <iostream>
 
 namespace Luden
@@ -53,12 +53,14 @@ namespace Luden
 		
 		return BYTES_TO_MEGABYTES(MemoryInfo.CurrentUsage);
 	}
+
 	f64 D3D12Adapter::GetCurrentMemoryUsage()
 	{
 		Adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &MemoryInfo);
 
 		return MemoryInfo.CurrentUsage / 1024.0 / 1024.0 / 1024.0;
 	}
+
 	f64 D3D12Adapter::GetDeviceTotalMemory() const
 	{
 		return MemoryInfo.Budget / 1024.0 / 1024.0 / 1024.0;

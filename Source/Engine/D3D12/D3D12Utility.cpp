@@ -1,4 +1,4 @@
-#include "Core/Logger.hpp"
+#include "Core/Logging/Logger.hpp"
 #include <D3D12AgilitySDK/d3d12.h>
 #include <Core/RefPtr.hpp>
 #include <Windows.h>
@@ -43,7 +43,7 @@ namespace Luden
 
 	void Util::NameD3D12Object(ID3D12Object* pD3D12Object, std::string_view DebugName)
 	{
-		if (!pD3D12Object)
+		if (pD3D12Object == nullptr)
 		{
 			LOG_WARNING("Trying to set name: '{}' for empty D3D12 object!", DebugName);
 

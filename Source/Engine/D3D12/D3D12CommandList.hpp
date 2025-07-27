@@ -16,6 +16,8 @@ namespace Luden
 	class D3D12ConstantBuffer;
 	class D3D12Buffer;
 	class D3D12Texture;
+	class D3D12CommandSignature;
+	class D3D12StateObject;
 
 	constexpr std::array<float, 4> DefaultClearColor		= { 0.0f, 0.0f, 0.0f, 1.0f };
 	constexpr std::array<float, 4> RenderTargetClearColor	= { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -48,7 +50,7 @@ namespace Luden
 		// Before state is taken from pResource itself.
 		void ResourceTransition(D3D12Resource* pResource, D3D12_RESOURCE_STATES After);
 		// Multiple Resources transition.
-		void ResourcesTransition(const std::vector<std::pair<D3D12Resource*, D3D12_RESOURCE_STATES>>& pResources);
+		void ResourceTransition(const std::vector<std::pair<D3D12Resource*, D3D12_RESOURCE_STATES>>& pResources);
 
 		// Either Buffer to Buffer or Texture to Texture.
 		void CopyResource(D3D12Resource* pSource, D3D12Resource* pDestination);
@@ -57,21 +59,24 @@ namespace Luden
 		void CopyBufferToBuffer(D3D12Resource* pSource, D3D12Resource* pDestination, void* pData, uint64 Size);
 
 		void CopyTextureToTexture(D3D12Resource* pSource, D3D12Resource* pDestination, D3D12_SUBRESOURCE_DATA* Subresource);
-		void CopyTextureToTexture(D3D12Texture* pSource, D3D12Texture* pDestination, D3D12_SUBRESOURCE_DATA Subresource);
+		//void CopyTextureToTexture(D3D12Texture* pSource, D3D12Texture* pDestination, D3D12_SUBRESOURCE_DATA Subresource);
 
 		void SetRootSignature(D3D12RootSignature* pRootSignature);
 		void SetGraphicsRootSignature(D3D12RootSignature* pRootSignature);
 		void SetComputeRootSignature(D3D12RootSignature* pRootSignature);
 
 		void SetPipelineState(D3D12PipelineState* pPipelineState);
-		//void SetRaytracingPipeline(D3D12PipelineState* pPipelineState);
+		void SetPipelineState1(D3D12StateObject* pStateObject);
 
 		void ResolveSubresource(D3D12Resource* DestResource, uint32 DestSubresource, D3D12Resource* SourceResource, uint32 SourceSubresource, DXGI_FORMAT Format);
 
 		void ClearDepthStencilView(D3D12Descriptor& DepthStencilView);
 
-		void SetRenderTarget(D3D12Descriptor& RenderTargetView);
-		void SetRenderTarget(D3D12Descriptor& RenderTargetView, D3D12Descriptor& DepthStencilView);
+		// Single RenderTarget.
+		void SetRenderTargets(D3D12Descriptor& RenderTargetView);
+		// Single RenderTarget and DepthStencil.
+		void SetRenderTargets(D3D12Descriptor& RenderTargetView, D3D12Descriptor& DepthStencilView);
+		// Multiple RenderTargets and DepthStencil.
 		void SetRenderTargets(const std::vector<D3D12Descriptor*>& RenderTargetViews, D3D12Descriptor& DepthStencilView);
 
 		void ClearRenderTarget(D3D12Descriptor& RenderTargetView, std::array<float, 4> ClearColor = DefaultClearColor);
@@ -82,10 +87,13 @@ namespace Luden
 		void PushConstants(uint32 Slot, uint32 Count, void* pData, uint32 Offset = 0);
 		void PushRootSRV(uint32 Slot, uint64 Address);
 
+		void Dispatch(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ);
 		void DispatchMesh(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ);
 
 		void Draw(uint32 VertexCount);
 		void DrawIndexed(uint32 IndexCount, uint32 BaseIndex, uint32 BaseVertex);
+
+		void ExecuteIndirect(D3D12CommandSignature* pCommandSignature);
 
 		//void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW* pIndexBufferView);
 		void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW IndexBufferView);

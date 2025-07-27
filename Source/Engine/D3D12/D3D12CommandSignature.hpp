@@ -14,12 +14,25 @@ namespace Luden
 	struct FDispatchMeshCommand
 	{
 		D3D12_DISPATCH_MESH_ARGUMENTS Argument;
+		uint32 VertexBufferIndex;
+		uint32 MeshletBufferIndex;
+		uint32 MeshletVerticesIndex;
+		uint32 MeshletTrianglesIndex;
+		uint32 MeshletBoundsBufferIndex;
+
+		uint32 TransformsBufferIndex;
+		uint32 MaterialsBufferIndex;
+		uint32 MaterialID;
+		uint32 TransformID;
+
 	};
 
 	class D3D12CommandSignature
 	{
 	public:
 		D3D12CommandSignature() = default;
+		D3D12CommandSignature(D3D12Device* pDevice)
+			: m_ParentDevice(pDevice) {}
 		~D3D12CommandSignature()
 		{
 			Release();
@@ -27,10 +40,10 @@ namespace Luden
 
 		HRESULT Build(D3D12Device* pDevice, D3D12RootSignature* pRootSignature);
 		
-		void CreateCommandsBuffer();
+		void CreateCommandsBuffer(BufferDesc Desc);
 
-		Ref<ID3D12CommandSignature>&	GetHandle()		{ return m_CommandSignature;		}
-		ID3D12CommandSignature*			GetHandleRaw()	{ return m_CommandSignature.Get();	}
+		//ID3D12CommandSignature*	GetHandleRaw() { return m_CommandSignature; }
+		ID3D12CommandSignature*	GetHandleRaw() { return m_CommandSignature.Get(); }
 
 		void AddDrawIndexedCommand();
 		void AddDispatchMeshCommand();
@@ -49,9 +62,10 @@ namespace Luden
 
 	private:
 		Ref<ID3D12CommandSignature> m_CommandSignature;
+		//ID3D12CommandSignature* m_CommandSignature = nullptr;
 		
-		D3D12Buffer* m_CommandsBuffer;
+		D3D12Buffer* m_CommandsBuffer = nullptr;
 
-		D3D12Device* m_ParentDevice		= nullptr;
+		D3D12Device* m_ParentDevice	= nullptr;
 	};
 } // namespace Luden

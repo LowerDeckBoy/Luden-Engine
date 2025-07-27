@@ -34,6 +34,7 @@ namespace Luden
 		D3D12Texture() = default;
 		// Create texture Resource from desc.
 		D3D12Texture(D3D12Device* pDevice, TextureDesc Desc);
+		//D3D12Texture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name = "");
 		// Create texture Resource from file.
 		D3D12Texture(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
 		~D3D12Texture();
@@ -43,7 +44,7 @@ namespace Luden
 		//void CreateFromFile(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
 
 		D3D12Descriptor ShaderResourceHandle;
-		D3D12Descriptor RenderTargetHandle;
+		D3D12Descriptor UnorderedAccessHandle;
 		D3D12Descriptor DepthStencilHandle;
 
 		TextureDesc& GetTextureDesc()
@@ -60,6 +61,8 @@ namespace Luden
 		{
 			m_Filepath = Path;
 		}
+
+		void Resize(uint32 Width, uint32 Height);
 		
 	private:
 		TextureDesc m_TextureDesc{};
@@ -71,7 +74,6 @@ namespace Luden
 	{
 	public:
 		D3D12RenderTexture() = default;
-		D3D12RenderTexture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name = "");
 		D3D12RenderTexture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::array<float, 4> ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f }, std::string_view Name = "");
 		~D3D12RenderTexture();
 
@@ -81,6 +83,7 @@ namespace Luden
 
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor RenderTargetHandle;
+		D3D12Descriptor UnorderedAccessHandle;
 
 		DXGI_FORMAT& GetFormat()
 		{

@@ -73,7 +73,7 @@ namespace Luden
 	protected:
 		Ref<ID3D12Resource2>		m_Resource;
 		//Ref<ID3D12Resource2>		m_UploadResource;
-		//Ref<D3D12MA::Allocation>	m_ResourceAllocation;
+		Ref<D3D12MA::Allocation>	m_ResourceAllocation;
 
 		D3D12_RESOURCE_STATES		m_CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
 		D3D12_RESOURCE_DESC1		m_Desc{};

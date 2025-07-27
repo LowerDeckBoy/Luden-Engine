@@ -1,7 +1,7 @@
 #include "D3D12Device.hpp"
 #include "D3D12DescriptorHeap.hpp"
 #include "D3D12Utility.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 
 namespace Luden
 {
@@ -88,7 +88,7 @@ namespace Luden
 
 		m_DescriptorType = DescriptorType;
 
-		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr); //  
+		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr);
 
 		if (bIsShaderVisible)
 		{
@@ -149,11 +149,11 @@ namespace Luden
 
 	void D3D12DescriptorHeap::Reset()
 	{
-		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr + m_DescriptorIncrementSize);
+		m_AvailableCpuPtr = static_cast<uint64>(GetCpuStartHandle().ptr);// + m_DescriptorIncrementSize);
 
 		if (bIsShaderVisible)
 		{
-			m_AvailableGpuPtr = static_cast<uint64>(GetGpuStartHandle().ptr + m_DescriptorIncrementSize);
+			m_AvailableGpuPtr = static_cast<uint64>(GetGpuStartHandle().ptr);// + m_DescriptorIncrementSize);
 		}
 
 		m_CurrentAllocations = 0;

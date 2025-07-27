@@ -1,6 +1,6 @@
 #include "D3D12Device.hpp"
 #include "D3D12Utility.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 #include <D3D12AgilitySDK/d3dx12/d3dx12_check_feature_support.h>
 #include "RHI/Types.hpp"
 
@@ -45,7 +45,8 @@ namespace Luden
 
 		if (Config::Get().bEnableDebugLayer)
 		{	
-			if (FAILED(m_DXGIDebug->ReportLiveObjects(DXGI_DEBUG_DX, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL))))
+			const auto rloFlags = DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL);
+			if (FAILED(m_DXGIDebug->ReportLiveObjects(DXGI_DEBUG_D3D12, rloFlags)))
 			{
 				LOG_WARNING("Failed to ReportLiveObjects!");
 			}
@@ -59,7 +60,7 @@ namespace Luden
 		CD3DX12FeatureSupport features;
 		features.Init(LogicalDevice.Get());
 
-		auto shaderModel = features.HighestShaderModel();
+		const auto shaderModel = features.HighestShaderModel();
 		
 		LOG_INFO("Highest HLSL Shader Model: {0}.", ShaderModelToString(shaderModel));
 
@@ -124,6 +125,20 @@ namespace Luden
 
 		LogicalDevice->CreateShaderResourceView(pBuffer->GetHandleRaw(), &srvDesc, pBuffer->ShaderResourceView.CpuHandle);
 
+	}
+
+	void D3D12Device::CreateUnorderedAccessView(D3D12Texture* pTexture)
+	{
+		const auto& desc = pTexture->GetDesc();
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+		uavDesc.Format = desc.Format;
+		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+		uavDesc.Texture2D.MipSlice = 0;
+
+		ShaderResourceHeap->Allocate(pTexture->UnorderedAccessHandle);
+
+		LogicalDevice->CreateUnorderedAccessView(pTexture->GetHandleRaw(), nullptr, &uavDesc, pTexture->UnorderedAccessHandle.CpuHandle);
 	}
 
 	void D3D12Device::CreateRenderTargetView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 Count)

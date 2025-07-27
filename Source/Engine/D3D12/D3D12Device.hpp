@@ -16,10 +16,8 @@ namespace Luden
 		explicit D3D12Device(D3D12Adapter* pParentAdapter);
 		~D3D12Device();
 
-		D3D12Adapter* ParentAdapter;
-
-		Ref<ID3D12Device14> LogicalDevice;
-
+		D3D12Adapter*			ParentAdapter;
+		Ref<ID3D12Device14>		LogicalDevice;
 		Ref<D3D12MA::Allocator> D3D12MemoryAllocator;
 
 		uint32 NodeMask = 0;
@@ -42,6 +40,7 @@ namespace Luden
 		void CreateShaderResourceView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 NumMips = 1, uint32 Count = 1);
 		// Create SRV for Buffer usage.
 		void CreateShaderResourceView(D3D12Buffer* pBuffer);
+		void CreateUnorderedAccessView(D3D12Texture* pTexture);
 		void CreateRenderTargetView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 Count = 1);
 		void CreateDepthStencilView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
 

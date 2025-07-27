@@ -1,13 +1,15 @@
 #include "D3D12Device.hpp"
 #include "D3D12PipelineState.hpp"
 #include "D3D12RootSignature.hpp"
+#include "D3D12CommandSignature.hpp"
 #include "D3D12DescriptorHeap.hpp"
 #include "D3D12Resource.hpp"
 #include "D3D12SwapChain.hpp"
+#include "D3D12StateObject.hpp"
 #include "D3D12CommandList.hpp"
 #include <D3D12AgilitySDK/d3dx12/d3dx12.h>
 #include "D3D12Utility.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 
 namespace Luden
 {
@@ -108,7 +110,7 @@ namespace Luden
 	{
 		if (pResource->GetCurrentState() == After)
 		{
-			LOG_WARNING("Skipped Resource barrier.\n");
+			LOG_WARNING("Resource State: Before and After states must be different - skipping Resource barrier.");
 			return;
 		}
 
@@ -117,13 +119,14 @@ namespace Luden
 		pResource->SetResourceState(After);
 	}
 
-	void D3D12CommandList::ResourcesTransition(const std::vector<std::pair<D3D12Resource*, D3D12_RESOURCE_STATES>>& pResources)
+	void D3D12CommandList::ResourceTransition(const std::vector<std::pair<D3D12Resource*, D3D12_RESOURCE_STATES>>& pResources)
 	{
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers{};
-		for (auto& resource : pResources)
+
+		for (const auto& [resource , barrier] : pResources)
 		{
-			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(resource.first->GetHandleRaw(), resource.first->GetCurrentState(), resource.second));
-			resource.first->SetResourceState(resource.second);
+			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(resource->GetHandleRaw(), resource->GetCurrentState(), barrier));
+			resource->SetResourceState(barrier);
 		}
 
 		m_GraphicsCommandList->ResourceBarrier(static_cast<uint32>(barriers.size()), barriers.data());
@@ -186,6 +189,11 @@ namespace Luden
 		m_GraphicsCommandList->SetPipelineState(pPipelineState->GetHandleRaw());
 	}
 
+	void D3D12CommandList::SetPipelineState1(D3D12StateObject* pStateObject)
+	{
+		m_GraphicsCommandList->SetPipelineState1(pStateObject->GetHandleRaw());
+	}
+
 	void D3D12CommandList::ResolveSubresource(D3D12Resource* DestResource, uint32 DestSubresource, D3D12Resource* SourceResource, uint32 SourceSubresource, DXGI_FORMAT Format)
 	{
 		m_GraphicsCommandList->ResolveSubresource(DestResource->GetHandle(), DestSubresource, SourceResource->GetHandle(), SourceSubresource, Format);
@@ -196,12 +204,12 @@ namespace Luden
 		m_GraphicsCommandList->ClearDepthStencilView(DepthStencilView.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, D3D12_MAX_DEPTH, 0, 0, nullptr);
 	}
 
-	void D3D12CommandList::SetRenderTarget(D3D12Descriptor& RenderTargetView)
+	void D3D12CommandList::SetRenderTargets(D3D12Descriptor& RenderTargetView)
 	{
 		m_GraphicsCommandList->OMSetRenderTargets(1, &RenderTargetView.CpuHandle, false, nullptr);
 	}
 
-	void D3D12CommandList::SetRenderTarget(D3D12Descriptor& RenderTargetView, D3D12Descriptor& DepthStencilView)
+	void D3D12CommandList::SetRenderTargets(D3D12Descriptor& RenderTargetView, D3D12Descriptor& DepthStencilView)
 	{
 		m_GraphicsCommandList->OMSetRenderTargets(1, &RenderTargetView.CpuHandle, false, &DepthStencilView.CpuHandle);
 	}
@@ -253,6 +261,11 @@ namespace Luden
 		m_GraphicsCommandList->SetGraphicsRootShaderResourceView(Slot, (D3D12_GPU_VIRTUAL_ADDRESS)Address);
 	}
 
+	void D3D12CommandList::Dispatch(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ)
+	{
+		m_GraphicsCommandList->Dispatch(DispatchThreadX, DispatchThreadY, DispatchThreadZ);
+	}
+
 	void D3D12CommandList::DispatchMesh(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ)
 	{
 		m_GraphicsCommandList->DispatchMesh(DispatchThreadX, DispatchThreadY, DispatchThreadZ);
@@ -266,6 +279,12 @@ namespace Luden
 	void D3D12CommandList::DrawIndexed(uint32 IndexCount, uint32 BaseIndex, uint32 BaseVertex)
 	{
 		m_GraphicsCommandList->DrawIndexedInstanced(IndexCount, 1, BaseIndex, BaseVertex, 0);
+	}
+
+	void D3D12CommandList::ExecuteIndirect(D3D12CommandSignature* pCommandSignature)
+	{
+		m_GraphicsCommandList->ExecuteIndirect(
+			pCommandSignature->GetHandleRaw(), static_cast<uint32>(pCommandSignature->ArgumentDescs.size()), pCommandSignature->GetCommandsBuffer()->GetHandleRaw(), pCommandSignature->ByteStride, nullptr, 0);
 	}
 
 	void D3D12CommandList::SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW IndexBufferView)
@@ -285,7 +304,7 @@ namespace Luden
 	void D3D12CommandList::SetConstantBuffer(uint32 RegisterSlot, D3D12ConstantBuffer* pConstantBuffer)
 	{
 		const auto address = pConstantBuffer->GetBuffer()->GetGPUVirtualAddress();
-
+		
 		if (m_CommandListType == D3D12_COMMAND_LIST_TYPE_DIRECT)
 		{
 			m_GraphicsCommandList->SetGraphicsRootConstantBufferView(RegisterSlot, address);

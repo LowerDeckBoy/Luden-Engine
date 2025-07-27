@@ -4,7 +4,7 @@
 #include "D3D12Utility.hpp"
 #include <D3D12AgilitySDK/d3dx12/d3dx12.h>
 
-#include "Core/Logger.hpp"
+#include "Core/Logging/Logger.hpp"
 
 namespace Luden
 {
@@ -135,9 +135,15 @@ namespace Luden
 
 		uploadResource->SetResourceState(D3D12_RESOURCE_STATE_GENERIC_READ);
 
-		void* mapped;
-		uploadResource->GetHandle()->Map(0, 0, &mapped);
-		memcpy(mapped, pBuffer->GetBufferDesc().Data, Size);
+		//void* mapped;
+		uint8* data = reinterpret_cast<uint8*>(pBuffer->GetBufferDesc().Data);
+		uint8* mapped;
+		//std::memset(mapped, 0, Size);
+		//uploadResource->GetHandle()->Map(0, nullptr, &mapped);
+		//std::memcpy(mapped, pBuffer->GetBufferDesc().Data, Size);
+		//VERIFY_D3D12_RESULT(uploadResource->GetHandle()->Map(0, 0, reinterpret_cast<void**>(&mapped)));
+		VERIFY_D3D12_RESULT(uploadResource->GetHandle()->Map(0, 0, (void**)(&mapped)));
+		std::memcpy(mapped, data, Size);
 		uploadResource->GetHandle()->Unmap(0, 0);
 
 		request.UploadResource = uploadResource;

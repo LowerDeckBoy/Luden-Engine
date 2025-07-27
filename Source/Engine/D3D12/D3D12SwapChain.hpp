@@ -10,12 +10,6 @@ namespace Luden
 	class D3D12Device;
 	class D3D12CommandQueue;
 
-	enum class DisplayMode
-	{
-		SDR,
-		HDR,
-	};
-
 	class D3D12Viewport
 	{
 	public:
@@ -48,8 +42,6 @@ namespace Luden
 	{
 	public:
 		D3D12SwapChain(D3D12Device* pDevice, D3D12CommandQueue* pCommandQueue, Platform::Window* pWindow);
-		// Better solutions?
-		//D3D12SwapChain(D3D12Device* pDevice, D3D12CommandQueue* pCommandQueue, ::HWND Handle, uint32 Width, uint32 Height);
 		~D3D12SwapChain();
 
 		Ref<IDXGISwapChain4>& GetHandle()
@@ -100,35 +92,28 @@ namespace Luden
 
 	private:
 		void CreateSwapChain(D3D12Device* pDevice, D3D12CommandQueue* pCommandQueue, Platform::Window* pWindow);
-
 		void CreateBackBuffers();
-
-		//void SetViewport(uint32 Width, uint32 Height);
-
+		
 		void QueryDisplayInfo();
 
 	private:
 		Ref<IDXGISwapChain4>	m_SwapChain;
 		DXGI_FORMAT				m_SwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		DXGI_COLOR_SPACE_TYPE	m_ColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 		
 		D3D12Viewport m_SwapChainViewport;
 
 		// Owns SwapChain's BackBuffer RenderTargetViews.
 		D3D12DescriptorHeap m_SwapChainDescriptorHeap;
 
-		DXGI_COLOR_SPACE_TYPE m_ColorSpace;
-
 		Ref<IDXGIOutput6> m_DisplayOutput{};
 		DXGI_OUTPUT_DESC1 m_DisplayOutputDesc{};
 
-		DisplayMode m_DisplayMode;
+		bool bIsDisplayHDR = false;
 
-		bool bIsDisplayHDR;
-
-		D3D12Device* m_ParentDevice;
-		D3D12CommandQueue* m_ParentQueue = nullptr;
-		// Remove?
-		Platform::Window* m_ParentWindow = nullptr;
+		D3D12Device*		m_ParentDevice = nullptr;
+		D3D12CommandQueue*	m_ParentQueue = nullptr;
+		Platform::Window*	m_ParentWindow = nullptr;
 
 	};
 } // namespace Luden

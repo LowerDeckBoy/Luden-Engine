@@ -34,18 +34,18 @@ namespace Luden
 		HRESULT Build(D3D12Device* pDevice, PipelineType Type);
 
 		// Use Shader Bytcode to create Root Signature.
-		// Note:
-		// Passed Shader MUST have specified Root Signature!
+		// Note: Passed Shader MUST have specified Root Signature!
 		HRESULT BuildFromShader(D3D12Device* pDevice, D3D12Shader* pShader, PipelineType Type);
 
 		void AddConstants(uint32 Count, uint32 RegisterSlot, uint32 RegisterSpace = 0, D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
 		void AddCBV(uint32 RegisterSlot, uint32 RegisterSpace = 0, D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
 		void AddSRV(uint32 RegisterSlot, uint32 RegisterSpace = 0, D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
+		void AddUAV(uint32 RegisterSlot, uint32 RegisterSpace = 0, D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
 
 		void AddStaticSampler(uint32 RegisterSlot, uint32 RegisterSpace, D3D12_FILTER Filter, D3D12_TEXTURE_ADDRESS_MODE AddressMode, D3D12_COMPARISON_FUNC ComparisonFunc);
 
 		// For Raytracing Root Signature only.
-		void SetGlobal(bool bSet);
+		void SetRaytracingLocal();
 
 		PipelineType GetPipelineType() const
 		{
@@ -60,7 +60,7 @@ namespace Luden
 		std::vector<D3D12_ROOT_PARAMETER1> m_Parameters;
 		std::vector<D3D12_STATIC_SAMPLER_DESC1> m_StaticSamplers;
 
-		bool bIsGlobal = false;
+		bool bIsRaytracingLocal = false;
 
 		D3D12_ROOT_SIGNATURE_FLAGS m_RootFlags =
 			D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED |
