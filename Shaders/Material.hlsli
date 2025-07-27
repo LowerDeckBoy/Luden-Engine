@@ -16,7 +16,7 @@ struct FMaterial
 	float	IndexOfRefraction;
 		
 	float	Anisotropy;
-	float	Glossiness;
+	float	EmissiveStrength;
 	float	Reflectivity;
 	uint	AlphaMode;
 

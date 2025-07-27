@@ -25,6 +25,9 @@ bool IsVisible(MeshletBound bounds, row_major float4x4 world, float3 viewPos)
 	return true;
 }
 
+static StructuredBuffer<MeshletBound>	MeshletBoundsBuffer = ResourceDescriptorHeap[Constants.MeshletBoundsIndex];
+static StructuredBuffer<Transform>		TransformBuffer		= ResourceDescriptorHeap[Constants.TransformBuffer];
+
 groupshared Payload sPayload;
 
 [NumThreads(AS_GROUP_SIZE, 1, 1)]
@@ -37,11 +40,8 @@ void ASMain(
 
 	if (Constants.bMeshletCulling)
 	{
-		StructuredBuffer<MeshletBound> MeshletBoundsBuffer = ResourceDescriptorHeap[Constants.MeshletBoundsIndex];
 		MeshletBound bounds = MeshletBoundsBuffer[DispatchThreadID];
-		
-		StructuredBuffer<Transform> transformBuffer = ResourceDescriptorHeap[Constants.TransformBuffer];
-		Transform transform = transformBuffer[Constants.TransformID];
+		Transform transform = TransformBuffer[Constants.TransformID];
 		
 		bool visible = IsVisible(bounds, transform.World, CameraConstants.Position);
 

@@ -59,7 +59,7 @@ float3 GetMeshletColorHashed(uint MeshletIndex)
 	uint hash = Hash(MeshletIndex);
 	
 	return float3(
-		float((hash	  ) & 255),
+		float((hash		 ) & 255),
 		float((hash >> 8 ) & 255),
 		float((hash >> 16) & 255)) / 255.0;
 }

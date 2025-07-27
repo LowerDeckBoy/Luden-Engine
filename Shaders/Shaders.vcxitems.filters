@@ -2,15 +2,23 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <FxCompile Include="$(MSBuildThisFileDirectory)Common\Common.hlsli" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)MS.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Base.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)Vertex.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)MeshBasic.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)MSCulled.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)TempMS.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_MS.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_PS.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Indirect\Indirect.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBufferBlend_MS.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\VisibilityBuffer.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_AS.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\Miss.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\RayGen.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\ClosestHit.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred_CS.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Bloom.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Downsample.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Upsample.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Combine.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\MipMap2D.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
@@ -18,14 +26,25 @@
     <None Include="$(MSBuildThisFileDirectory)Common\Camera.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Transform.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Meshlet.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)Vertex.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PBR.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Deferred\Deferred_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Indirect\Indirect_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Mesh\GBufferCommon.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Raytracing\Base\Common.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Samplers.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Tonemapping.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)BRDF.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Bloom_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Common.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Bindless.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="NewFilter1">
       <UniqueIdentifier>{60986820-6f91-427a-9f76-43755d4f6f2b}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)Common\Light.hlsli" />
   </ItemGroup>
 </Project>

@@ -1,8 +1,6 @@
 #ifndef RAYTRACING_COMMON_HLSL
 #define RAYTRACING_COMMON_HLSL
 
-
-
 struct SceneData
 {
 	float4x4 View;
@@ -10,12 +8,12 @@ struct SceneData
 	float4x4 ViewProjection;
 	
 	float3 CameraPosition;
+	uint padding;
 	uint RaytracingOutput;
+	uint RaytracingTopLevel;
 };
 
-ConstantBuffer<SceneData> Scene : register(b0, space1);
-//RWTexture2D<float4> gRaytraceScene : register(u0, space2);
-RaytracingAccelerationStructure gSceneBVH : register(t0, space1);
+ConstantBuffer<SceneData>		Scene			: register(b0, space0);
 
 struct HitInfo
 {
@@ -23,4 +21,3 @@ struct HitInfo
 };
 
 #endif // RAYTRACING_COMMON_HLSL
-

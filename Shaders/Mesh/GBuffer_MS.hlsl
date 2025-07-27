@@ -4,6 +4,11 @@
 #include "GBuffer_RS.hlsli"
 #include "GBufferCommon.hlsli"
 
+static StructuredBuffer<Meshlet>	Meshlets			= ResourceDescriptorHeap[Constants.MeshletIndex];
+static StructuredBuffer<Vertex>		VertexBuffer		= ResourceDescriptorHeap[Constants.VertexIndex];
+static StructuredBuffer<uint>		MeshletVertices		= ResourceDescriptorHeap[Constants.MeshletVerticesIndex];
+static StructuredBuffer<uint>		MeshletTriangles	= ResourceDescriptorHeap[Constants.MeshletTrianglesIndex];
+
 [RootSignature(GBUFFER_ROOT_SIG)]
 [NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
@@ -14,11 +19,6 @@ void MSMain(
 	out indices uint3 Triangles[MAX_TRIANGLES],
 	out vertices VertexOut Vertices[MAX_VERTICES])
 {
-	StructuredBuffer<Meshlet> Meshlets		= ResourceDescriptorHeap[Constants.MeshletIndex];
-	StructuredBuffer<Vertex> VertexBuffer	= ResourceDescriptorHeap[Constants.VertexIndex];
-	StructuredBuffer<uint> MeshletVertices	= ResourceDescriptorHeap[Constants.MeshletVerticesIndex];
-	StructuredBuffer<uint> MeshletTriangles = ResourceDescriptorHeap[Constants.MeshletTrianglesIndex];
-	
 	uint meshletIndex = payload.MeshletIndices[GroupID];
 	Meshlet meshlet = Meshlets[meshletIndex];
 

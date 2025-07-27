@@ -43,11 +43,12 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 	
 	output.WorldPosition = float4(pin.WorldPosition.xyz, 0.0f);
 	
+	output.Emissive = float4(material.EmissiveFactor);
 	if (IsIndexValid(material.EmissiveIndex))
 	{
 		Texture2D emissiveTexture = ResourceDescriptorHeap[material.EmissiveIndex];
 		output.Emissive = emissiveTexture.Sample(AnisotropicSampler, pin.TexCoord);
-
+		output.Emissive *= material.EmissiveFactor;
 	}
 	
 	output.BaseColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -65,7 +66,7 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 			}
 		}
 		
-		output.BaseColor = float4(baseColor.rgb, 1.0f);
+		output.BaseColor = float4(baseColor.rgb + output.Emissive.rgb, 1.0f);
 	}
 	
 	if (Constants.bDrawMeshlets)
@@ -87,7 +88,7 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 	// Saving depth into unused Normal's W component.
 	const float z = 1.0f - (pin.Position.z / pin.Position.w);
 	output.Normal.w = z;
-	
+
 	output.MetallicRoughness = float4(0.0f, material.Roughness, material.Metallic, 1.0f);
 	if (IsIndexValid(material.MetallicRoughnessIndex))
 	{
