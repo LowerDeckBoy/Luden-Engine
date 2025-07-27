@@ -1,0 +1,6 @@
+#ifndef SAMPLERS_HLSLI
+#define SAMPLERS_HLSLI
+
+// TODO:
+
+#endif // SAMPLERS_HLSLI
