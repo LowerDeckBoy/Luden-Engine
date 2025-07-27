@@ -6,19 +6,23 @@ Very much work in progress.
 
 Project is made for mainly for learning about 3D engines design and architecture.
 
-
 Note:
 Repo does not provide model assets.
 
 ## Features:
 
 - Renderer
-    - Basic meshletizing
+	- Virtual geometry
+	- GPU Meshlet culling
+	- Deferred rendering
+	- Bloom for emissive textures.
 - Scene
-    - loading and unloading JSON scenes at runtime,
-    - adding models to scene at runtime,
+	- Loading and unloading JSON-based scenes at runtime
+	- Adding models to scene at runtime
+- Editor
+    - ImGui based editor layer
 
-## Requirements
+## Tech
 
 - C++23
 - Visual Studio 2022
@@ -27,14 +31,17 @@ Repo does not provide model assets.
 
 ## Showcase
 
-| Bistro exterior											| Bistro interior											|
+| Bistro exterior - deferred											| Bistro exterior - meshlets											|
 | --------------------------------------------------------- | --------------------------------------------------------- |
-| ![bistro_meshlets](Media/bistro_exterior_meshlets.png)	| ![bistro_meshlets](Media/bistro_interior_meshlets.png)	|
+| ![bistro_meshlets](Media/deferred_bloom.png)	| ![bistro_meshlets](Media/deferred_meshlets.png)	|
 
-<!---
-![bistro_meshlets](Media/bistro_exterior_meshlets.png)
-![bistro_meshlets](Media/bistro_interior_meshlets.png)
---->
 
 ## Third-party
 
+- [ImGui](https://github.com/ocornut/imgui)
+- [assimp](https://github.com/assimp/assimp)
+- [fastgltf](https://github.com/spnda/fastgltf)
+- [EnTT](https://github.com/skypjack/entt)
+- [meshoptimizer](https://github.com/zeux/meshoptimizer)
+- [D3D12MemoryAlloctor](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
+- [json](https://github.com/nlohmann/json)
