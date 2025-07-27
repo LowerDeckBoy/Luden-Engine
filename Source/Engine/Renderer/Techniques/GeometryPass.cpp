@@ -99,10 +99,24 @@ namespace Luden
 			VERIFY_D3D12_RESULT(builder.Build(BlendPipelineState.PipelineState));
 		}
 		
+		// Indirect Draw PSO
+		{
+			IndirectPipelineState.Compute = pShaderCompiler->CompileCS("../../Shaders/Indirect/Indirect.hlsl", true);
+
+			VERIFY_D3D12_RESULT(IndirectPipelineState.RootSignature.BuildFromShader(m_RHI->Device, &IndirectPipelineState.Compute, PipelineType::Compute));
+
+			D3D12ComputePipelineStateBuilder builder(m_RHI->Device);
+			builder.SetComputeShader(&IndirectPipelineState.Compute);
+			builder.SetRootSignature(&IndirectPipelineState.RootSignature);
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, IndirectPipelineState));
+		}
 	}
 
 	void GeometryPass::Release()
 	{
+		delete IndirectSignature;
+		delete IndirectArgumentsBuffer;
+
 		BaseColor.Release();
 		Normal.Release();
 		MetallicRoughness.Release();
@@ -296,6 +310,30 @@ namespace Luden
 			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ }
 		});
+
+	}
+
+	void GeometryPass::RenderIndirect(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame)
+	{
+		auto commandList = CurrentFrame.GraphicsCommandList;
+
+		commandList->ResourceTransition({
+			{ &BaseColor,			D3D12_RESOURCE_STATE_RENDER_TARGET },
+			{ &Normal,				D3D12_RESOURCE_STATE_RENDER_TARGET },
+			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_RENDER_TARGET },
+			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET },
+			{ &WorldPosition,		D3D12_RESOURCE_STATE_RENDER_TARGET },
+			});
+
+		commandList->SetRenderTargets(m_RenderTargetHandles, m_RHI->SceneDepthBuffer->DepthStencilHandle);
+		commandList->ClearRenderTargets(m_RenderTargetHandles, RenderTargetClearColor);
+
+		//auto device = m_RHI->Device;
+
+		commandList->SetRootSignature(&IndirectPipelineState.RootSignature);
+		commandList->SetPipelineState(&IndirectPipelineState.PipelineState);
+
+		commandList->PushConstants(1, 28, &pScene->Consts);
 
 	}
 

@@ -116,8 +116,10 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
   <ItemGroup>
     <ClInclude Include="Asset\AssetImporter.hpp" />
     <ClInclude Include="Asset\ShaderCache.hpp" />
+    <ClInclude Include="Renderer\Techniques\Bloom.hpp" />
     <ClInclude Include="Config.hpp" />
     <ClInclude Include="D3D12\D3D12CommandSignature.hpp" />
+    <ClInclude Include="D3D12\D3D12ShaderTable.hpp" />
     <ClInclude Include="D3D12\D3D12StateObject.hpp" />
     <ClInclude Include="D3D12\D3D12UploadContext.hpp" />
     <ClInclude Include="D3D12\D3D12Raytracing.hpp" />
@@ -149,12 +151,10 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Dependencies\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="ECS\Components\BoundingBoxComponent.hpp" />
     <ClInclude Include="ECS\Components\CameraComponent.hpp" />
-    <ClInclude Include="ECS\Components\DirectionalLightComponent.hpp" />
     <ClInclude Include="ECS\Components\Graphics\MaterialComponent.hpp" />
     <ClInclude Include="ECS\Components\Graphics\SkeletalMeshComponent.hpp" />
-    <ClInclude Include="ECS\Components\PointLightComponent.hpp" />
+    <ClInclude Include="ECS\Components\LightComponent.hpp" />
     <ClInclude Include="ECS\Components\RootComponent.hpp" />
-    <ClInclude Include="ECS\Components\StaticMeshComponent.hpp" />
     <ClInclude Include="ECS\Components\NameComponent.hpp" />
     <ClInclude Include="ECS\Components\TransformComponent.hpp" />
     <ClInclude Include="ECS\Entity.hpp" />
@@ -168,6 +168,8 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Renderer\Renderer.hpp" />
     <ClInclude Include="Renderer\RenderPass.hpp" />
     <ClInclude Include="Renderer\Techniques\LightPass.hpp" />
+    <ClInclude Include="Renderer\Techniques\SSAO.hpp" />
+    <ClInclude Include="Renderer\Techniques\FXAA.hpp" />
     <ClInclude Include="RHI\Common.hpp" />
     <ClInclude Include="RHI\Constants.hpp" />
     <ClInclude Include="RHI\Defines.hpp" />
@@ -184,7 +186,9 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="Asset\AssetImporter.cpp" />
     <ClCompile Include="Asset\AssimpLoader.cpp" />
     <ClCompile Include="Asset\fastgltfLoader.cpp" />
+    <ClCompile Include="Renderer\Techniques\Bloom.cpp" />
     <ClCompile Include="D3D12\D3D12CommandSignature.cpp" />
+    <ClCompile Include="D3D12\D3D12ShaderTable.cpp" />
     <ClCompile Include="D3D12\D3D12StateObject.cpp" />
     <ClCompile Include="D3D12\D3D12Memory.cpp" />
     <ClCompile Include="D3D12\D3D12UploadContext.cpp" />
@@ -240,6 +244,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="Renderer\Renderer.cpp" />
     <ClCompile Include="Renderer\RenderPass.cpp" />
     <ClCompile Include="Renderer\Techniques\LightPass.cpp" />
+    <ClCompile Include="Renderer\Techniques\SSAO.cpp" />
     <ClCompile Include="RHI\Types.cpp" />
     <ClCompile Include="Scene\SceneSerializer.cpp" />
     <ClCompile Include="Scene\SceneCamera.cpp" />

@@ -45,6 +45,34 @@ namespace Luden
 	// Get information about it's meshes, matrix transformation and material.
 	static void TraverseNode(assimp::FAssimpLoadingData& SceneData, aiNode* pNode);
 
+	bool AssetImporter::ImportAssimpModel_TEST(Scene* pScene, Filepath Path, Model& OutModel)
+	{
+		constexpr int32 loadFlags =
+			aiProcess_ConvertToLeftHanded |
+			aiProcess_Triangulate |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_RemoveRedundantMaterials |
+			aiProcess_FindInstances |
+			aiProcess_GenSmoothNormals |
+			aiProcess_CalcTangentSpace |
+			aiProcess_GenBoundingBoxes;
+
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(Path.string(), (uint32)loadFlags);
+
+		if (!scene || !scene->mRootNode || !scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
+		{
+			LOG_WARNING("\n\tFailed to load model: {0}, reason: {1}", scene->GetShortFilename(Path.string().c_str()), importer.GetErrorString());
+			importer.FreeScene();
+
+			return false;
+		}
+
+
+
+		return true;
+	}
+
 	bool AssetImporter::ImportAssimpModel(Scene* pScene, Filepath Path, Model& OutModel)
 	{
 		constexpr int32 loadFlags =
@@ -137,10 +165,13 @@ namespace Luden
 			pScene->Materials.push_back(data.UniqueMaterials.at(mesh.MaterialID));
 			mesh.MaterialID = materialHandle;
 
-			const uint32 transformHandle = static_cast<uint32>(pScene->Transforms.size());
-			//pScene->Transforms.push_back()
-			mesh.TransformID = transformHandle;
+			
 		}
+
+		const uint32 transformHandle = static_cast<uint32>(pScene->Transforms.size());
+		pScene->Transforms.push_back(ecs::ObjectTransforms());
+		OutModel.TransformID = transformHandle;
+
 
 		OutModel.Meshes = std::move(data.Meshes);
 		OutModel.Textures = std::move(data.ModelTextures);
@@ -359,7 +390,7 @@ namespace Luden
 			assimpMaterial->Get(AI_MATKEY_GLTF_ALPHACUTOFF,		material.AlphaCutoff);
 			assimpMaterial->Get(AI_MATKEY_REFRACTI,				material.IndexOfRefraction);
 			assimpMaterial->Get(AI_MATKEY_ANISOTROPY_FACTOR,	material.Anisotropy);
-			assimpMaterial->Get(AI_MATKEY_GLOSSINESS_FACTOR,	material.Glossiness);
+			assimpMaterial->Get(AI_MATKEY_EMISSIVE_INTENSITY,	material.EmissiveStrength);
 			assimpMaterial->Get(AI_MATKEY_REFLECTIVITY,			material.Reflectivity);
 
 			aiColor4D baseColorFactor{};

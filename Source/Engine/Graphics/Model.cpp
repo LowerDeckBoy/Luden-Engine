@@ -2,7 +2,7 @@
 #include "D3D12/D3D12UploadContext.hpp"
 #include "Model.hpp"
 #include <Core/Defines.hpp>
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 
 namespace Luden
 {

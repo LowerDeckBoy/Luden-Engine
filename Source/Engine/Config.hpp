@@ -52,6 +52,11 @@ namespace Luden
 		// Whether to enable alpha masking cutoff in pixel shaders.
 		bool bAlphaMask = true;
 
+		// Temporarly
+		bool bLightPassCompute = false;
+
+		bool bDrawIndirect = false;
+
 		// True, to dispatch Raytracing.
 		// Else, use raster mode.
 		bool bRaytracing = false;

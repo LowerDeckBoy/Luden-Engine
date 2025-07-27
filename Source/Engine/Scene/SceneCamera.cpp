@@ -1,5 +1,5 @@
 #include "SceneCamera.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 #include <Core/Math/Math.hpp>
 #include <Platform/Window.hpp>
 
@@ -28,7 +28,7 @@ namespace Luden
 		DxMouse->SetDataFormat(&c_dfDIMouse);
 		DxMouse->SetCooperativeLevel(pWindow->Handle, DISCL_NONEXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
 
-		Frustum.Construct(GetViewProjection());
+		//Frustum.Construct(GetViewProjection());
 	}
 
 	SceneCamera::~SceneCamera()
@@ -41,7 +41,7 @@ namespace Luden
 		AspectRatio = (f32)m_ParentWindow->Width / (f32)m_ParentWindow->Height;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
 	
-		Update();
+		//Update();
 	}
 
 	void SceneCamera::Tick(f64 DeltaTime)
@@ -175,6 +175,16 @@ namespace Luden
 	DirectX::XMMATRIX SceneCamera::GetViewProjection() const
 	{
 		return DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&View), DirectX::XMLoadFloat4x4(&Projection));
+	}
+
+	DirectX::XMMATRIX SceneCamera::GetInversedView() const
+	{
+		return DirectX::XMMatrixInverse(nullptr, GetView());
+	}
+
+	DirectX::XMMATRIX SceneCamera::GetInversedProjection() const
+	{
+		return DirectX::XMMatrixInverse(nullptr, GetProjection());
 	}
 
 	void CameraFrustum::Construct(const DirectX::XMMATRIX& ViewProjection)

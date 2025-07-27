@@ -6,7 +6,7 @@ namespace Luden
 {
 	World::World()
 	{
-		Registry = new entt::registry();
+		Registry = new entt::registry();	
 	}
 
 	World::~World()

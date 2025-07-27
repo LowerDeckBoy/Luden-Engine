@@ -24,14 +24,17 @@ namespace Luden::ecs
 		TransformComponent(DirectX::XMFLOAT3 Position)
 			: Translation(Position), Rotation(0.0f, 0.0f, 0.0f, 1.0f), Scale(1.0f, 1.0f, 1.0f)
 		{
+			bDirty = true;
 		}
 		TransformComponent(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 Rotation)
 			: Translation(Position), Rotation(Rotation), Scale(1.0f, 1.0f, 1.0f)
 		{
+			bDirty = true;
 		}
 		TransformComponent(DirectX::XMFLOAT3 Position, DirectX::XMFLOAT4 Rotation, DirectX::XMFLOAT3 Scale)
 			: Translation(Position), Rotation(Rotation), Scale(Scale)
 		{
+			bDirty = true;
 		}
 
 		DirectX::XMFLOAT3 Translation;
@@ -43,7 +46,7 @@ namespace Luden::ecs
 		// Flag as *true* if any value changes, then update matrices.
 		bool bDirty = false;
 
-		// Update World (aka Model) transformation as S * R * T
+		// Update World ransformation matrix as S * R * T.
 		void Update()
 		{
 			WorldMatrix =
@@ -51,7 +54,8 @@ namespace Luden::ecs
 				DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMVectorMultiply((XMLoadFloat4(&Rotation)), RadiansVector)) *
 				DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&Translation));
 
-			//bDirty = false;
+			// Signal that update if not needed anymore.
+			bDirty = false;
 		}
 
 		void Decompose(DirectX::XMMATRIX Matrix)

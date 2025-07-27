@@ -81,8 +81,6 @@ namespace Luden
 		frame->GraphicsCommandList->ResourceTransition(&backbuffer, D3D12_RESOURCE_STATE_PRESENT);
 
 		m_D3D12RHI->GraphicsQueue->Execute({ frame->GraphicsCommandList, frame->ComputeCommandList });
-		//m_D3D12RHI->ComputeQueue->Execute({ frame->ComputeCommandList });
-		//m_D3D12RHI->GraphicsQueue->Execute({ frame->GraphicsCommandList });
 		
 	}
 
@@ -164,6 +162,7 @@ namespace Luden
 				});
 
 			BloomPass->Render(*frame, GBuffer->Emissive.RenderTargetHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
+			//BloomPass->Render(*frame, LightingPass->RenderTexture.RenderTargetHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
 			BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->BaseColor.ShaderResourceHandle.Index);
 
 		}
@@ -247,8 +246,6 @@ namespace Luden
 		m_D3D12RHI->Wait();
 
 		Camera->Resize();
-
-		LOG_DEBUG("Resized to {}x{}", m_ParentWindow->Width, m_ParentWindow->Height);
 
 	}
 

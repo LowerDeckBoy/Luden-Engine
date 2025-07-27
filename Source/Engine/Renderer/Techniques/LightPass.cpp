@@ -22,11 +22,18 @@ namespace Luden
 		m_RHI = pD3D12RHI;
 		m_GeometryPass = pGeometryPass;
 
-		RenderTexture.Create(m_RHI->Device, Width, Height, pD3D12RHI->SwapChain->GetSwapChainFormat(), DefaultClearColor, "Light Pass Render Target");
+		RenderTexture.Create(m_RHI->Device, Width, Height, pD3D12RHI->SwapChain->GetSwapChainFormat(), RenderTargetClearColor, "Light Pass Render Target");
 		//RenderTexture.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor, "Light Pass Render Target");
 
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+		uavDesc.Texture2D.MipSlice = 0;
+		uavDesc.Format = RenderTexture.GetFormat();
+		m_RHI->Device->ShaderResourceHeap->Allocate(RenderTexture.UnorderedAccessHandle, 1);
+		m_RHI->Device->LogicalDevice->CreateUnorderedAccessView(RenderTexture.GetHandleRaw(), nullptr, &uavDesc, RenderTexture.UnorderedAccessHandle.CpuHandle);
+
 		Pipeline.Vertex = pShaderCompiler->CompileVS("../../Shaders/Deferred/Deferred.hlsl", false);
-		Pipeline.Pixel = pShaderCompiler->CompilePS("../../Shaders/Deferred/Deferred.hlsl", true);
+		Pipeline.Pixel  = pShaderCompiler->CompilePS("../../Shaders/Deferred/Deferred.hlsl", true);
 
 		VERIFY_D3D12_RESULT(Pipeline.RootSignature.BuildFromShader(pD3D12RHI->Device, &Pipeline.Pixel, PipelineType::Graphics));
 
@@ -41,12 +48,15 @@ namespace Luden
 
 		// Test
 		// Compute PSO
-		ComputePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/Deferred/Deferred_CS.hlsl", true);
-		D3D12ComputePipelineStateBuilder csBuilder(m_RHI->Device);
-		csBuilder.SetComputeShader(&ComputePSO.Compute);
-		VERIFY_D3D12_RESULT(ComputePSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &ComputePSO.Compute, PipelineType::Compute));
-		csBuilder.SetRootSignature(&ComputePSO.RootSignature);
-		VERIFY_D3D12_RESULT(csBuilder.Build(m_RHI->Device, ComputePSO));
+		{
+			ComputePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/Deferred/Deferred_CS.hlsl", true);
+			D3D12ComputePipelineStateBuilder csBuilder(m_RHI->Device);
+			csBuilder.SetComputeShader(&ComputePSO.Compute);
+			VERIFY_D3D12_RESULT(ComputePSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &ComputePSO.Compute, PipelineType::Compute));
+			csBuilder.SetRootSignature(&ComputePSO.RootSignature);
+			VERIFY_D3D12_RESULT(csBuilder.Build(m_RHI->Device, ComputePSO));
+		}
+		
 
 	}
 
@@ -60,7 +70,8 @@ namespace Luden
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		commandList->SetRenderTargets(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
-		commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, DefaultClearColor);
+		commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, RenderTargetClearColor);
+		//commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, DefaultClearColor);
 
 		pScene->UpdateSceneBufferData(pCamera);
 
@@ -82,7 +93,8 @@ namespace Luden
 			.NormalIndex = m_GeometryPass->Normal.ShaderResourceHandle.Index,
 			.MRIndex = m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
 			.EmissiveIndex = m_GeometryPass->Emissive.ShaderResourceHandle.Index,
-			.WorldPositionIndex = m_GeometryPass->WorldPosition.ShaderResourceHandle.Index
+			.WorldPositionIndex = m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
+			//.padding = RenderTexture.han
 		};
 
 		commandList->PushConstants(2, 8, &constants);
@@ -94,6 +106,55 @@ namespace Luden
 
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
 
+	}
+
+	void LightPass::RenderCompute(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera)
+	{
+		auto commandList = CurrentFrame.GraphicsCommandList;
+
+		commandList->SetPipelineState(&ComputePSO.PipelineState);
+		commandList->SetRootSignature(&ComputePSO.RootSignature);
+
+		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+		//commandList->SetRenderTargets(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
+		//commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, RenderTargetClearColor);
+		//commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, DefaultClearColor);
+
+		pScene->UpdateSceneBufferData(pCamera);
+
+		// Push Constants here
+		struct pushConstants
+		{
+			uint32 LightBufferIndex;
+			uint32 NumLights;
+			uint32 BaseColorIndex;
+			uint32 NormalIndex;
+			uint32 MRIndex;
+			uint32 EmissiveIndex;
+			uint32 WorldPositionIndex;
+			uint32 padding = 0;
+		} constants{
+			.LightBufferIndex = pScene->LightBuffer->ShaderResourceView.Index,
+			.NumLights = static_cast<uint32>(pScene->PointLights.size()),
+			.BaseColorIndex = m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
+			.NormalIndex = m_GeometryPass->Normal.ShaderResourceHandle.Index,
+			.MRIndex = m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
+			.EmissiveIndex = m_GeometryPass->Emissive.ShaderResourceHandle.Index,
+			.WorldPositionIndex = m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
+			.padding = RenderTexture.ShaderResourceHandle.Index
+		};
+
+		//commandList->PushConstants(2, 8, &constants);
+		commandList->GetHandle()->SetComputeRoot32BitConstants(2, 8, &constants, 0);
+		commandList->GetHandle()->SetComputeRootConstantBufferView(1, pScene->SceneDataBuffer->GetBuffer()->GetGPUVirtualAddress());
+		//commandList->SetConstantBuffer(1, pScene->SceneDataBuffer);
+
+		// Draw screen space quad.
+		//commandList->Draw(4);
+		commandList->Dispatch(Math::RoundUp<uint32>((uint32)RenderTexture.GetDesc().Width / 8), Math::RoundUp<uint32>(RenderTexture.GetDesc().Height / 8), 1);
+
+		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
 	}
 
 	void LightPass::Resize(uint32 Width, uint32 Height)

@@ -17,13 +17,12 @@ namespace Luden
 	{
 	}
 
-	bool Entity::IsValid()
+	bool Entity::IsValid() const
 	{
-		return m_ParentWorld->Registry->valid(m_Handle);
+		return m_Handle != entt::null;
 	}
-	
-	bool Entity::IsAlive()
+
+	void Entity::Destroy()
 	{
-		return m_ParentWorld != nullptr;
 	}
 } // namespace Luden

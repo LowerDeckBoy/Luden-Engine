@@ -16,8 +16,10 @@ namespace Luden
 		Entity(World* pWorld, entt::entity Handle);
 		Entity(const Entity& Other);
 		
-		bool IsValid();
-		bool IsAlive();
+		// Has a valid handle.
+		bool IsValid() const;
+
+		void Destroy();
 
 		entt::entity&	GetHandle()		 { return m_Handle; }
 		World*			GetParentWorld() { return m_ParentWorld; }
@@ -51,17 +53,17 @@ namespace Luden
 			}
 		}
 
-		//void Destroy();
+		//
 
 		bool operator==(const Entity& Other) const { return (m_Handle == Other.m_Handle); }
 
-		bool HasParent() const { return Parent != nullptr; }
+		//bool HasParent() const { return Parent != nullptr; }
 
-		Entity* Parent = nullptr;
-		std::vector<Entity*> Children;
+		//Entity* Parent = nullptr;
+		//std::vector<Entity*> Children;
 
 	protected:
-		entt::entity m_Handle = entt::entity(0xFFFFFFFF);
+		entt::entity m_Handle = entt::null;
 
 		World* m_ParentWorld = nullptr;
 

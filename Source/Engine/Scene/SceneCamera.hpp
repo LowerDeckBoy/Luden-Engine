@@ -66,6 +66,8 @@ namespace Luden
 		DirectX::XMMATRIX GetView() const;
 		DirectX::XMMATRIX GetProjection() const;
 		DirectX::XMMATRIX GetViewProjection() const;
+		DirectX::XMMATRIX GetInversedView() const;
+		DirectX::XMMATRIX GetInversedProjection() const;
 
 		f32 zNear		= 0.01f;
 		f32 zFar		= 10000.0f;

@@ -2,7 +2,7 @@
 
 #include "Graphics/Model.hpp"
 #include <Core/File.hpp>
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 #include <Core/Types.hpp>
 
 namespace Luden

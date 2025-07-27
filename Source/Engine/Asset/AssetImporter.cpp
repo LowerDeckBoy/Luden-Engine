@@ -16,14 +16,6 @@ namespace Luden
 
 			return false;
 		}
-		//if (File::GetExtension(Path) == ".gltf")
-		//{
-		//	return ImportFastglftModel(Path, OutModel);
-		//}
-		//else
-		//{
-		//	return ImportAssimpModel(Path, OutModel);
-		//}
 
 		return ImportAssimpModel(pScene, Path, OutModel);
 	}

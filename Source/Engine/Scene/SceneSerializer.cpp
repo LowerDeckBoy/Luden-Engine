@@ -1,6 +1,6 @@
 #include "Asset/AssetImporter.hpp"
 #include "SceneSerializer.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <print>
@@ -29,6 +29,7 @@ namespace Luden
 		std::ifstream file(Path.c_str());
 		nlohmann::json json = nlohmann::json::parse(file);
 
+		// Load all models.
 		for (const auto& record : json["scene"]["models"])
 		{
 			const auto& name = std::string(record["name"]);
@@ -50,7 +51,8 @@ namespace Luden
 				DirectX::XMFLOAT3(scale[0], scale[1], scale[2]));
 
 			auto startTime = std::chrono::high_resolution_clock::now();
-			if (!pImporter->ImportStaticMesh(path, model))
+			
+			if (!pImporter->ImportStaticMesh(pScene, path, model))
 			{
 				LOG_WARNING("Failed to load {}", name);
 
@@ -62,6 +64,28 @@ namespace Luden
 
 			model.SetFilepath(path);
 			pScene->Models.push_back(std::make_unique<Model>(model));
+		}
+
+		// Load all lights.
+		for (const auto& record : json["scene"]["lights"])
+		{
+			Entity entity;
+			pScene->CreateEntity(entity);
+
+			entity.AddComponent<ecs::NameComponent>(std::format("Point Light {}", pScene->PointLights.size()));
+
+			const auto& position = record["position"];
+			const auto& ambient = record["ambient"];
+			const auto& radius = record["radius"];
+
+			ecs::PointLightComponent pointLight{};
+			pointLight.Position = DirectX::XMFLOAT3(position[0], position[1], position[2]);
+			pointLight.Ambient	= DirectX::XMFLOAT3(ambient[0], ambient[1], ambient[2]);
+			pointLight.Radius	= radius;
+
+			entity.AddComponent<ecs::PointLightComponent>(pointLight);
+
+			pScene->PointLights.push_back(entity);
 		}
 
 		std::println();

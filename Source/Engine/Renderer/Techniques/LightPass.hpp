@@ -17,6 +17,7 @@ namespace Luden
 
 		//void Render(Scene* pScene, Frame& CurrentFrame);
 		void Render(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera);
+		void RenderCompute(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera);
 
 		void Resize(uint32 Width, uint32 Height) override;
 		void Release() override;

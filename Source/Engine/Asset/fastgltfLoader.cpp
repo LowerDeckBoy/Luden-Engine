@@ -1,5 +1,5 @@
 #include "AssetImporter.hpp"
-#include <Core/Logger.hpp>
+#include <Core/Logging/Logger.hpp>
 #include <fastgltf/core.hpp>
 #include <fastgltf/dxmath_element_traits.hpp>
 #include <fastgltf/types.hpp>
@@ -230,6 +230,10 @@ namespace Luden
 							DirectX::XMStoreFloat3x4(&meshData.RaytracingInstanceDesc.Transform, meshData.Transform.WorldMatrix);
 							meshData.RaytracingInstanceDesc.InstanceID = 0;
 							meshData.RaytracingInstanceDesc.InstanceMask = 1;
+
+							meshData.Transform.Translation.z *= 1.0f;
+							meshData.Transform.Rotation.z *= 1.0f;
+							meshData.Transform.Rotation.w *= 1.0f;
 
 							meshData.Vertices.reserve(positions.size());
 							for (usize vertIdx = 0; vertIdx < positions.size(); ++vertIdx)

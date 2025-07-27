@@ -23,7 +23,7 @@ namespace Luden
 		float IndexOfRefraction	= 1.0f;
 		
 		float Anisotropy		= 0.0f;
-		float Glossiness		= 0.0f;
+		float EmissiveStrength	= 0.0f;
 		float Reflectivity		= 0.0f;
 		EAlphaMode AlphaMode	= Opaque;
 
