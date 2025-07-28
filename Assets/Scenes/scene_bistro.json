@@ -3,7 +3,7 @@
 		"models": [
 			{
 				"name": "Bistro Exterior",
-				"path": "../../Assets/Models/bistro_exterior/scene.gltf",
+				"path": "../../Assets/Models/bistro_exterior/bistro.gltf",
 				"transform": {
 					"position": [ 0.0, 0.0, 0.0 ],
 					"rotation": [ 0.0, 0.0, 0.0, 1.0 ],
