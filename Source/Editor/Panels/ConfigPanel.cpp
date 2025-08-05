@@ -20,6 +20,7 @@ namespace Luden::Panel
 		DrawSceneConfig();
 		DrawSceneCameraConfig();
 		DrawBloomConfig();
+		DrawAmbientOcclusionConfig();
 
 		ImGui::End();
 	}
@@ -117,44 +118,6 @@ namespace Luden::Panel
 
 				ImGui::EndTable();
 			}
-
-			// Set output image.
-			{
-				ImGui::Text("Image to display:");
-
-				static const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive", "LightPass", "Raytracing", "Bloom - Test" };
-
-				if (ImGui::Combo("##comb", &DisplayImageIndex, items, IM_ARRAYSIZE(items)))
-				{
-					switch (DisplayImageIndex)
-					{
-					case 0:
-						DisplayImageAddress = m_Renderer->SceneTextures.Scene.ShaderResourceHandle.GpuHandle.ptr;
-						break;
-					case 1:
-						DisplayImageAddress = m_Renderer->GBuffer->BaseColor.ShaderResourceHandle.GpuHandle.ptr;
-						break;
-					case 2:
-						DisplayImageAddress = m_Renderer->GBuffer->Normal.ShaderResourceHandle.GpuHandle.ptr;
-						break;
-					case 3:
-						DisplayImageAddress = m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle.GpuHandle.ptr;
-						break;
-					case 4:
-						DisplayImageAddress = m_Renderer->GBuffer->Emissive.ShaderResourceHandle.GpuHandle.ptr;
-						break;
-					case 5:
-						DisplayImageAddress = m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle.GpuHandle.ptr;
-						break;
-					case 6:
-						DisplayImageAddress = m_Renderer->RaytracingOutput->ShaderResourceHandle.GpuHandle.ptr;
-						break;
-					case 7:
-						DisplayImageAddress = m_Renderer->BloomPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
-						break;
-					}
-				}
-			}
 		}
 	}
 
@@ -226,7 +189,19 @@ namespace Luden::Panel
 		{
 			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
 			{
-				//ImGui::Checkbox("Enable");
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable");
+				ImGui::TableNextColumn();
+				ImGui::Checkbox("##Enable", &Config::Get().bEnableBloom);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn(); ImGui::Text("");
+				if (!Config::Get().bEnableBloom)
+				{
+					ImGui::BeginDisabled();
+				}
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -260,10 +235,69 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::SliderFloat("##Gamma:", &m_Renderer->BloomPass->Parameters.Gamma, 0.0f, 10.0f);
 
+				if (!Config::Get().bEnableBloom)
+				{
+					ImGui::EndDisabled();
+				}
+
 				ImGui::EndTable();
 			}
 		}
 
+	}
+
+	void ConfigPanel::DrawAmbientOcclusionConfig()
+	{
+		if (ImGui::CollapsingHeader("SSAO"))
+		{
+			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable");
+				ImGui::TableNextColumn();
+				ImGui::Checkbox("##Enable", &Config::Get().bEnableSSAO);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn(); ImGui::Text("");
+				if (!Config::Get().bEnableSSAO)
+				{
+					ImGui::BeginDisabled();
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Compute - test");
+				ImGui::TableNextColumn();
+				ImGui::Checkbox("##Compute", &Config::Get().bSSAOCompute);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Radius");
+				ImGui::TableNextColumn();
+				ImGui::SliderFloat("##Radius", &m_Renderer->SSAOPass->Parameters.Radius, 0.0f, 10.0f);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Bias");
+				ImGui::TableNextColumn();
+				ImGui::SliderFloat("##Bias", &m_Renderer->SSAOPass->Parameters.Bias, 0.0f, 10.0f);
+
+				if (!Config::Get().bEnableSSAO)
+				{
+					ImGui::EndDisabled();
+				}
+
+				ImGui::EndTable();
+			}
+		}
 	}
 
 } // namespace Luden::Panel

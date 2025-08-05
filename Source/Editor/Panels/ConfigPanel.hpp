@@ -35,5 +35,7 @@ namespace Luden::Panel
 
 		void DrawBloomConfig();
 
+		void DrawAmbientOcclusionConfig();
+
 	};
 } // namespace Luden::Panel
