@@ -19,7 +19,7 @@ namespace Luden::Panel
 
 		DrawSceneConfig();
 		DrawSceneCameraConfig();
-		DrawBloomConfig();
+		DrawPostProcessConfig();
 		DrawAmbientOcclusionConfig();
 
 		ImGui::End();
@@ -183,9 +183,18 @@ namespace Luden::Panel
 		}
 	}
 
+	void ConfigPanel::DrawPostProcessConfig()
+	{
+		if (ImGui::CollapsingHeader("Post-Process"))
+		{
+			DrawBloomConfig();
+			DrawAntiAliasingConfig();
+		}
+	}
+
 	void ConfigPanel::DrawBloomConfig()
 	{
-		if (ImGui::CollapsingHeader("Bloom"))
+		if (ImGui::TreeNodeEx("Bloom"))
 		{
 			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
 			{
@@ -205,7 +214,7 @@ namespace Luden::Panel
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-				
+
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Threshold");
 				ImGui::TableNextColumn();
@@ -213,7 +222,7 @@ namespace Luden::Panel
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-				
+
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Intensity");
 				ImGui::TableNextColumn();
@@ -242,8 +251,8 @@ namespace Luden::Panel
 
 				ImGui::EndTable();
 			}
+			ImGui::TreePop();
 		}
-
 	}
 
 	void ConfigPanel::DrawAmbientOcclusionConfig()
@@ -297,6 +306,14 @@ namespace Luden::Panel
 
 				ImGui::EndTable();
 			}
+		}
+	}
+
+	void ConfigPanel::DrawAntiAliasingConfig()
+	{
+		if (ImGui::TreeNodeEx("Anti-Aliasing", ImGuiTreeNodeFlags_Leaf))
+		{
+			ImGui::TreePop();
 		}
 	}
 
