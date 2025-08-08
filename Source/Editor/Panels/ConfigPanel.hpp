@@ -30,15 +30,11 @@ namespace Luden::Panel
 	private:
 
 		void DrawSceneConfig();
-
 		void DrawSceneCameraConfig();
-
 		void DrawPostProcessConfig();
-
 		void DrawBloomConfig();
-
 		void DrawAntiAliasingConfig();
-
+		void DrawTonemappingConfig();
 		void DrawAmbientOcclusionConfig();
 	};
 } // namespace Luden::Panel

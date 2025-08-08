@@ -10,6 +10,9 @@
 #include "Techniques/GeometryPass.hpp"
 #include "Techniques/LightPass.hpp"
 #include "Techniques/Bloom.hpp"
+#include "Techniques/FXAA.hpp"
+#include "Techniques/SSAO.hpp"
+#include "Techniques/Tonemapping.hpp"
 
 // Test
 #include "D3D12/D3D12StateObject.hpp"
@@ -66,9 +69,12 @@ namespace Luden
 		Filepath SceneToLoad;
 
 		// Render Passes
-		GeometryPass*	GBuffer = nullptr;
-		LightPass*		LightingPass = nullptr;
-		Bloom*			BloomPass = nullptr;
+		GeometryPass*	GBuffer;
+		LightPass*		LightingPass;
+		Bloom*			BloomPass;
+		FXAA*			FXAAPass;
+		Tonemapping*	TonemappingPass;
+		SSAO*			SSAOPass;
 	
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;

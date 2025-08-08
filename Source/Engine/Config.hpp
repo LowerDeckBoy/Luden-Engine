@@ -53,7 +53,7 @@ namespace Luden
 		bool bAlphaMask = true;
 
 		// Temporarly
-		bool bLightPassCompute = false;
+		bool bLightPassCompute = true;
 
 		bool bDrawIndirect = false;
 
@@ -62,6 +62,18 @@ namespace Luden
 		bool bRaytracing = false;
 
 		bool bHideEditor = false;
+		
+		bool bEnableSSAO = false;
+
+		// Post-Processes
+		bool bEnableBloom = true;
+		bool bEnableFXAA  = true;
+
+		bool bEnableTonemapping = true;
+		bool bUseTonemappingReinhard = true;
+		bool bUseTonemappingGammaCorrection = false;
+
+		bool bSSAOCompute = false;
 
 	};
 } // namespace Luden

@@ -116,6 +116,14 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##bDrawIndirect", &config.bDrawIndirect);
 
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Tonemapping: ");
+				ImGui::TableNextColumn();
+				ImGui::Checkbox("##Tonemapping", &config.bEnableTonemapping);
+
 				ImGui::EndTable();
 			}
 		}
@@ -189,6 +197,7 @@ namespace Luden::Panel
 		{
 			DrawBloomConfig();
 			DrawAntiAliasingConfig();
+			DrawTonemappingConfig();
 		}
 	}
 
@@ -311,8 +320,80 @@ namespace Luden::Panel
 
 	void ConfigPanel::DrawAntiAliasingConfig()
 	{
-		if (ImGui::TreeNodeEx("Anti-Aliasing", ImGuiTreeNodeFlags_Leaf))
+		if (ImGui::TreeNodeEx("Anti-Aliasing"))
 		{
+			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable FXAA");
+				ImGui::TableNextColumn();
+				ImGui::Checkbox("##Enable:", &Config::Get().bEnableFXAA);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Subpixel quality");
+				ImGui::TableNextColumn();
+				ImGui::SliderFloat("##Subpixel quality:", &m_Renderer->FXAAPass->Parameters.QualitySubpix, 0.0f, 1.0f);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Threshold");
+				ImGui::TableNextColumn();
+				ImGui::SliderFloat("##Threshold:", &m_Renderer->FXAAPass->Parameters.EdgeThreshold, 0.1f, 5.0f);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Threshold Min");
+				ImGui::TableNextColumn();
+				ImGui::SliderFloat("##Threshold Min:", &m_Renderer->FXAAPass->Parameters.EdgeThresholdMin, 0.1f, 5.0f);
+
+				ImGui::EndTable();
+			}
+
+			ImGui::TreePop();
+		}
+	}
+
+	void ConfigPanel::DrawTonemappingConfig()
+	{
+		if (ImGui::TreeNodeEx("Tonemapping"))
+		{
+			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable");
+				ImGui::TableNextColumn();
+				ImGui::Checkbox("##Enable", &Config::Get().bEnableTonemapping);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Exposure");
+				ImGui::TableNextColumn();
+				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
+
+				static const char* types[4] = { "None", "Reinhard", "Gamma Correction", "Uncharted2" };
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Type");
+				ImGui::TableNextColumn();
+				ImGui::Combo("##Type", &m_Renderer->TonemappingPass->Type, types, IM_ARRAYSIZE(types));
+
+				ImGui::EndTable();
+			}
+
 			ImGui::TreePop();
 		}
 	}
