@@ -120,9 +120,9 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 
 				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Tonemapping: ");
+				ImGui::Text("Enable Post-Process: ");
 				ImGui::TableNextColumn();
-				ImGui::Checkbox("##Tonemapping", &config.bEnableTonemapping);
+				ImGui::Checkbox("##Post-Process", &config.bEnablePostProcess);
 
 				ImGui::EndTable();
 			}
@@ -196,8 +196,8 @@ namespace Luden::Panel
 		if (ImGui::CollapsingHeader("Post-Process"))
 		{
 			DrawBloomConfig();
-			DrawAntiAliasingConfig();
 			DrawTonemappingConfig();
+			DrawAntiAliasingConfig();
 		}
 	}
 
@@ -383,7 +383,7 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[4] = { "None", "Reinhard", "Gamma Correction", "Uncharted2" };
+				static const char* types[5] = { "None", "Reinhard", "Gamma Correction", "Uncharted2", "ACES" };
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				ImGui::AlignTextToFramePadding();

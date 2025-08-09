@@ -11,7 +11,7 @@ struct Parameters
 {
 	uint	SceneImageIndex;
 	float	Exposure;
-	uint	Type;
+	uint	FilterType;
 };
 
 ConstantBuffer<Parameters> Constants : register(b0);
@@ -23,7 +23,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	RWTexture2D<float4> scene = GetBindlessRWTexture<float4>(Constants.SceneImageIndex);
 	
 	float3 color = scene[DispatchThreadID.xy].rgb;
-	scene[DispatchThreadID.xy] = float4(Tonemapping::Tonemap(color, Constants.Exposure, Constants.Type), 1.0f);
+	scene[DispatchThreadID.xy] = float4(Tonemapping::ApplyTonemapping(color, Constants.Exposure, Constants.FilterType), 1.0f);
 
 }
 
