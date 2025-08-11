@@ -1,6 +1,7 @@
 #include "../Colors.hpp"
 #include "Components.hpp"
 #include <ImGui/imgui_stdlib.h>
+#include <ImGui/ImGuizmo.h>
 #include <FontAwsome6/IconsFontAwesome6.h>
 
 namespace Luden::gui
@@ -113,10 +114,10 @@ namespace Luden::gui
 		}
 	}
 
-	void Math::EditColor3(std::string_view Label, DirectX::XMFLOAT3& Float3)
+	void Math::EditColor3(std::string_view /* Label */, DirectX::XMFLOAT3& Float3)
 	{
-		ImGui::Text(Label.data());
-		ImGui::SameLine();
+		//ImGui::Text(Label.data());
+		//ImGui::SameLine();
 		ImGui::ColorEdit3("##editColor", (float*)&Float3);
 	}
 
@@ -182,6 +183,17 @@ namespace Luden::gui
 
 	void DrawPointLightComponent(ecs::PointLightComponent& Component)
 	{
+		//DirectX::XMFLOAT3 rotation{};
+		//DirectX::XMFLOAT3 scale{};
+		//ImGuizmo::DecomposeMatrixToComponents((float*)&Component.Transform, (float*)&Component.Position, (float*)&rotation, (float*)&scale);
+		//
+		//if (ImGuizmo::IsOver())
+		//{
+		//	ImGuizmo::Enable(true);
+		//	//void DrawCube(const float* view, const float* projection, float* matrix); **
+		//	ImGuizmo::RecomposeMatrixFromComponents((float*)&Component.Position, (float*)&rotation, (float*)&scale, (float*)&Component.Transform);
+		//}
+
 		if (ImGui::BeginTable("##pointLight", 2, ImGuiTableFlags_Resizable))
 		{
 			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 60.0f);
@@ -206,6 +218,60 @@ namespace Luden::gui
 			ImGui::Text("Radius");
 			ImGui::TableNextColumn();
 			ImGui::DragFloat("##radius", &Component.Radius, 1.0f, 1.0f, 0.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			
+			
+
+			ImGui::EndTable();
+		}
+	}
+
+	void DrawSpotLightComponent(ecs::SpotLightComponent& Component)
+	{
+		if (ImGui::BeginTable("##spotLight", 2, ImGuiTableFlags_Resizable))
+		{
+			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Position");
+			ImGui::TableNextColumn();
+			Math::DrawFloat3("Position", Component.Position);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Direction");
+			ImGui::TableNextColumn();
+			Math::DrawFloat3("Direction", Component.Direction);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Ambient");
+			ImGui::TableNextColumn();
+			Math::EditColor3("Ambient", Component.Ambient);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Inner Cutoff");
+			ImGui::TableNextColumn();
+			ImGui::DragFloat("##Inner Cutoff", &Component.InnerCutoff, 1.0f, 1.0f, 0.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Outer Cutoff");
+			ImGui::TableNextColumn();
+			ImGui::DragFloat("##Outer Cutoff", &Component.OuterCutoff, 1.0f, 1.0f, 0.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Intensity");
+			ImGui::TableNextColumn();
+			ImGui::DragFloat("##Intensity", &Component.Intensity, 1.0f, 1.0f, 0.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
 			ImGui::EndTable();
 		}
@@ -230,6 +296,13 @@ namespace Luden::gui
 			ImGui::Text("Ambient");
 			ImGui::TableNextColumn();
 			Math::EditColor3("Ambient", Component.Ambient);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Intensity");
+			ImGui::TableNextColumn();
+			ImGui::DragFloat("##Intensity", &Component.Intensity, 1.0f, 0.0f, 10.0f);
 
 			ImGui::EndTable();
 		}

@@ -117,6 +117,8 @@ namespace Luden
 		ImGui_ImplDX12_NewFrame();
 
 		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
+		//https://github.com/CedricGuillemet/ImGuizmo
 
 		ImGui::PushFont(m_MainFont);
 
@@ -284,7 +286,7 @@ namespace Luden
 		{
 			if (ImGui::BeginMenu(ICON_FA_IMAGE" Render Target"))
 			{
-				static const char* items[] = { "Scene", "BaseColor", "Normal", "Metallic-Roughness", "Emissive", "LightPass", "Raytracing", "Bloom - Test" };
+				//static const char* items[] = { "Scene", "BaseColor", "Normal", "Normal TBN", "Metallic-Roughness", "Emissive", "Depth", "LightPass", "Raytracing", "Bloom - Test"};
 
 				if (ImGui::MenuItem("Scene"))
 				{
@@ -298,6 +300,10 @@ namespace Luden
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Normal.ShaderResourceHandle.GpuHandle.ptr;
 				}
+				else if (ImGui::MenuItem("Normal TBN"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->NormalTBN.ShaderResourceHandle.GpuHandle.ptr;
+				}
 				else if (ImGui::MenuItem("Metallic-Roughness"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle.GpuHandle.ptr;
@@ -305,6 +311,10 @@ namespace Luden
 				else if (ImGui::MenuItem("Emissive"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Emissive.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Depth"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Depth.ShaderResourceHandle.GpuHandle.ptr;
 				}
 				else if (ImGui::MenuItem("LightPass"))
 				{
@@ -317,6 +327,14 @@ namespace Luden
 				else if (ImGui::MenuItem("Bloom - Test"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->BloomPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("SSAO - Test"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Anti-Aliasing Debug"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->FXAAPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 				}
 
 				ImGui::EndMenu();
@@ -332,6 +350,12 @@ namespace Luden
 			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Point Light"))
 			{
 				m_Renderer->ActiveScene->AddPointLight();
+			}
+
+			// Temp
+			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Spot Light"))
+			{
+				m_Renderer->ActiveScene->AddSpotLight();
 			}
 
 

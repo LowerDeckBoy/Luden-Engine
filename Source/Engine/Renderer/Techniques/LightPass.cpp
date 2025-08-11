@@ -50,7 +50,7 @@ namespace Luden
 		// Compute PSO
 		{
 			ComputePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/Deferred/Deferred_CS.hlsl", true);
-			D3D12ComputePipelineStateBuilder csBuilder(m_RHI->Device);
+			D3D12ComputePipelineStateBuilder csBuilder;
 			csBuilder.SetComputeShader(&ComputePSO.Compute);
 			VERIFY_D3D12_RESULT(ComputePSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &ComputePSO.Compute, PipelineType::Compute));
 			csBuilder.SetRootSignature(&ComputePSO.RootSignature);
@@ -69,17 +69,20 @@ namespace Luden
 
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-		commandList->SetRenderTargets(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
-		commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, RenderTargetClearColor);
+		//commandList->SetRenderTargets(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
 		//commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, DefaultClearColor);
+		commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, RenderTargetClearColor);
+		commandList->SetRenderTargets(RenderTexture.RenderTargetHandle);
 
 		pScene->UpdateSceneBufferData(pCamera);
 
 		// Push Constants here
 		struct pushConstants
 		{
-			uint32 LightBufferIndex;
-			uint32 NumLights;
+			uint32 PointLightBufferIndex;
+			uint32 NumPointLights;
+			uint32 SpotLightBufferIndex;
+			uint32 NumSpotLights;
 			uint32 BaseColorIndex;
 			uint32 NormalIndex;
 			uint32 MRIndex;
@@ -87,17 +90,18 @@ namespace Luden
 			uint32 WorldPositionIndex;
 			uint32 padding = 0;
 		} constants{
-			.LightBufferIndex = pScene->LightBuffer->ShaderResourceView.Index,
-			.NumLights = static_cast<uint32>(pScene->PointLights.size()),
-			.BaseColorIndex = m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
-			.NormalIndex = m_GeometryPass->Normal.ShaderResourceHandle.Index,
-			.MRIndex = m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
-			.EmissiveIndex = m_GeometryPass->Emissive.ShaderResourceHandle.Index,
-			.WorldPositionIndex = m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
-			//.padding = RenderTexture.han
+			.PointLightBufferIndex	= pScene->LightBuffer->ShaderResourceView.Index,
+			.NumPointLights			= static_cast<uint32>(pScene->PointLights.size()),
+			.SpotLightBufferIndex	= pScene->SpotLightBuffer->ShaderResourceView.Index,
+			.NumSpotLights			= static_cast<uint32>(pScene->SpotLights.size()),
+			.BaseColorIndex			= m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
+			.NormalIndex			= m_GeometryPass->NormalTBN.ShaderResourceHandle.Index,
+			.MRIndex				= m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
+			.EmissiveIndex			= m_GeometryPass->Emissive.ShaderResourceHandle.Index,
+			.WorldPositionIndex		= m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
 		};
 
-		commandList->PushConstants(2, 8, &constants);
+		commandList->PushConstants(2, 10, &constants);
 		
 		commandList->SetConstantBuffer(1, pScene->SceneDataBuffer);
 
@@ -117,36 +121,35 @@ namespace Luden
 
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		//commandList->SetRenderTargets(RenderTexture.RenderTargetHandle, m_RHI->SceneDepthBuffer->DepthStencilHandle);
-		//commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, RenderTargetClearColor);
-		//commandList->ClearRenderTarget(RenderTexture.RenderTargetHandle, DefaultClearColor);
-
 		pScene->UpdateSceneBufferData(pCamera);
 
 		// Push Constants here
 		struct pushConstants
 		{
-			uint32 LightBufferIndex;
-			uint32 NumLights;
+			uint32 PointLightBufferIndex;
+			uint32 NumPointLights;
+			uint32 SpotLightBufferIndex;
+			uint32 NumSpotLights;
 			uint32 BaseColorIndex;
 			uint32 NormalIndex;
 			uint32 MRIndex;
 			uint32 EmissiveIndex;
 			uint32 WorldPositionIndex;
-			uint32 padding = 0;
+			uint32 OutputImage;
 		} constants{
-			.LightBufferIndex = pScene->LightBuffer->ShaderResourceView.Index,
-			.NumLights = static_cast<uint32>(pScene->PointLights.size()),
-			.BaseColorIndex = m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
-			.NormalIndex = m_GeometryPass->Normal.ShaderResourceHandle.Index,
-			.MRIndex = m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
-			.EmissiveIndex = m_GeometryPass->Emissive.ShaderResourceHandle.Index,
-			.WorldPositionIndex = m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
-			.padding = RenderTexture.ShaderResourceHandle.Index
+			.PointLightBufferIndex	= pScene->LightBuffer->ShaderResourceView.Index,
+			.NumPointLights			= static_cast<uint32>(pScene->PointLights.size()),
+			.SpotLightBufferIndex	= pScene->SpotLightBuffer->ShaderResourceView.Index,
+			.NumSpotLights			= static_cast<uint32>(pScene->SpotLights.size()),
+			.BaseColorIndex			= m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
+			.NormalIndex			= m_GeometryPass->NormalTBN.ShaderResourceHandle.Index,
+			.MRIndex				= m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
+			.EmissiveIndex			= m_GeometryPass->Emissive.ShaderResourceHandle.Index,
+			.WorldPositionIndex		= m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
+			.OutputImage			 = RenderTexture.ShaderResourceHandle.Index,
 		};
 
-		//commandList->PushConstants(2, 8, &constants);
-		commandList->GetHandle()->SetComputeRoot32BitConstants(2, 8, &constants, 0);
+		commandList->GetHandle()->SetComputeRoot32BitConstants(2, 10, &constants, 0);
 		commandList->GetHandle()->SetComputeRootConstantBufferView(1, pScene->SceneDataBuffer->GetBuffer()->GetGPUVirtualAddress());
 		//commandList->SetConstantBuffer(1, pScene->SceneDataBuffer);
 

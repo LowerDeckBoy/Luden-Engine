@@ -5,11 +5,14 @@
 #include "../PBR.hlsli"
 #include "../Common/Light.hlsli"
 #include "../Common/Common.hlsli"
+#include "../Common/Scene.hlsli"
 
 struct PushConstants
 {
-	uint LightBufferIndex;
-	uint NumLights;
+	uint PointLightBufferIndex;
+	uint NumPointLights;
+	uint SpotLightBufferIndex;
+	uint NumSpotLights;
 	uint BaseColorIndex;
 	uint NormalIndex;
 	uint MRIndex;
@@ -19,23 +22,6 @@ struct PushConstants
 };
 
 ConstantBuffer<PushConstants> Constants : register(b2);
-
-struct SceneConstants
-{
-	row_major float4x4	View;
-	row_major float4x4	Projection;
-	row_major float4x4	InversedView;
-	row_major float4x4	InversedProjection;
-	row_major float4x4	InversedViewProjection;
-	float3				CameraPosition;
-	float				pad;
-	float4				Planes[6];
-	
-	float3				DirectionalPosition;
-	float				pad2;
-	float3				DirectionalAmbient;
-	float				pad3;
-};
 
 ConstantBuffer<SceneConstants> Scene : register(b1);
 
@@ -68,7 +54,8 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	Texture2D<float4> texEmissive		= ResourceDescriptorHeap[Constants.EmissiveIndex];
 	Texture2D<float4> texWorldPositon	= ResourceDescriptorHeap[Constants.WorldPositionIndex];
 	
-	const float4 baseColor			= pow(texBaseColor.Load(int3(uv, 0.0f)), 2.2f);
+	//const float4 baseColor			= pow(texBaseColor.Load(int3(uv, 0.0f)), 2.2f);
+	const float4 baseColor			= texBaseColor.Load(int3(uv, 0.0f));
 	const float4 normal				= texNormal.Load(int3(uv, 0.0f));
 	const float3 metallicRoughness	= texMR.Load(int3(uv, 0.0f)).rgb;
 	const float3 emissive			= texEmissive.Load(int3(uv, 0.0f)).rgb;
@@ -78,9 +65,7 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	const float roughness			= metallicRoughness.g;
 	
 	float3 albedo = baseColor.rgb + emissive.rgb;
-	
-	StructuredBuffer<PointLight> PointLights = ResourceDescriptorHeap[Constants.LightBufferIndex];
-	
+
 	const float3 N = normalize(normal.rgb);
 	const float  depth = normal.w;
 	
@@ -94,71 +79,30 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
 	
-	// Single directional lighting.
+	// Point lights
+	StructuredBuffer<PointLight> PointLights = ResourceDescriptorHeap[Constants.PointLightBufferIndex];
+	for (uint pointLightIdx = 0; pointLightIdx < Constants.NumPointLights; ++pointLightIdx)
 	{
-		const float3 L = -Scene.DirectionalPosition;
-		const float3 H = normalize(V + L);
-		
-		const float NdotL = max(dot(N, L), Epsilon);
-		const float NdotH = max(dot(N, H), Epsilon);
-		const float HdotV = max(dot(H, V), Epsilon);
-		/*
-		const float NdotL = max(dot(N, L), 0.0f);
-		const float NdotH = max(dot(N, H), 0.0f);
-		const float HdotV = max(dot(H, V), 0.0f);
-		*/
-		
-		const float D = DistributionGGX(N, H, roughness);
-		const float G = GeometrySmith(NdotV, NdotL, roughness);
-		const float3 F = FresnelSchlick(HdotV, F0);
-		const float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
-		
-		const float3 numerator = D * G * F;
-		const float denominator = 4.0f * NdotL * NdotV + Epsilon;
-		
-		const float3 diffuse = kD * baseColor.rgb * InvPI;
-		const float3 specular = numerator / denominator;
-
-		Lo += (diffuse + specular) * pow(Scene.DirectionalAmbient, 2.2f) * NdotL;
+		PointLight light = PointLights[pointLightIdx];
+		Lo += CalculatePointLight(light, baseColor.rgb, N, V, NdotV, worldPosition, metalness, roughness);
 	}
 	
-	// Point lights
-	for (uint lightIdx = 0; lightIdx < Constants.NumLights; lightIdx++)
+	// Spot lights
+	StructuredBuffer<SpotLight> SpotLights = ResourceDescriptorHeap[Constants.SpotLightBufferIndex];
+	for (uint spotLightIdx = 0; spotLightIdx < Constants.NumSpotLights; ++spotLightIdx)
 	{
-		PointLight light = PointLights[lightIdx];
-		
-		const float3 L = normalize(light.Position - worldPosition);
-		const float3 H = normalize(V + L);
-		
-		const float NdotL = max(dot(N, L), Epsilon);
-		const float NdotH = max(dot(N, H), Epsilon);
-		const float HdotV = max(dot(H, V), Epsilon);
-		
-		const float distance	= length(light.Position - worldPosition);
-		const float attenuation = (1.0f / (distance * distance + 1.0f)) * (saturate(1.0f - distance / light.Radius));
-		//const float3 radiance	= attenuation * pow(light.Ambient, 2.2f) * light.Radius;
-		const float3 radiance	= attenuation * light.Ambient * light.Radius;
-		
-		const float D   = DistributionGGX(N, H, roughness);
-		const float G	= GeometrySmith(NdotV, NdotL, roughness);
-		const float3 F	= FresnelSchlick(HdotV, F0);
-		const float3 kD = (float3(1.0f, 1.0f, 1.0f) - F) * (1.0f - metalness);
-		
-		const float3 numerator = D * G * F;
-		const float denominator = 4.0f * NdotL * NdotV + Epsilon;
-		
-		const float3 diffuse = kD * baseColor.rgb * InvPI;
-		const float3 specular = numerator / denominator;
-
-		Lo += (diffuse + specular) * radiance * NdotL;
+		SpotLight light = SpotLights[spotLightIdx];
+		Lo += CalculateSpotLight(light, baseColor.rgb, N, V, NdotV, worldPosition, metalness, roughness);
+		//Lo += CalculatePointLight(light, baseColor.rgb, N, V, NdotV, worldPosition, metalness, roughness);
 	}
-
+	
+	// Single directional lighting.
+	{
+		Lo += CalculateDirectionalLight(Scene.DirectionalPosition, Scene.DirectionalAmbient, Scene.DirectionalIntensity, baseColor.rgb, N, V, NdotV, metalness, roughness);
+	}
+	
 	output += Lo;
 	output += emissive;
-	// Reinhard
-	output /= (output + float3(1.0f, 1.0f, 1.0f));
-	// Gamma correction
-	output = lerp(output, pow(output, 0.4545454545F), 0.4f);
 
 	return float4(output.rgb, 1.0f);
 }

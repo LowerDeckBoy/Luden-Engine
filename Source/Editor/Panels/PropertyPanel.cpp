@@ -45,5 +45,12 @@ namespace Luden::Panel
 				});
 		}
 
+		if (Target.HasComponent<ecs::SpotLightComponent>())
+		{
+			DrawComponent<ecs::SpotLightComponent>(Target, [&](auto& component) {
+				gui::DrawSpotLightComponent(component);
+				});
+		}
+
 	}
 } // namespace Luden::Panel

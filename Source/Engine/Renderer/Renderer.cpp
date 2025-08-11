@@ -32,9 +32,6 @@ namespace Luden
 		TonemappingPass = new Tonemapping(pD3D12RHI, m_ShaderCompiler);
 		SSAOPass		= new SSAO(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
 
-		//SceneTextures.ImageToDisplay = &SceneTextures.Scene.ShaderResourceHandle;
-		SceneTextures.ImageToDisplay = &GBuffer->BaseColor.ShaderResourceHandle;
-
 	}
 
 	Renderer::~Renderer()
@@ -123,8 +120,7 @@ namespace Luden
 
 		auto& depthStencilView = m_D3D12RHI->SceneDepthBuffer->DepthStencilHandle;
 
-		//commandList->ClearDepthStencilView(depthStencilView);
-		commandList->ClearDepthStencilView(depthStencilView, 1.0f);
+		commandList->ClearDepthStencilView(depthStencilView);
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3D12RHI->SwapChain->GetSwapChainDescriptorHeap().GetCpuStartHandle(), BackBufferIndex, m_D3D12RHI->SwapChain->GetSwapChainDescriptorHeap().GetDescriptorIncrementSize());
 
@@ -132,6 +128,7 @@ namespace Luden
 
 		if (!Config::Get().bRaytracing)
 		{
+			// G-Buffer
 			if (!Config::Get().bDrawIndirect)
 			{
 				GBuffer->Render(ActiveScene, Camera, *frame);
@@ -142,7 +139,6 @@ namespace Luden
 			//	GBuffer->RenderIndirect(ActiveScene, Camera, *frame);
 			//}
 
-
 			if (Config::Get().bEnableSSAO)
 			{
 				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
@@ -150,6 +146,7 @@ namespace Luden
 				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			}
 
+			// Light Pass
 			if (!Config::Get().bLightPassCompute)
 			{
 				LightingPass->Render(ActiveScene, *frame, Camera);
@@ -159,42 +156,45 @@ namespace Luden
 				LightingPass->RenderCompute(ActiveScene, *frame, Camera);
 			}
 
-			// Open ComputeCommandList before dispatching Post-Processes and set DescriptorHeap once.
-			if (!frame->ComputeCommandList->IsOpen())
+			// Post-Processes
+			if (Config::Get().bEnablePostProcess)
 			{
-				frame->ComputeCommandList->Open();
-			}
+				// Open ComputeCommandList before dispatching Post-Processes and set DescriptorHeap once.
+				if (!frame->ComputeCommandList->IsOpen())
+				{
+					frame->ComputeCommandList->Open();
+				}
 
-			frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
-			
-			frame->ComputeCommandList->ResourceTransition({
-				{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_COPY_SOURCE },
-				{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_COPY_DEST }
-				});
-			frame->ComputeCommandList->CopyResource(&LightingPass->RenderTexture, &SceneTextures.Scene);
-			frame->ComputeCommandList->ResourceTransition({
-				{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_GENERIC_READ },
-				{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_GENERIC_READ }
-				});
+				frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
 
-			if (Config::Get().bEnableFXAA)
-			{
-				frame->ComputeCommandList->ResourceTransition(&SceneTextures.Scene, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-				FXAAPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index);
+				frame->ComputeCommandList->ResourceTransition({
+					{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_COPY_SOURCE },
+					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_COPY_DEST }
+					});
+				frame->ComputeCommandList->CopyResource(&LightingPass->RenderTexture, &SceneTextures.Scene);
+				frame->ComputeCommandList->ResourceTransition({
+					{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_GENERIC_READ },
+					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_UNORDERED_ACCESS }
+					});
+
+				if (Config::Get().bEnableBloom)
+				{
+					BloomPass->Render(*frame, GBuffer->Emissive.RenderTargetHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
+					BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->BaseColor.ShaderResourceHandle.Index);
+				}
+
+				if (Config::Get().bEnableTonemapping)
+				{
+					TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
+				}
+
+				if (Config::Get().bEnableFXAA)
+				{
+					FXAAPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index);
+				}
+
 				frame->ComputeCommandList->ResourceTransition(&SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ);
 			}
-
-			if (Config::Get().bEnableBloom)
-			{
-				BloomPass->Render(*frame, GBuffer->Emissive.RenderTargetHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
-				BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->BaseColor.ShaderResourceHandle.Index);
-			}
-
-			if (Config::Get().bEnableTonemapping)
-			{
-				TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
-			}
-
 		}
 		else
 		{
@@ -339,7 +339,7 @@ namespace Luden
 		// Should I keep it persistent?
 		//pScene->MaterialBuffer->GetHandle()->Unmap(0, nullptr);
 
-		// Lighting buffer
+		// Point Lighting buffer
 		if (pScene->LightBuffer != nullptr)
 		{
 			delete pScene->LightBuffer;
@@ -355,18 +355,36 @@ namespace Luden
 			.Stride = sizeof(ecs::PointLightComponent),
 			.Size = alignedSize,
 			.bBindless = true,
-			.Name = "Scene Lighting Buffer" });
+			.Name = "Scene Point Lighting Buffer" });
 
-		//mapSize = static_cast<usize>(pScene->PointLightsStorage.size() * sizeof(ecs::PointLightComponent));
 		VERIFY_D3D12_RESULT(pScene->LightBuffer->GetHandle()->Map(0, nullptr, &pScene->LightBuffer->GetBufferDesc().Data));
-		//std::memcpy(pScene->LightBuffer->GetBufferDesc().Data, pScene->PointLightsStorage.data(), mapSize);
+
+		// Spot Lighting buffer
+		if (pScene->SpotLightBuffer != nullptr)
+		{
+			delete pScene->SpotLightBuffer;
+			pScene->SpotLightBuffer = nullptr;
+		}
+
+		alignedSize = Math::Align<uint64>(sizeof(ecs::SpotLightComponent) * 128, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+
+		pScene->SpotLightBuffer = new D3D12Buffer(m_D3D12RHI->Device, BufferDesc{
+			.BufferUsage = BufferUsageFlag::Storage,
+			.Data = pScene->SpotLights.data(),
+			.NumElements = 128,
+			.Stride = sizeof(ecs::SpotLightComponent),
+			.Size = alignedSize,
+			.bBindless = true,
+			.Name = "Scene Spot Lighting Buffer" });
+
+		VERIFY_D3D12_RESULT(pScene->SpotLightBuffer->GetHandle()->Map(0, nullptr, &pScene->SpotLightBuffer->GetBufferDesc().Data));
+
 
 		pScene->CreateEntity(pScene->SkyLight);
 		pScene->SkyLight.AddComponent<ecs::NameComponent>("Directional Light");
 		pScene->SkyLight.AddComponent<ecs::DirectionalLightComponent>();
 
-
-
+		/*
 		if (GBuffer->IndirectSignature != nullptr)
 		{
 			GBuffer->IndirectSignature->Release();
@@ -380,39 +398,40 @@ namespace Luden
 		}
 
 		GBuffer->IndirectSignature = new D3D12CommandSignature(m_D3D12RHI->Device);
-
 		std::vector<FDispatchMeshCommand> drawCommands;
-
 		GBuffer->IndirectSignature->AddDispatchMeshCommand();
+		*/
+
 		for (auto& model : pScene->Models)
 		{
 			// Initialize resources.
 			model->Create(m_D3D12RHI->Device);
 
 			// Gather indirect arguments.
-			for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
-			{
-				auto& mesh = model->Meshes.at(meshIdx);
-
-				FDispatchMeshCommand command{};
-				command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
-				command.Argument.ThreadGroupCountY	= 1;
-				command.Argument.ThreadGroupCountZ	= 1;
-
-				command.MeshletBufferIndex			= mesh.MeshletsBuffer;
-				command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
-				command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
-				command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
-
-				command.TransformsBufferIndex		= pScene->TransformsBuffer->ShaderResourceView.Index;
-				command.MaterialsBufferIndex		= pScene->MaterialBuffer->ShaderResourceView.Index;
-				command.TransformID					= model->TransformID;
-				command.MaterialID					= mesh.MaterialID;
-
-				drawCommands.push_back(command);
-			}
+			//for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
+			//{
+			//	auto& mesh = model->Meshes.at(meshIdx);
+			//
+			//	FDispatchMeshCommand command{};
+			//	command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
+			//	command.Argument.ThreadGroupCountY	= 1;
+			//	command.Argument.ThreadGroupCountZ	= 1;
+			//
+			//	command.MeshletBufferIndex			= mesh.MeshletsBuffer;
+			//	command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
+			//	command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
+			//	command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
+			//
+			//	command.TransformsBufferIndex		= pScene->TransformsBuffer->ShaderResourceView.Index;
+			//	command.MaterialsBufferIndex		= pScene->MaterialBuffer->ShaderResourceView.Index;
+			//	command.TransformID					= model->TransformID;
+			//	command.MaterialID					= mesh.MaterialID;
+			//
+			//	drawCommands.push_back(command);
+			//}
 		}
 
+		/*
 		// To finish:
 		BufferDesc desc{};
 		desc.Data			= drawCommands.data();
@@ -424,7 +443,7 @@ namespace Luden
 		//GBuffer->IndirectArgumentsBuffer = new D3D12Buffer(m_D3D12RHI->Device, desc);
 		//VERIFY_D3D12_RESULT(GBuffer->IndirectSignature->Build(m_D3D12RHI->Device, &GBuffer->IndirectPipelineState.RootSignature));
 		//GBuffer->IndirectSignature->CreateCommandsBuffer(desc);
-
+		*/
 
 		//InitializeRaytracingResources();
 

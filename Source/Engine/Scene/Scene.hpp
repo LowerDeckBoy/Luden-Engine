@@ -32,10 +32,15 @@ namespace Luden
 		DirectX::XMMATRIX InversedViewProjection{};
 		DirectX::XMFLOAT3 CameraPosition{};
 		float pad = 0;
+		uint32 Width;
+		uint32 Height;
+		float AspectRatio;
+		float pad2 = 0;
+
 		DirectX::XMFLOAT4 Planes[6];
 
 		DirectX::XMFLOAT3 DirectionalPosition;
-		float pad2 = 0;
+		float DirectionalIntensity = 1.0f;
 		DirectX::XMFLOAT3 DirectionalAmbient;
 		float pad3 = 0;
 	};
@@ -72,9 +77,11 @@ namespace Luden
 		
 		void AddDirectionalLight();
 		void AddPointLight();
+		void AddSpotLight();
 
 		std::vector<Entity> DirectionalLights;
 		std::vector<Entity> PointLights;
+		std::vector<Entity> SpotLights;
 
 		std::vector<std::unique_ptr<Model>> Models;
 
@@ -85,12 +92,15 @@ namespace Luden
 		D3D12Buffer* MaterialBuffer = nullptr;
 
 		D3D12Buffer* LightBuffer = nullptr;
+		D3D12Buffer* SpotLightBuffer = nullptr;
 
 		D3D12ConstantBuffer* SceneDataBuffer = nullptr;
 		SceneConstants SceneData{};
 		void UpdateSceneBufferData(SceneCamera* pCamera);
 
 		Entity SkyLight;
+
+		AssetImporter* GetAssetImporter() { return m_AssetImporter; }
 
 	private:
 		Filepath m_Filepath;

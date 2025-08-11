@@ -30,6 +30,8 @@ namespace Luden::gui
 
 	extern void DrawPointLightComponent(ecs::PointLightComponent& Component);
 
+	extern void DrawSpotLightComponent(ecs::SpotLightComponent& Component);
+
 	extern void DrawDirectionalLightComponent(ecs::DirectionalLightComponent& Component);
 
 	extern void AddOrRemoveComponent(Entity& Target);

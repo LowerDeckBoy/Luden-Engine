@@ -84,9 +84,17 @@ namespace Luden
 		if (LightBuffer)
 		{
 			delete LightBuffer;
+			PointLights.clear();
+			PointLights.shrink_to_fit();
 		}
 
-		
+		if (SpotLightBuffer)
+		{
+			delete SpotLightBuffer;
+			SpotLights.clear();
+			SpotLights.shrink_to_fit();
+		}
+
 		GetWorld()->Clear();
 	}
 
@@ -166,6 +174,19 @@ namespace Luden
 
 	}
 
+	void Scene::AddSpotLight()
+	{
+		Entity entity;
+		CreateEntity(entity);
+
+		entity.AddComponent<ecs::NameComponent>(std::format("Spot Light {}", SpotLights.size()));
+
+		entity.AddComponent<ecs::SpotLightComponent>();
+
+		SpotLights.push_back(entity);
+
+	}
+
 	void Scene::UpdateSceneBufferData(SceneCamera* pCamera)
 	{
 		Consts.Planes[0]				= pCamera->Frustum.Planes[0]; // Right
@@ -174,12 +195,13 @@ namespace Luden
 		Consts.Planes[3]				= pCamera->Frustum.Planes[3]; // Bottom
 		Consts.Planes[4]				= pCamera->Frustum.Planes[4]; // Far
 		Consts.Planes[5]				= pCamera->Frustum.Planes[5]; // Near
+		Consts.Position					= pCamera->Position;
 
-		SceneData.View					= pCamera->GetView();
-		SceneData.Projection			= pCamera->GetProjection();
-		SceneData.InversedView			= pCamera->GetInversedView();
-		SceneData.InversedProjection	= pCamera->GetInversedProjection();
-		SceneData.InversedViewProjection = DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection());
+		SceneData.View					= DirectX::XMMatrixTranspose(pCamera->GetView());
+		SceneData.Projection			= DirectX::XMMatrixTranspose(pCamera->GetProjection());
+		SceneData.InversedView			= DirectX::XMMatrixTranspose(pCamera->GetInversedView());
+		SceneData.InversedProjection	= DirectX::XMMatrixTranspose(pCamera->GetInversedProjection());
+		SceneData.InversedViewProjection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection()));
 		SceneData.CameraPosition		= pCamera->Position;
 
 		SceneData.Planes[0]				= pCamera->Frustum.Planes[0];
@@ -193,19 +215,30 @@ namespace Luden
 		auto& directional = SkyLight.GetComponent<ecs::DirectionalLightComponent>();
 		SceneData.DirectionalPosition = directional.Direction;
 		SceneData.DirectionalAmbient  = directional.Ambient;
+		SceneData.DirectionalIntensity = directional.Intensity;
 
 		SceneDataBuffer->Update(&SceneData);
 
 		// Works for now. Can't keep it this way, tho.
-		std::vector<ecs::PointLightComponent> lights;
-		const auto& lightsView = GetRegistry()->view<ecs::PointLightComponent>();
-		for (auto [handle, light] : lightsView.each())
+		std::vector<ecs::PointLightComponent> pointLights;
+		const auto& pointLightsView = GetRegistry()->view<ecs::PointLightComponent>();
+		for (auto [handle, light] : pointLightsView.each())
 		{
-			lights.push_back(light);
+			pointLights.push_back(light);
 		}
 
-		const usize mapSize = lights.size() * sizeof(ecs::PointLightComponent);
-		std::memcpy(LightBuffer->GetBufferDesc().Data, lights.data(), mapSize);
+		usize mapSize = pointLights.size() * sizeof(ecs::PointLightComponent);
+		std::memcpy(LightBuffer->GetBufferDesc().Data, pointLights.data(), mapSize);
+
+		std::vector<ecs::SpotLightComponent> spotLights;
+		const auto& spotLightsView = GetRegistry()->view<ecs::SpotLightComponent>();
+		for (auto [handle, light] : spotLightsView.each())
+		{
+			spotLights.push_back(light);
+		}
+
+		mapSize = spotLights.size() * sizeof(ecs::SpotLightComponent);
+		std::memcpy(SpotLightBuffer->GetBufferDesc().Data, spotLights.data(), mapSize);
 
 	}
 
