@@ -15,7 +15,7 @@ struct CameraProperties
 	float FarZ;
 	// Placeholder
 	float FoV;
-	float pad1;
+	float AspectRatio;
 	
 };
 

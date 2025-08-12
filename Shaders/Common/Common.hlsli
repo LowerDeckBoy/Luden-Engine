@@ -6,12 +6,43 @@ static const float TwoPI	= 6.28318530718;
 static const float HalfPI	= 1.57079632679;
 static const float InvPI	= 0.31830988618379067154f;
 
+static const float3 Fdielectric = 0.04f;
+
 static const float Epsilon	= 0.0001f;
+
+
+Texture2D GetBindlessTexture(uint Index)
+{
+	return ResourceDescriptorHeap[Index];
+}
+
+template<typename T>
+RWTexture2D<T> GetBindlessRWTexture(uint Index)
+{
+	return ResourceDescriptorHeap[Index];
+}
 
 float2 GetTextureSize(in Texture2D Texture)
 {
 	float2 dimensions;
 	Texture.GetDimensions(dimensions.x, dimensions.y);
+	
+	return dimensions;
+}
+
+float2 GetRWTextureSize(in RWTexture2D<float4> RWTexture)
+{
+	float2 dimensions;
+	RWTexture.GetDimensions(dimensions.x, dimensions.y);
+	
+	return dimensions;
+}
+
+template<typename T>
+float2 GetTextureSize(in RWTexture2D<T> RWTexture)
+{
+	float2 dimensions;
+	RWTexture.GetDimensions(dimensions.x, dimensions.y);
 	
 	return dimensions;
 }
@@ -35,6 +66,28 @@ float GetLinearDepth(float Depth, float Near, float Far)
 {
 	float depth = 2.0f * Depth - 1.0f;
 	return (Near * Far) / (Far + depth * (Far - Near));
+}
+
+float GetLinearizedDepth(float Depth, float Near, float Far)
+{
+	//return Far / (Far + Depth * (Near - Far));
+	return Near * (Far / (Far + Depth * (Near - Far)));
+}
+
+float GetLinearDepthPerspective(float Depth, float Near, float Far)
+{
+	//float depth = 2.0f * Depth - 1.0f;
+	float depth =  Depth ;
+	//return (Near * Far) / (Far + depth * (Far - Near));
+	return ((Far + Near) / (Far - Near)) + (1 / depth * (-2.0f * Far * Near) / (Far - Near));
+
+}
+
+float4 ClipToViewSpace(float4 ClipSpace, float4x4 InvProjection)
+{
+	float4 viewSpace = mul(ClipSpace, InvProjection);
+	
+	return viewSpace / viewSpace.w;
 }
 
 float3 Unproject(float2 UV, float Depth, row_major float4x4 InversedMatrix)

@@ -87,6 +87,11 @@ float3 CalculateSpotLight(SpotLight Light, float3 BaseColor, float3 N, float3 V,
 	float innerAngle = Light.InnerCutoff * PI / 180.0f;
 	float outerAngle = Light.OuterCutoff * PI / 180.0f;
 	
+	if (innerAngle >= outerAngle)
+	{
+		return float3(0.0f, 0.0f, 0.0f);
+	}
+	
 	float cosAngle = cos(outerAngle);
 	float falloff = saturate((theta - cosAngle) / (1.0f - cosAngle));
 
