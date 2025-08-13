@@ -177,6 +177,11 @@ namespace Luden
 					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_UNORDERED_ACCESS }
 					});
 
+				if (Config::Get().bEnableFXAA)
+				{
+					FXAAPass->Render(*frame, LightingPass->RenderTexture.ShaderResourceHandle.Index, SceneTextures.Scene.ShaderResourceHandle.Index);
+				}
+
 				if (Config::Get().bEnableBloom)
 				{
 					BloomPass->Render(*frame, GBuffer->Emissive.RenderTargetHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
@@ -186,11 +191,6 @@ namespace Luden
 				if (Config::Get().bEnableTonemapping)
 				{
 					TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
-				}
-
-				if (Config::Get().bEnableFXAA)
-				{
-					FXAAPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index);
 				}
 
 				frame->ComputeCommandList->ResourceTransition(&SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ);

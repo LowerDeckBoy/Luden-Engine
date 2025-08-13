@@ -7,6 +7,10 @@
 	"DENY_HULL_SHADER_ROOT_ACCESS |"\
 	"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
 	"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
-	"RootConstants(num32BitConstants=5, b0)"
+	"RootConstants(num32BitConstants=5, b0),"\
+	"StaticSampler(s0, "\
+		"addressU = TEXTURE_ADDRESS_WRAP,"\
+		"addressV = TEXTURE_ADDRESS_WRAP,"\
+		"filter = FILTER_MIN_MAG_MIP_LINEAR )"
 	
 #endif // FXAA_RS_HLSLI

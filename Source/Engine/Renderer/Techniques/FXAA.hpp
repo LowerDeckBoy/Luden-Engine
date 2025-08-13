@@ -12,10 +12,10 @@ namespace Luden
 	struct FXAAParameters
 	{
 		uint32	SceneImageIndex;
-		uint32	DebugImageIndex;
-		float	QualitySubpix = 1.0f;
-		float	EdgeThreshold = 1.0f / 8.0f;
-		float	EdgeThresholdMin = 1.0f / 24.0f;
+		uint32	OutputImageIndex;
+		float	QualitySubpixel		= 8.0f;
+		float	EdgeThreshold		= 1.0f / 8.0f;
+		float	EdgeThresholdMin	= 1.0f / 128.0f;
 	};
 
 	class FXAA : public RenderPass
@@ -24,7 +24,7 @@ namespace Luden
 		FXAA(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height);
 		~FXAA();
 
-		void Render(Frame& CurrentFrame, uint32 SceneImageIndex);
+		void Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 OutputImageIndex);
 		void Resize(uint32 Width, uint32 Height) override;
 
 		void Release() override;

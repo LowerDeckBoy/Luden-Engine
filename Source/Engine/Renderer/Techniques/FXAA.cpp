@@ -18,7 +18,7 @@ namespace Luden
 		Release();
 	}
 
-	void FXAA::Render(Frame& CurrentFrame, uint32 SceneImageIndex)
+	void FXAA::Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 OutputImageIndex)
 	{
 		auto commandList = CurrentFrame.ComputeCommandList;
 		const uint32 dispatchBlock = 8;
@@ -27,7 +27,7 @@ namespace Luden
 		commandList->SetComputeRootSignature(&Pipeline.RootSignature);
 
 		Parameters.SceneImageIndex = SceneImageIndex;
-		Parameters.DebugImageIndex = RenderTarget.ShaderResourceHandle.Index;
+		Parameters.OutputImageIndex = OutputImageIndex;
 
 		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 5, &Parameters, 0);
 

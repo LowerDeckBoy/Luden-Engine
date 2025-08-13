@@ -338,7 +338,7 @@ namespace Luden::Panel
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text("Subpixel quality");
 				ImGui::TableNextColumn();
-				ImGui::SliderFloat("##Subpixel quality:", &m_Renderer->FXAAPass->Parameters.QualitySubpix, 0.0f, 1.0f);
+				ImGui::SliderFloat("##Subpixel quality:", &m_Renderer->FXAAPass->Parameters.QualitySubpixel, 0.0f, 8.0f);
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();

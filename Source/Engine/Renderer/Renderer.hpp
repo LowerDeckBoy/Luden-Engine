@@ -21,10 +21,10 @@ namespace Luden
 {
 	struct SceneRenderTargets
 	{
-		// Final image
+		// Final scene image.
 		D3D12RenderTexture Scene;
-
-		D3D12Descriptor* ImageToDisplay;
+		// Immediate image for all post processes.
+		//D3D12RenderTexture PostProcess;
 	};
 
 	// TODO:
