@@ -25,6 +25,76 @@ namespace Luden::Panel
 		ImGui::End();
 	}
 
+	void ConfigPanel::DrawDebugPanel()
+	{
+		ImGui::Begin(ICON_FA_BUG" Debug");
+
+		if (ImGui::BeginTable("##timers", 2))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Present:");
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1.0f);
+			ImGui::Text("%.3f ms", m_Renderer->PresentRenderTime);
+			
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("G-Buffer:");
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1.0f);
+			ImGui::Text("%.3f ms", m_Renderer->GBuffer->RenderTime);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("LightPass:");
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1.0f);
+			ImGui::Text("%.3f ms", m_Renderer->LightingPass->RenderTime);
+
+			if (Config::Get().bEnableBloom)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Bloom:");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Text("%.3f ms", m_Renderer->BloomPass->RenderTime);
+			}
+
+			if (Config::Get().bEnableTonemapping)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Tonemapping:");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Text("%.3f ms", m_Renderer->TonemappingPass->RenderTime);
+			}
+
+			if (Config::Get().bEnableFXAA)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("FXAA:");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Text("%.3f ms", m_Renderer->FXAAPass->RenderTime);
+			}
+
+			ImGui::EndTable();
+		}
+
+
+		ImGui::End();
+	}
+
 	void ConfigPanel::DrawSceneConfig()
 	{
 		if (ImGui::CollapsingHeader("Config"))

@@ -2,6 +2,7 @@
 
 #include "D3D12/D3D12RHI.hpp"
 #include <Core/Types.hpp>
+#include <Core/Time/Time.hpp>
 
 namespace Luden
 {
@@ -19,6 +20,9 @@ namespace Luden
 		virtual void Release() = 0;
 
 		D3D12Pipeline Pipeline;
+
+		//
+		double RenderTime = 0.0;
 
 	protected:
 		D3D12RHI* m_RHI;

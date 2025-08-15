@@ -24,7 +24,9 @@ namespace Luden
 		void Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 Width, uint32 Height);
 
 		float Exposure = 1.45f;
-		int32 Type = TonemapType::Reinhard;
+		int32 Type = TonemapType::ACES;
+
+		double RenderTime = 0.0;
 
 	private:
 		D3D12Pipeline PSO;

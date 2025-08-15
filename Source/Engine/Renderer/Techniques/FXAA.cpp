@@ -20,13 +20,16 @@ namespace Luden
 
 	void FXAA::Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 OutputImageIndex)
 	{
+		auto renderBeginTime = Time::GetTimestamp();
+
 		auto commandList = CurrentFrame.ComputeCommandList;
-		const uint32 dispatchBlock = 8;
+		// Should 8 suffice?
+		const uint32 dispatchBlock = 16;
 
 		commandList->SetPipelineState(&Pipeline.PipelineState);
 		commandList->SetComputeRootSignature(&Pipeline.RootSignature);
 
-		Parameters.SceneImageIndex = SceneImageIndex;
+		Parameters.SceneImageIndex  = SceneImageIndex;
 		Parameters.OutputImageIndex = OutputImageIndex;
 
 		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 5, &Parameters, 0);
@@ -35,6 +38,7 @@ namespace Luden
 		const uint32 dispatchY = Math::RoundUp<uint32>(RenderTarget.GetDesc().Height / dispatchBlock);
 		commandList->Dispatch(dispatchX, dispatchY, 1);
 
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
 	}
 
 	void FXAA::Resize(uint32 Width, uint32 Height)

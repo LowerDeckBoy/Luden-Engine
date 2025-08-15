@@ -62,6 +62,8 @@ namespace Luden
 
 	void LightPass::Render(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera)
 	{
+		auto renderBeginTime = Time::GetTimestamp();
+
 		auto commandList = CurrentFrame.GraphicsCommandList;
 
 		commandList->SetRootSignature(&Pipeline.RootSignature);
@@ -95,7 +97,7 @@ namespace Luden
 			.SpotLightBufferIndex	= pScene->SpotLightBuffer->ShaderResourceView.Index,
 			.NumSpotLights			= static_cast<uint32>(pScene->SpotLights.size()),
 			.BaseColorIndex			= m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
-			.NormalIndex			= m_GeometryPass->NormalTBN.ShaderResourceHandle.Index,
+			.NormalIndex			= m_GeometryPass->Normal.ShaderResourceHandle.Index,
 			.MRIndex				= m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
 			.EmissiveIndex			= m_GeometryPass->Emissive.ShaderResourceHandle.Index,
 			.WorldPositionIndex		= m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
@@ -110,10 +112,13 @@ namespace Luden
 
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
 
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
 	}
 
 	void LightPass::RenderCompute(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera)
 	{
+		auto renderBeginTime = Time::GetTimestamp();
+
 		auto commandList = CurrentFrame.GraphicsCommandList;
 
 		commandList->SetPipelineState(&ComputePSO.PipelineState);
@@ -142,11 +147,11 @@ namespace Luden
 			.SpotLightBufferIndex	= pScene->SpotLightBuffer->ShaderResourceView.Index,
 			.NumSpotLights			= static_cast<uint32>(pScene->SpotLights.size()),
 			.BaseColorIndex			= m_GeometryPass->BaseColor.ShaderResourceHandle.Index,
-			.NormalIndex			= m_GeometryPass->NormalTBN.ShaderResourceHandle.Index,
+			.NormalIndex			= m_GeometryPass->Normal.ShaderResourceHandle.Index,
 			.MRIndex				= m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
 			.EmissiveIndex			= m_GeometryPass->Emissive.ShaderResourceHandle.Index,
 			.WorldPositionIndex		= m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
-			.OutputImage			 = RenderTexture.ShaderResourceHandle.Index,
+			.OutputImage			= RenderTexture.ShaderResourceHandle.Index,
 		};
 
 		commandList->GetHandle()->SetComputeRoot32BitConstants(2, 10, &constants, 0);
@@ -158,6 +163,8 @@ namespace Luden
 		commandList->Dispatch(Math::RoundUp<uint32>((uint32)RenderTexture.GetDesc().Width / 8), Math::RoundUp<uint32>(RenderTexture.GetDesc().Height / 8), 1);
 
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
+
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
 	}
 
 	void LightPass::Resize(uint32 Width, uint32 Height)

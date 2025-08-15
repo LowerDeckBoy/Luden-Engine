@@ -1,6 +1,7 @@
 #pragma once
 
 #include "D3D12/D3D12RHI.hpp"
+#include "../RenderPass.hpp"
 
 namespace Luden
 {
@@ -13,24 +14,26 @@ namespace Luden
 		uint32	LightImage;
 		uint32	SceneImage;
 		float	Threshold	= 1.0f;
-		float	Intensity	= 3.0f;
+		float	Intensity	= 1.25f;
 		float	Exposure	= 1.0f;
 		// Temp
-		float	Gamma		= 0.6f;
+		float	Gamma		= 1.0f;
 		// For Down and Up sampling textures.
 		uint32	MipIndex;
 	};
 
-	class Bloom
+	class Bloom : public RenderPass
 	{
 	public:
 		Bloom(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height);
 		~Bloom();
 	
 		void Render(Frame& CurrentFrame, uint32 LightPassImageIndex, uint32 SceneImageIndex);
-		void Resize(uint32 Width, uint32 Height);
-		
+		void Resize(uint32 Width, uint32 Height) override;
+
 		void Combine(Frame& CurrentFrame, D3D12RenderTexture* pSceneImage, uint32 ImageIndex);
+
+		void Release() override;
 
 		D3D12RenderTexture RenderTarget;
 
@@ -48,7 +51,7 @@ namespace Luden
 		static constexpr uint32 NumUpsamples	= NumDownsamples + 1;
 
 	private:
-		D3D12RHI* m_D3D12RHI;
+		//D3D12RHI* m_D3D12RHI;
 
 		void CreatePipelines(ShaderCompiler* pShaderCompiler);
 

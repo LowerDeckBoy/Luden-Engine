@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Core/Timer.hpp>
+#include <Core/Time/Timer.hpp>
 
 namespace Luden
 {
@@ -19,6 +19,8 @@ namespace Luden::Panel
 		void Initialize(Renderer* pRenderer, Core::Timer* pTimer);
 
 		void DrawPanel();
+
+		void DrawDebugPanel();
 
 		inline static int32 DisplayImageIndex = 0;
 		inline static uint64 DisplayImageAddress = 0;

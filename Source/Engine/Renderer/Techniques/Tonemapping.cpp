@@ -1,6 +1,7 @@
 #include "Tonemapping.hpp"
 #include "D3D12/D3D12Utility.hpp"
 #include "Asset/ShaderCompiler.hpp"
+#include <Core/Time/Time.hpp>
 
 namespace Luden
 {
@@ -25,6 +26,8 @@ namespace Luden
 
 	void Tonemapping::Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 Width, uint32 Height)
 	{
+		auto renderBeginTime = Time::GetTimestamp();
+
 		auto commandList = CurrentFrame.ComputeCommandList;
 
 		commandList->SetPipelineState(&PSO.PipelineState);
@@ -48,6 +51,7 @@ namespace Luden
 		const uint32 dispatchY = Math::RoundUp(Height / 8u);
 		commandList->Dispatch(dispatchX, dispatchY, 1);
 
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
 	}
 
 } // namespace Luden

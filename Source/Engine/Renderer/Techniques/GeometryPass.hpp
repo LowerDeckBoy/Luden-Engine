@@ -23,16 +23,18 @@ namespace Luden
 
 		void Resize(uint32 Width, uint32 Height) override;
 
-		void Render(Frame& CurrentFrame, std::function<void()> const& DrawFunction);
+		//void Render(Frame& CurrentFrame, std::function<void()> const& DrawFunction);
 		void Render(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
 		// Test. TODO now.
 		void RenderIndirect(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
 
 		D3D12RenderTexture BaseColor;
 		D3D12RenderTexture Normal;
+		D3D12RenderTexture MotionVectors;
 		D3D12RenderTexture MetallicRoughness;
 		D3D12RenderTexture Emissive;
 		D3D12RenderTexture WorldPosition;
+		D3D12RenderTexture Depth;
 
 		D3D12CommandSignature* IndirectSignature = nullptr;
 		D3D12RootSignature IndirectRS;

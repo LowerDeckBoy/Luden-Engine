@@ -5,7 +5,7 @@
 namespace Luden
 {
 	Bloom::Bloom(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height)
-		: m_D3D12RHI(pD3D12RHI)
+		: RenderPass(pD3D12RHI)
 	{
 		CreatePipelines(pShaderCompiler);
 
@@ -19,6 +19,8 @@ namespace Luden
 
 	void Bloom::Render(Frame& CurrentFrame, uint32 LightPassImageIndex, uint32 SceneImageIndex)
 	{
+		auto renderBeginTime = Time::GetTimestamp();
+
 		constexpr uint32 DispatchGroup = 8;
 
 		auto commandList = CurrentFrame.ComputeCommandList;
@@ -117,6 +119,7 @@ namespace Luden
 			{ &UpsampleTextures.at(5), D3D12_RESOURCE_STATE_GENERIC_READ },
 			});
 
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
 	}
 
 	void Bloom::Resize(uint32 Width, uint32 Height)
@@ -150,16 +153,16 @@ namespace Luden
 		commandList->SetPipelineState(&CombinePSO.PipelineState);
 		commandList->SetComputeRootSignature(&BloomPSO.RootSignature);
 
-		commandList->ResourceTransition(pSceneImage, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
 		Parameters.MipIndex		= RenderTarget.ShaderResourceHandle.Index;
 		Parameters.SceneImage	= pSceneImage->ShaderResourceHandle.Index;
 		Parameters.BaseColor	= ImageIndex;
 
 		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 8, &Parameters, 0);
 		commandList->Dispatch(Math::RoundUp<uint32>((uint32)pSceneImage->GetDesc().Width / DispatchGroup), Math::RoundUp<uint32>(pSceneImage->GetDesc().Height / DispatchGroup), 1);
+	}
 
-		commandList->ResourceTransition(pSceneImage, D3D12_RESOURCE_STATE_GENERIC_READ);
+	void Bloom::Release()
+	{
 	}
 
 	void Bloom::CreatePipelines(ShaderCompiler* pShaderCompiler)
@@ -167,49 +170,49 @@ namespace Luden
 		// Bloom
 		{
 			BloomPSO.Compute = pShaderCompiler->CompileCS("../../Shaders/PostProcess/Bloom/Bloom.hlsl", true);
-			VERIFY_D3D12_RESULT(BloomPSO.RootSignature.BuildFromShader(m_D3D12RHI->Device, &BloomPSO.Compute, PipelineType::Compute));
+			VERIFY_D3D12_RESULT(BloomPSO.RootSignature.BuildFromShader(m_RHI->Device, &BloomPSO.Compute, PipelineType::Compute));
 
-			D3D12ComputePipelineStateBuilder builder(m_D3D12RHI->Device);
+			D3D12ComputePipelineStateBuilder builder;
 			builder.SetComputeShader(&BloomPSO.Compute);
 			builder.SetRootSignature(&BloomPSO.RootSignature);
-			VERIFY_D3D12_RESULT(builder.Build(m_D3D12RHI->Device, BloomPSO));
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, BloomPSO));
 		}
 
 		// Downsample
 		{
 			DownsamplePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/PostProcess/Bloom/Downsample.hlsl", false);
 
-			D3D12ComputePipelineStateBuilder builder(m_D3D12RHI->Device);
+			D3D12ComputePipelineStateBuilder builder;
 			builder.SetComputeShader(&DownsamplePSO.Compute);
 			builder.SetRootSignature(&BloomPSO.RootSignature);
-			VERIFY_D3D12_RESULT(builder.Build(m_D3D12RHI->Device, DownsamplePSO));
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, DownsamplePSO));
 		}
 
 		// Upsample
 		{
 			UpsamplePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/PostProcess/Bloom/Upsample.hlsl", false);
 
-			D3D12ComputePipelineStateBuilder builder(m_D3D12RHI->Device);
+			D3D12ComputePipelineStateBuilder builder;
 			builder.SetComputeShader(&UpsamplePSO.Compute);
 			builder.SetRootSignature(&BloomPSO.RootSignature);
-			VERIFY_D3D12_RESULT(builder.Build(m_D3D12RHI->Device, UpsamplePSO));
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, UpsamplePSO));
 		}
 		
 		// Combine
 		{
 			CombinePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/PostProcess/Bloom/Combine.hlsl", false);
 
-			D3D12ComputePipelineStateBuilder builder(m_D3D12RHI->Device);
+			D3D12ComputePipelineStateBuilder builder;
 			builder.SetComputeShader(&CombinePSO.Compute);
 			builder.SetRootSignature(&BloomPSO.RootSignature);
-			VERIFY_D3D12_RESULT(builder.Build(m_D3D12RHI->Device, CombinePSO));
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, CombinePSO));
 		}
 	}
 
 	void Bloom::CreateTextures(uint32 Width, uint32 Height)
 	{
 		// Base Texture
-		RenderTarget.Create(m_D3D12RHI->Device, Width, Height, DXGI_FORMAT_R11G11B10_FLOAT);
+		RenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R11G11B10_FLOAT);
 
 		float previousWidth  = static_cast<float>(Width);
 		float previousHeight = static_cast<float>(Height);
@@ -220,7 +223,7 @@ namespace Luden
 			previousHeight = previousHeight * 0.5f;
 
 			D3D12RenderTexture texture;
-			texture.Create(m_D3D12RHI->Device, static_cast<uint32>(previousWidth), static_cast<uint32>(previousHeight), RenderTarget.GetFormat());
+			texture.Create(m_RHI->Device, static_cast<uint32>(previousWidth), static_cast<uint32>(previousHeight), RenderTarget.GetFormat());
 			texture.SetDebugName(std::format("Post-Process Bloom Downsample texture #{}", mip));
 
 			DownsampleTextures.push_back(std::move(texture));
@@ -229,7 +232,7 @@ namespace Luden
 		for (uint32 mip = 0; mip < NumUpsamples; ++mip)
 		{
 			D3D12RenderTexture texture;
-			texture.Create(m_D3D12RHI->Device, static_cast<uint32>(previousWidth), static_cast<uint32>(previousHeight), RenderTarget.GetFormat());
+			texture.Create(m_RHI->Device, static_cast<uint32>(previousWidth), static_cast<uint32>(previousHeight), RenderTarget.GetFormat());
 			texture.SetDebugName(std::format("Post-Process Bloom Upsample texture #{}", mip));
 
 			UpsampleTextures.push_back(std::move(texture));
