@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Defines.hpp"
-#include "Types.hpp"
+#include "../Defines.hpp"
+#include "../Types.hpp"
 #include <chrono>
 
 namespace Luden::Core
