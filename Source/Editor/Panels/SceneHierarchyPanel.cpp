@@ -41,69 +41,48 @@ namespace Luden::Panel
 				return;
 			}
 
-			// Iterate over every entity that owns a NameComponent.
-			const auto& view = m_ActiveScene->GetRegistry()->view<ecs::NameComponent>();
-			for (auto [handle, name] : view.each())
+			if (ImGui::BeginTable("hierachy", 2, ImGuiTableFlags_SizingStretchProp))
 			{
-				Entity entity(m_ActiveScene->GetWorld(), handle);
+				// Iterate over every entity that owns a NameComponent.
+				const auto& view = m_ActiveScene->GetRegistry()->view<ecs::NameComponent>();
 
-				ImGuiTreeNodeFlags flags =
-					((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
-					ImGuiTreeNodeFlags_Leaf;
-
-				ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, name.Name.data());
-				if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+				for (auto [handle, name] : view.each())
 				{
-					m_SelectedEntity = entity;
-				}
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
 
-				ImGui::TreePop();
-			}
+					const char* icon = name.bVisibleInScene ? ICON_FA_EYE : ICON_FA_EYE_SLASH;
 
-			if (ImGui::TreeNodeEx("Lights", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
-			{
-				for (usize i = 0; i < m_ActiveScene->PointLights.size(); ++i)
-				{
-					
-					//Entity entity(m_ActiveScene->GetWorld(), handle);
-					Entity entity(m_ActiveScene->GetWorld(), m_ActiveScene->PointLights.at(i).GetHandle());
-
-					ImGuiTreeNodeFlags flags =
-						((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
-						ImGuiTreeNodeFlags_Leaf;
-
-					//ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, name.Name.data());
-					ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, std::format("Point light {}", i).c_str());
-					if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+					ImGui::PushID(name.Name.data());
+					ImGui::PushStyleColor(ImGuiCol_Button, gui::Color::BackgroundDark);
+					if (ImGui::Button(icon))
 					{
-						m_SelectedEntity = entity;
+						name.bVisibleInScene = !name.bVisibleInScene;
 					}
-					ImGui::TreePop();
-				}
+					ImGui::PopStyleColor();
+					ImGui::PopID();
 
-				/*
-				// Lights
-				const auto& lightsView = m_ActiveScene->GetRegistry()->view<ecs::NameComponent, ecs::PointLightComponent>();
-				for (auto [handle, name, light] : lightsView.each())
-				{
+					ImGui::TableNextColumn();
+
 					Entity entity(m_ActiveScene->GetWorld(), handle);
 
 					ImGuiTreeNodeFlags flags =
 						((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
-						ImGuiTreeNodeFlags_Leaf;
+						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanFullWidth;
+					ImGui::SetNextItemWidth(-1.0f);
 
 					ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, name.Name.data());
 					if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 					{
 						m_SelectedEntity = entity;
 					}
+
 					ImGui::TreePop();
 				}
-				*/
+
+				ImGui::EndTable();
 				ImGui::TreePop();
 			}
-
-			ImGui::TreePop();
 		}
 	}
 	

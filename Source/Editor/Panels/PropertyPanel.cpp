@@ -21,7 +21,7 @@ namespace Luden::Panel
 	{
 		// Drawable entites should always have Name component.
 		DrawComponent<ecs::NameComponent>(Target, [&](auto& component) { 
-				gui::DrawNameComponent(component); 
+				gui::DrawNameComponent(component);
 			});
 		
 		if (Target.HasComponent<ecs::TransformComponent>())
