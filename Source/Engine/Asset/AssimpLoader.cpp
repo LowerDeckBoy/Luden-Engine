@@ -45,34 +45,6 @@ namespace Luden
 	// Get information about it's meshes, matrix transformation and material.
 	static void TraverseNode(assimp::FAssimpLoadingData& SceneData, aiNode* pNode);
 
-	bool AssetImporter::ImportAssimpModel_TEST(Scene* pScene, Filepath Path, Model& OutModel)
-	{
-		constexpr int32 loadFlags =
-			aiProcess_ConvertToLeftHanded |
-			aiProcess_Triangulate |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_RemoveRedundantMaterials |
-			aiProcess_FindInstances |
-			aiProcess_GenSmoothNormals |
-			aiProcess_CalcTangentSpace |
-			aiProcess_GenBoundingBoxes;
-
-		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(Path.string(), (uint32)loadFlags);
-
-		if (!scene || !scene->mRootNode || !scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
-		{
-			LOG_WARNING("\n\tFailed to load model: {0}, reason: {1}", scene->GetShortFilename(Path.string().c_str()), importer.GetErrorString());
-			importer.FreeScene();
-
-			return false;
-		}
-
-
-
-		return true;
-	}
-
 	bool AssetImporter::ImportAssimpModel(Scene* pScene, Filepath Path, Model& OutModel)
 	{
 		constexpr int32 loadFlags =
@@ -163,9 +135,7 @@ namespace Luden
 
 			const uint32 materialHandle = static_cast<uint32>(pScene->Materials.size());
 			pScene->Materials.push_back(data.UniqueMaterials.at(mesh.MaterialID));
-			mesh.MaterialID = materialHandle;
-
-			
+			mesh.MaterialID = materialHandle;		
 		}
 
 		const uint32 transformHandle = static_cast<uint32>(pScene->Transforms.size());
@@ -401,7 +371,7 @@ namespace Luden
 			assimpMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColorFactor);
 			material.EmissiveFactor = *(DirectX::XMFLOAT4*)(&emissiveColorFactor);
 
-			aiString blend;
+			aiString blend{};
 			assimpMaterial->Get(AI_MATKEY_GLTF_ALPHAMODE, blend);
 
 			if (std::strcmp(blend.C_Str(), "OPAQUE") == 0)

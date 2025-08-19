@@ -48,7 +48,6 @@ namespace Luden
 
 		// For non glTF models.
 		bool ImportAssimpModel(Scene* pScene, Filepath Path, Model& OutModel);
-		bool ImportAssimpModel_TEST(Scene* pScene, Filepath Path, Model& OutModel);
 
 		// for glTF 2.0 models only.
 		bool ImportFastglftModel(Filepath Path, Model& OutModel);

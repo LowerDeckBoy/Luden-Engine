@@ -40,7 +40,7 @@ namespace Luden
 	{
 		DirectX::ScratchImage scratchImage{};
 		DirectX::TexMetadata metadata{};
-
+		
 		HRESULT result = DirectX::LoadFromWICFile(Path.wstring().c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, &metadata, scratchImage);
 		
 		if (FAILED(result))
