@@ -15,12 +15,21 @@ Repo does not provide model assets.
 	- Virtual geometry
 	- GPU Meshlet culling
 	- Deferred rendering
-	- Bloom for emissive textures.
+	- Bindless resources
+	- Post-Process:
+		- [x] Bloom
+		- [x] FXAA
+		- [x] Tonemapping:
+			- [x] Reinhard
+			- [x] Gamma Correction
+			- [x] Uncharted2
+			- [x] ACES
 - Scene
 	- Loading and unloading JSON-based scenes at runtime
 	- Adding models to scene at runtime
+
 - Editor
-    - ImGui based editor layer
+	- ImGui based editor layer
 
 ## Tech
 
@@ -31,9 +40,9 @@ Repo does not provide model assets.
 
 ## Showcase
 
-| Bistro exterior - deferred											| Bistro exterior - meshlets											|
+| Bistro exterior - deferred								| Bistro exterior - meshlets								|
 | --------------------------------------------------------- | --------------------------------------------------------- |
-| ![bistro_meshlets](Media/deferred_bloom.png)	| ![bistro_meshlets](Media/deferred_meshlets.png)	|
+| ![bistro_meshlets](Media/deferred_bloom.png)				| ![bistro_meshlets](Media/deferred_meshlets.png)			|
 
 
 ## Third-party
