@@ -40,7 +40,7 @@ namespace Luden
 		DirectX::XMFLOAT4 Planes[6];
 
 		DirectX::XMFLOAT3 DirectionalPosition;
-		float DirectionalIntensity = 1.0f;
+		float DirectionalIntensity = 5.0f;
 		DirectX::XMFLOAT3 DirectionalAmbient;
 		float pad3 = 0;
 	};

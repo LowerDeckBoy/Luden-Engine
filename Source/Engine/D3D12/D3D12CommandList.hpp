@@ -70,7 +70,7 @@ namespace Luden
 
 		void ResolveSubresource(D3D12Resource* DestResource, uint32 DestSubresource, D3D12Resource* SourceResource, uint32 SourceSubresource, DXGI_FORMAT Format);
 
-		void ClearDepthStencilView(D3D12Descriptor& DepthStencilView);
+		void ClearDepthStencilView(D3D12Descriptor& DepthStencilView, float ClearValue = D3D12_MAX_DEPTH);
 
 		// Single RenderTarget.
 		void SetRenderTargets(D3D12Descriptor& RenderTargetView);
@@ -85,6 +85,7 @@ namespace Luden
 		void SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY PrimitiveTopology);
 
 		void PushConstants(uint32 Slot, uint32 Count, void* pData, uint32 Offset = 0);
+		void PushComputeConstants(uint32 Slot, uint32 Count, void* pData, uint32 Offset = 0);
 		void PushRootSRV(uint32 Slot, uint64 Address);
 
 		void Dispatch(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ);
@@ -99,6 +100,7 @@ namespace Luden
 		void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW IndexBufferView);
 		void SetIndexBuffer(D3D12Buffer* pIndexBuffer);
 		void SetConstantBuffer(uint32 RegisterSlot, D3D12ConstantBuffer* pConstantBuffer);
+		void SetComputeConstantBuffer(uint32 RegisterSlot, D3D12ConstantBuffer* pConstantBuffer);
 		
 	private:
 		Ref<ID3D12GraphicsCommandList10>	m_GraphicsCommandList;

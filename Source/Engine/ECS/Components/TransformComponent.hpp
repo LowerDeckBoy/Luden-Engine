@@ -9,6 +9,7 @@ namespace Luden::ecs
 	{
 		DirectX::XMMATRIX WVP;
 		DirectX::XMMATRIX World;
+		DirectX::XMMATRIX PreviousWorld;
 	};
 
 	// Use to convert object's rotation from degrees to radians.
@@ -42,6 +43,7 @@ namespace Luden::ecs
 		DirectX::XMFLOAT3 Scale;
 
 		DirectX::XMMATRIX WorldMatrix = DirectX::XMMatrixIdentity();
+		DirectX::XMMATRIX PreviousPosition = DirectX::XMMatrixIdentity();
 
 		// Flag as *true* if any value changes, then update matrices.
 		bool bDirty = false;
@@ -49,6 +51,8 @@ namespace Luden::ecs
 		// Update World ransformation matrix as S * R * T.
 		void Update()
 		{
+			PreviousPosition = WorldMatrix;
+
 			WorldMatrix =
 				DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&Scale)) *
 				DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMVectorMultiply((XMLoadFloat4(&Rotation)), RadiansVector)) *

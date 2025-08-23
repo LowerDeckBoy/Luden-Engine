@@ -54,4 +54,10 @@ namespace Luden::Math
 	{
 		return (Value < Min) ? Min : (Value > Max) ? Max : Value;
 	}
+
+	constexpr f32 Lerp(f32 A, f32 B, f32 Alpha)
+	{
+		return A + Alpha * (B - A);
+	}
+
 } // namespace Luden::Math

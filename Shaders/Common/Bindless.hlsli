@@ -8,4 +8,10 @@ Texture2D GetTexture(uint Index)
 	return ResourceDescriptorHeap[Index];
 }
 
+template<typename T>
+RWTexture2D<float4> GetRWTexture(uint Index)
+{
+	return ResourceDescriptorHeap[Index];
+}
+
 #endif // BINDLESS_HLSLI

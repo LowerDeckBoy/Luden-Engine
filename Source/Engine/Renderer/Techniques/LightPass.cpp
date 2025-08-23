@@ -50,9 +50,10 @@ namespace Luden
 		// Compute PSO
 		{
 			ComputePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/Deferred/Deferred_CS.hlsl", true);
+			VERIFY_D3D12_RESULT(ComputePSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &ComputePSO.Compute, PipelineType::Compute));
+
 			D3D12ComputePipelineStateBuilder csBuilder;
 			csBuilder.SetComputeShader(&ComputePSO.Compute);
-			VERIFY_D3D12_RESULT(ComputePSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &ComputePSO.Compute, PipelineType::Compute));
 			csBuilder.SetRootSignature(&ComputePSO.RootSignature);
 			VERIFY_D3D12_RESULT(csBuilder.Build(m_RHI->Device, ComputePSO));
 		}
@@ -62,7 +63,7 @@ namespace Luden
 
 	void LightPass::Render(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera)
 	{
-		auto renderBeginTime = Time::GetTimestamp();
+		const auto renderBeginTime = Time::GetTimestamp();
 
 		auto commandList = CurrentFrame.GraphicsCommandList;
 
@@ -112,14 +113,15 @@ namespace Luden
 
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
 
-		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 	}
 
 	void LightPass::RenderCompute(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera)
 	{
-		auto renderBeginTime = Time::GetTimestamp();
+		const auto renderBeginTime = Time::GetTimestamp();
 
-		auto commandList = CurrentFrame.GraphicsCommandList;
+		//auto commandList = CurrentFrame.GraphicsCommandList;
+		auto commandList = CurrentFrame.ComputeCommandList;
 
 		commandList->SetPipelineState(&ComputePSO.PipelineState);
 		commandList->SetRootSignature(&ComputePSO.RootSignature);
@@ -154,9 +156,12 @@ namespace Luden
 			.OutputImage			= RenderTexture.ShaderResourceHandle.Index,
 		};
 
-		commandList->GetHandle()->SetComputeRoot32BitConstants(2, 10, &constants, 0);
-		commandList->GetHandle()->SetComputeRootConstantBufferView(1, pScene->SceneDataBuffer->GetBuffer()->GetGPUVirtualAddress());
-		//commandList->SetConstantBuffer(1, pScene->SceneDataBuffer);
+		//commandList->GetHandle()->SetComputeRoot32BitConstants(2, 10, &constants, 0);
+		//commandList->GetHandle()->SetComputeRootConstantBufferView(1, pScene->SceneDataBuffer->GetBuffer()->GetGPUVirtualAddress());
+		commandList->SetComputeConstantBuffer(1, pScene->SceneDataBuffer);
+		commandList->PushComputeConstants(2, 10, &constants);
+		//commandList->GetHandle()->SetComputeRoot32BitConstants(2, 10, &constants, 0);
+		//commandList->GetHandle()->SetComputeRootConstantBufferView(1, pScene->SceneDataBuffer->GetBuffer()->GetGPUVirtualAddress());
 
 		// Draw screen space quad.
 		//commandList->Draw(4);
@@ -164,7 +169,7 @@ namespace Luden
 
 		commandList->ResourceTransition(&RenderTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
 
-		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 	}
 
 	void LightPass::Resize(uint32 Width, uint32 Height)

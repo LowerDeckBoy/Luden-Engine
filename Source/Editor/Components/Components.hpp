@@ -36,6 +36,4 @@ namespace Luden::gui
 
 	extern void AddOrRemoveComponent(Entity& Target);
 
-	extern void DrawEntityHierarchy(Entity& Target);
-
 } // namespace Luden::gui

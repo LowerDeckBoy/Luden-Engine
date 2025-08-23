@@ -37,9 +37,9 @@ namespace Luden
 		D3D12RenderTexture Depth;
 
 		D3D12CommandSignature* IndirectSignature = nullptr;
-		D3D12RootSignature IndirectRS;
-		D3D12Buffer* IndirectArgumentsBuffer = nullptr;
-		D3D12Buffer* IndirectOutputBuffer = nullptr;
+		//D3D12RootSignature IndirectRS;
+		//D3D12Buffer* IndirectArgumentsBuffer = nullptr;
+		//D3D12Buffer* IndirectOutputBuffer = nullptr;
 
 		D3D12Pipeline BlendPipelineState;
 		D3D12Pipeline IndirectPipelineState;

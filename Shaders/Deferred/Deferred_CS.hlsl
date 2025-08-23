@@ -4,7 +4,6 @@
 #include "Deferred_RS.hlsli"
 #include "../PBR.hlsli"
 #include "../Common/Light.hlsli"
-#include "../Common/Common.hlsli"
 #include "../Common/Scene.hlsli"
 
 struct PushConstants
@@ -24,7 +23,6 @@ struct PushConstants
 ConstantBuffer<SceneConstants>	Scene		: register(b1);
 ConstantBuffer<PushConstants>	Constants	: register(b2);
 SamplerState					texSampler	: register(s0);
-
 
 [RootSignature(DEFERRED_ROOT_SIG)]
 [numthreads(8, 8, 1)]
@@ -46,7 +44,6 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 	const float3 uv = int3(DispatchThreadID.xy, 0.0f);
 	
-	//const float4 baseColor			= pow(texBaseColor.Load(uv), 2.2f);
 	const float4 baseColor			= texBaseColor.Load(uv);
 	const float4 normal				= texNormal.Load(uv);
 	const float3 metallicRoughness	= texMR.Load(uv).rgb;
@@ -67,6 +64,9 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	float3 output = float3(0.0f, 0.0f, 0.0f);
 
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
+	
+	// Test
+	float3 scattering = float3(0.0f, 0.0f, 0.0f);
 	
 	// Point lights
 	StructuredBuffer<PointLight> PointLights = ResourceDescriptorHeap[Constants.PointLightBufferIndex];

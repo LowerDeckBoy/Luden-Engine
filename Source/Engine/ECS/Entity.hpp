@@ -53,14 +53,12 @@ namespace Luden
 			}
 		}
 
-		//
-
 		bool operator==(const Entity& Other) const { return (m_Handle == Other.m_Handle); }
 
-		//bool HasParent() const { return Parent != nullptr; }
+		bool IsVisibleInScene() const { return bVisibleInScene; }
 
-		//Entity* Parent = nullptr;
-		//std::vector<Entity*> Children;
+		// Test
+		bool bVisibleInScene = true;
 
 	protected:
 		entt::entity m_Handle = entt::null;

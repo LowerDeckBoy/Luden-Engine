@@ -19,6 +19,12 @@
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Upsample.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Combine.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Compute\MipMap2D.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\SSAO.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\SSAO_Test.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\ChromaticAberration\ChromaticAberration.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\FXAA\FXAA.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\FilmGrain\FilmGrain.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
@@ -33,11 +39,19 @@
     <None Include="$(MSBuildThisFileDirectory)Mesh\GBufferCommon.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Raytracing\Base\Common.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Samplers.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)Tonemapping.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)BRDF.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Bloom_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Common.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Bindless.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Compute\SSAO_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Scene.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\FXAA\FXAA_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\ChromaticAberration\ChromaticAberration_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\DOF\DepthOfField_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Color.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\FilmGrain\FilmGrain_RS.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="NewFilter1">

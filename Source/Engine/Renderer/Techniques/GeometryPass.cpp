@@ -181,7 +181,8 @@ namespace Luden
 			// Works, but gotta rework it later.
 			// It's gonna require changes inside of Editor hierarchy and selection, tho.
 			// :(
-			if (!model->GetComponent<ecs::NameComponent>().bVisibleInScene) continue;
+			//if (!model->GetComponent<ecs::NameComponent>().bVisibleInScene) continue;
+			if (!model->bVisibleInScene) continue;
 
 			for (auto& mesh : model->OpaqueMeshes)
 			{
@@ -328,12 +329,12 @@ namespace Luden
 
 		//auto device = m_RHI->Device;
 
-		commandList->SetRootSignature(&Pipeline.RootSignature);
-		commandList->SetPipelineState(&Pipeline.PipelineState);
-		//commandList->SetRootSignature(&IndirectPipelineState.RootSignature);
-		//commandList->SetPipelineState(&IndirectPipelineState.PipelineState);
+		//commandList->SetPipelineState(&Pipeline.PipelineState);
+		//commandList->SetRootSignature(&Pipeline.RootSignature);
+		commandList->SetPipelineState(&IndirectPipelineState.PipelineState);
+		commandList->SetRootSignature(&IndirectPipelineState.RootSignature);
 
-		commandList->PushConstants(1, 28, &pScene->Consts);
+		//commandList->PushConstants(1, 28, &pScene->Consts);
 
 		commandList->ExecuteIndirect(IndirectSignature);
 

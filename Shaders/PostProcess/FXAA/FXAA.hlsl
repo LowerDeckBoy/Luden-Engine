@@ -4,7 +4,7 @@
 #include "../../Common/Common.hlsli"
 #include "FXAA_RS.hlsli"
 
-#define DISPATCH_BLOCK 8
+#define DISPATCH_BLOCK 16
 
 struct Parameters
 {
@@ -27,7 +27,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	RWTexture2D<float4> outputTexture = GetBindlessRWTexture<float4>(Constants.DebugImageIndex);
 	
 	const float2 textureSize = GetTextureSize(sceneTexture);
-	const float2 uv = ((float2) DispatchThreadID.xy + 0.5f) * 1.0f / textureSize;
+	const float2 uv = (float2(DispatchThreadID.xy) + 0.5f) * (1.0f / textureSize);
 
 	const float3 colorNW = sceneTexture.Sample(texSampler, uv + float2(-1.0f, -1.0f) / textureSize, 0).rgb;
 	const float3 colorNE = sceneTexture.Sample(texSampler, uv + float2(+1.0f, -1.0f) / textureSize, 0).rgb;

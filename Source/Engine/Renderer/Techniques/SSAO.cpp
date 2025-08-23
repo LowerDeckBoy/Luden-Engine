@@ -10,7 +10,7 @@ namespace Luden
 	SSAO::SSAO(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height)
 		: RenderPass(pD3D12RHI)
 	{
-		RenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R16G16B16A16_FLOAT);
+		RenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT);
 
 		CreatePipelines(pShaderCompiler);
 
@@ -61,27 +61,64 @@ namespace Luden
 
 	void SSAO::Render(Frame& CurrentFrame, GeometryPass* pGBuffer, SceneCamera* pCamera)
 	{
-		auto commandList = CurrentFrame.GraphicsCommandList;
-		
-		commandList->SetPipelineState(&Pipeline.PipelineState);
-		commandList->SetRootSignature(&Pipeline.RootSignature);
+		if (Config::Get().bSSAOCompute)
+		{
+			auto commandList = CurrentFrame.GraphicsCommandList;
 
-		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			commandList->SetPipelineState(&Pipeline.PipelineState);
+			commandList->SetRootSignature(&Pipeline.RootSignature);
 
-		//Parameters.Projection			= pCamera->GetProjection();
-		Parameters.Projection			= pCamera->GetViewProjection();
-		Parameters.OutputImageIndex		= RenderTarget.ShaderResourceHandle.Index;
-		Parameters.BaseColorIndex		= pGBuffer->BaseColor.ShaderResourceHandle.Index;
-		Parameters.NormalIndex			= pGBuffer->Normal.ShaderResourceHandle.Index;
-		Parameters.WorldPositionIndex	= pGBuffer->WorldPosition.ShaderResourceHandle.Index;
-		
-		ConstantBuffer->Update(&Parameters);
-		commandList->GetHandle()->SetComputeRootConstantBufferView(0, ConstantBuffer->GetBuffer()->GetGPUVirtualAddress());
+			commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		const uint32 dispatchX =  Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Width / 8);
-		const uint32 dispatchY =  Math::RoundUp<uint32>(RenderTarget.GetDesc().Height / 8);
-		commandList->Dispatch(dispatchX, dispatchY, 1);
-		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+			Parameters.Projection			= pCamera->GetProjection();
+			Parameters.InvView	= DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection());
+
+
+			Parameters.OutputImageIndex = RenderTarget.ShaderResourceHandle.Index;
+			//Parameters.BaseColorIndex		= pGBuffer->BaseColor.ShaderResourceHandle.Index;
+			//Parameters.BaseColorIndex = NoiseImage;
+			Parameters.NormalIndex = pGBuffer->Normal.ShaderResourceHandle.Index;
+			Parameters.WorldPositionIndex = pGBuffer->WorldPosition.ShaderResourceHandle.Index;
+
+			ConstantBuffer->Update(&Parameters);
+			commandList->GetHandle()->SetComputeRootConstantBufferView(0, ConstantBuffer->GetBuffer()->GetGPUVirtualAddress());
+
+			const uint32 dispatchX = Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Width / 16);
+			const uint32 dispatchY = Math::RoundUp<uint32>(RenderTarget.GetDesc().Height / 16);
+			commandList->Dispatch(dispatchX, dispatchY, 1);
+			commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+		}
+		else
+		{
+			auto commandList = CurrentFrame.GraphicsCommandList;
+
+			commandList->SetPipelineState(&VertexPSO.PipelineState);
+			commandList->SetRootSignature(&VertexPSO.RootSignature);
+
+			commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+			commandList->SetRenderTargets({ RenderTarget.RenderTargetHandle });
+
+			Parameters.Projection			= pCamera->GetProjection();
+			Parameters.InvProjection		= pCamera->GetInversedProjection();
+			Parameters.InvView				= pCamera->GetInversedView();
+			//Parameters.InvView				= pCamera->GetView();
+			Parameters.InvViewProjection	= DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection());
+			Parameters.InvViewProjection	= pCamera->GetViewProjection();
+
+			Parameters.OutputImageIndex = RenderTarget.ShaderResourceHandle.Index;
+			//Parameters.BaseColorIndex		= pGBuffer->BaseColor.ShaderResourceHandle.Index;
+			//Parameters.BaseColorIndex = NoiseImage;
+			Parameters.NormalIndex = pGBuffer->Normal.ShaderResourceHandle.Index;
+			Parameters.WorldPositionIndex = pGBuffer->WorldPosition.ShaderResourceHandle.Index;
+
+			ConstantBuffer->Update(&Parameters);
+			commandList->SetConstantBuffer(0, ConstantBuffer);
+
+			commandList->Draw(4);
+
+			commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+		}	
 	}
 
 	void SSAO::Resize(uint32 Width, uint32 Height)
@@ -95,14 +132,33 @@ namespace Luden
 
 	void SSAO::CreatePipelines(ShaderCompiler* pShaderCompiler)
 	{
-		Pipeline.Compute = pShaderCompiler->CompileCS("../../Shaders/Compute/SSAO.hlsl", true);
+		{
+			Pipeline.Compute = pShaderCompiler->CompileCS("../../Shaders/Compute/SSAO.hlsl", true);
 
-		VERIFY_D3D12_RESULT(Pipeline.RootSignature.BuildFromShader(m_RHI->Device, &Pipeline.Compute, PipelineType::Compute));
+			VERIFY_D3D12_RESULT(Pipeline.RootSignature.BuildFromShader(m_RHI->Device, &Pipeline.Compute, PipelineType::Compute));
 
-		D3D12ComputePipelineStateBuilder builder;
-		builder.SetComputeShader(&Pipeline.Compute);
-		builder.SetRootSignature(&Pipeline.RootSignature);
-		VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, Pipeline));
+			D3D12ComputePipelineStateBuilder builder;
+			builder.SetComputeShader(&Pipeline.Compute);
+			builder.SetRootSignature(&Pipeline.RootSignature);
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, Pipeline));
+		}
+		
+		{
+			VertexPSO.Vertex = pShaderCompiler->CompileVS("../../Shaders/Compute/SSAO_Test.hlsl", true);
+			VertexPSO.Pixel = pShaderCompiler->CompilePS("../../Shaders/Compute/SSAO_Test.hlsl", false);
+
+			VERIFY_D3D12_RESULT(VertexPSO.RootSignature.BuildFromShader(m_RHI->Device, &VertexPSO.Vertex, PipelineType::Graphics));
+
+			D3D12PipelineStateBuilder builder(m_RHI->Device);
+			builder.EnableDepth(false);
+			builder.SetVertexShader(&VertexPSO.Vertex);
+			builder.SetPixelShader(&VertexPSO.Pixel);
+			builder.SetRootSignature(&VertexPSO.RootSignature);
+			builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
+			builder.SetFillMode(D3D12_FILL_MODE_SOLID);
+			builder.SetRenderTargetFormats({ RenderTarget.GetFormat() });
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, VertexPSO));
+		}
 
 	}
 } // namespace Luden

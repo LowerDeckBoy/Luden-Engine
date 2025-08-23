@@ -26,7 +26,7 @@ namespace Luden
 
 	void Tonemapping::Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 Width, uint32 Height)
 	{
-		auto renderBeginTime = Time::GetTimestamp();
+		const auto renderBeginTime = Time::GetTimestamp();
 
 		auto commandList = CurrentFrame.ComputeCommandList;
 
@@ -51,7 +51,7 @@ namespace Luden
 		const uint32 dispatchY = Math::RoundUp(Height / 8u);
 		commandList->Dispatch(dispatchX, dispatchY, 1);
 
-		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 	}
 
 } // namespace Luden

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <D3D12AgilitySDK/d3d12.h>
+
+//#include <D3D12AgilitySDK/d3d12.h>
 #include <Core/RefPtr.hpp>
 #include <vector>
 
@@ -14,6 +15,7 @@ namespace Luden
 	struct FDispatchMeshCommand
 	{
 		D3D12_DISPATCH_MESH_ARGUMENTS Argument;
+
 		uint32 VertexBufferIndex;
 		uint32 MeshletBufferIndex;
 		uint32 MeshletVerticesIndex;
@@ -25,6 +27,8 @@ namespace Luden
 		uint32 MaterialID;
 		uint32 TransformID;
 
+		float  NearZ;
+		float  FarZ;
 	};
 
 	class D3D12CommandSignature
@@ -33,10 +37,7 @@ namespace Luden
 		D3D12CommandSignature() = default;
 		D3D12CommandSignature(D3D12Device* pDevice)
 			: m_ParentDevice(pDevice) {}
-		~D3D12CommandSignature()
-		{
-			Release();
-		}
+		~D3D12CommandSignature();
 
 		HRESULT Build(D3D12Device* pDevice, D3D12RootSignature* pRootSignature);
 		
@@ -51,6 +52,8 @@ namespace Luden
 		void AddConstantsCommand(uint32 NumConstants, uint32 RootIndex, uint32 Offset = 0);
 		void AddConstantsBufferViewCommand(uint32 RootIndex);
 
+		void AddDispatchMeshArgument(uint32 DispatchCountX, uint32 DispatchCountY = 1, uint32 DispatchCountZ = 1);
+
 		void Release();
 
 		void SetDebugName(std::string_view Name);
@@ -60,12 +63,13 @@ namespace Luden
 
 		D3D12Buffer* GetCommandsBuffer() { return m_CommandsBuffer; }
 
+		//D3D12
+
 	private:
 		Ref<ID3D12CommandSignature> m_CommandSignature;
-		//ID3D12CommandSignature* m_CommandSignature = nullptr;
-		
 		D3D12Buffer* m_CommandsBuffer = nullptr;
 
 		D3D12Device* m_ParentDevice	= nullptr;
+
 	};
 } // namespace Luden

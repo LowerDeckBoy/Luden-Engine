@@ -2,6 +2,7 @@
 #define LIGHT_HLSLI
 
 #include "Common.hlsli"
+#include "Color.hlsli"
 #include "../PBR.hlsli"
 
 struct PointLight
@@ -84,8 +85,8 @@ float3 CalculateSpotLight(SpotLight Light, float3 BaseColor, float3 N, float3 V,
 		
 	float theta = dot(L, normalize(Light.Direction));
 	
-	float innerAngle = Light.InnerCutoff * PI / 180.0f;
-	float outerAngle = Light.OuterCutoff * PI / 180.0f;
+	float innerAngle = DegreesToRadians(Light.InnerCutoff);
+	float outerAngle = DegreesToRadians(Light.OuterCutoff);
 	
 	if (innerAngle >= outerAngle)
 	{

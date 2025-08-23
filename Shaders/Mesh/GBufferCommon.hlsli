@@ -11,16 +11,11 @@ struct Payload
 	uint MeshletIndices[AS_GROUP_SIZE];
 };
 
-struct SceneConstants
-{
-	float4x4 View;
-	float4x4 Projection;
-};
-
 struct Transform
 {
-	row_major float4x4 WVP;
-	row_major float4x4 World;
+	float4x4 WVP;
+	float4x4 World;
+	float4x4 PreviousWorld;
 };
 
 struct CameraConsts
@@ -45,6 +40,8 @@ struct PushConstants
 	uint MaterialBuffer;
 	uint MaterialID;
 	uint TransformID;
+	float NearZ;
+	float FarZ;
 };
 
 struct Vertex
@@ -58,11 +55,13 @@ struct Vertex
 
 struct VertexOut
 {
-	float4 Position : SV_POSITION;
-	float4 WorldPosition : WORLD_POSITION;
-	float2 TexCoord : TEXCOORD;
-	float3x3 TBN : TBN;
-	uint MeshletIndex : COLOR0;
+	float4		Position		: SV_POSITION;
+	float4		WorldPosition	: WORLD_POSITION;
+	float4		CurrPosition	: CURR_POSITION;
+	float4		PrevPosition	: PREV_POSITION;
+	float2		TexCoord		: TEXCOORD;
+	float3x3	TBN				: TBN;
+	uint		MeshletIndex	: COLOR0;
 };
 
 ConstantBuffer<PushConstants>	Constants		: register(b1);
@@ -75,17 +74,19 @@ VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 	StructuredBuffer<Transform> transformBuffer = ResourceDescriptorHeap[Constants.TransformBuffer];
 	Transform transform = transformBuffer[Constants.TransformID];
 	
-	vout.Position		= mul(transform.WVP,   float4(InVertex.Position, 1.0f));
-	vout.WorldPosition  = mul(transform.World, float4(InVertex.Position, 1.0f));
+	float4x4 world = transform.World;
+	vout.Position		= mul(transform.WVP,			float4(InVertex.Position, 1.0f));
+	vout.CurrPosition	= mul(transform.WVP,			float4(InVertex.Position, 1.0f));
+	vout.PrevPosition	= mul(transform.PreviousWorld,	float4(InVertex.Position, 1.0f));
+	vout.WorldPosition	= mul(world,					float4(InVertex.Position, 1.0f));
 
 	vout.TexCoord		= InVertex.TexCoord;
-	
-	float3 N = normalize(mul((float3x3)transform.World, InVertex.Normal));
-	float3 T = normalize(mul((float3x3)transform.World, InVertex.Tangent));
-	float3 B = normalize(mul((float3x3)transform.World, InVertex.Bitangent));
 
-	vout.TBN = float3x3(T, B, N);
-	vout.TBN = mul((float3x3) transform.World, transpose(vout.TBN));
+	float3 N = normalize(mul((float3x3)world, InVertex.Normal));
+	float3 T = normalize(mul((float3x3)world, InVertex.Tangent));
+	float3 B = normalize(mul((float3x3)world, InVertex.Bitangent));
+	
+	vout.TBN = mul((float3x3)world, transpose(float3x3(T, B, N)));
 
 	vout.MeshletIndex = MeshletIndex;
 	

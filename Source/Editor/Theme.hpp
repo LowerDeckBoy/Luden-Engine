@@ -13,6 +13,9 @@ namespace Luden::gui
 		InStyle.FrameRounding		= 1.0f;
 		InStyle.FrameBorderSize		= 0.0f;
 		InStyle.ChildBorderSize		= 0.0f;
+		InStyle.TabRounding			= 1.0f;
+		InStyle.GrabRounding		= 1.0f;
+		InStyle.ScrollbarRounding	= 1.0f;
 
 		InStyle.AntiAliasedFill = true;
 		InStyle.AntiAliasedLines = true;
@@ -44,7 +47,7 @@ namespace Luden::gui
 		InStyle.Colors[ImGuiCol_Header]				= Color::Gray;
 		InStyle.Colors[ImGuiCol_HeaderActive]		= Color::White;
 		InStyle.Colors[ImGuiCol_HeaderHovered]		= Color::CoralActive;
-
+		
 		InStyle.Colors[ImGuiCol_DockingPreview]		= Color::Coral;
 		InStyle.Colors[ImGuiCol_ResizeGrip]			= Color::Coral;
 		InStyle.Colors[ImGuiCol_ResizeGripHovered]	= Color::Coral;

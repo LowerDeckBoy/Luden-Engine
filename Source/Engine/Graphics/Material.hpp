@@ -7,9 +7,9 @@ namespace Luden
 {
 	enum EAlphaMode
 	{
-		Opaque,
-		Mask,
-		Blend,
+		Opaque	= 0,
+		Mask	= 1,
+		Blend	= 2,
 	};
 
 	struct Material

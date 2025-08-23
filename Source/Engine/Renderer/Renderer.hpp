@@ -75,6 +75,8 @@ namespace Luden
 		FXAA*			FXAAPass;
 		Tonemapping*	TonemappingPass;
 		SSAO*			SSAOPass;
+
+		double PresentRenderTime = 0.0;
 	
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;

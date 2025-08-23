@@ -12,11 +12,19 @@ namespace Luden
 	struct SSAOParameters
 	{
 		DirectX::XMMATRIX Projection;
+		DirectX::XMMATRIX InvProjection;
+		DirectX::XMMATRIX InvView;
+		DirectX::XMMATRIX InvViewProjection;
 
 		uint32 OutputImageIndex;
 		uint32 BaseColorIndex;
 		uint32 NormalIndex;
 		uint32 WorldPositionIndex;
+
+		float Radius = 0.5f;
+		float Bias = 0.025f;
+		uint32 pad = 0;
+		uint32 pad2 = 0;
 
 		DirectX::XMFLOAT4 Samples[64];
 		DirectX::XMFLOAT4 Noise[16];
@@ -38,6 +46,10 @@ namespace Luden
 		SSAOParameters Parameters{};
 
 		D3D12ConstantBuffer* ConstantBuffer;
+
+		D3D12Pipeline VertexPSO;
+
+		D3D12Texture* NoiseTexture;
 
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;

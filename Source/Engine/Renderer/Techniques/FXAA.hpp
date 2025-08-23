@@ -13,7 +13,7 @@ namespace Luden
 	{
 		uint32	SceneImageIndex;
 		uint32	OutputImageIndex;
-		float	QualitySubpixel		= 8.0f;
+		float	QualitySubpixel		= 1.0f;
 		float	EdgeThreshold		= 1.0f / 8.0f;
 		float	EdgeThresholdMin	= 1.0f / 128.0f;
 	};

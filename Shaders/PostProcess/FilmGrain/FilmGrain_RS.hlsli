@@ -1,0 +1,6 @@
+#ifndef FILM_GRAIN_RS_HLSLI
+#define FILM_GRAIN_RS_HLSLI
+
+#define FILM_GRAIN_RS ""
+
+#endif //FILM_GRAIN_RS_HLSLI

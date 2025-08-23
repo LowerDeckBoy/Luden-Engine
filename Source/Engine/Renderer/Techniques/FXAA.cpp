@@ -20,7 +20,7 @@ namespace Luden
 
 	void FXAA::Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 OutputImageIndex)
 	{
-		auto renderBeginTime = Time::GetTimestamp();
+		const auto renderBeginTime = Time::GetTimestamp();
 
 		auto commandList = CurrentFrame.ComputeCommandList;
 		// Should 8 suffice?
@@ -38,7 +38,7 @@ namespace Luden
 		const uint32 dispatchY = Math::RoundUp<uint32>(RenderTarget.GetDesc().Height / dispatchBlock);
 		commandList->Dispatch(dispatchX, dispatchY, 1);
 
-		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime).count();
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 	}
 
 	void FXAA::Resize(uint32 Width, uint32 Height)

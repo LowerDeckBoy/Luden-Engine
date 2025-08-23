@@ -199,9 +199,9 @@ namespace Luden
 		m_GraphicsCommandList->ResolveSubresource(DestResource->GetHandle(), DestSubresource, SourceResource->GetHandle(), SourceSubresource, Format);
 	}
 
-	void D3D12CommandList::ClearDepthStencilView(D3D12Descriptor& DepthStencilView)
+	void D3D12CommandList::ClearDepthStencilView(D3D12Descriptor& DepthStencilView, float ClearValue)
 	{
-		m_GraphicsCommandList->ClearDepthStencilView(DepthStencilView.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, D3D12_MAX_DEPTH, 0, 0, nullptr);
+		m_GraphicsCommandList->ClearDepthStencilView(DepthStencilView.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, ClearValue, 0, 0, nullptr);
 	}
 
 	void D3D12CommandList::SetRenderTargets(D3D12Descriptor& RenderTargetView)
@@ -254,6 +254,11 @@ namespace Luden
 		{
 			m_GraphicsCommandList->SetComputeRoot32BitConstants(Slot, Count, pData, Offset);
 		}
+	}
+
+	void D3D12CommandList::PushComputeConstants(uint32 Slot, uint32 Count, void* pData, uint32 Offset)
+	{
+		m_GraphicsCommandList->SetComputeRoot32BitConstants(Slot, Count, pData, Offset);
 	}
 
 	void D3D12CommandList::PushRootSRV(uint32 Slot, uint64 Address)
@@ -313,6 +318,12 @@ namespace Luden
 		{
 			m_GraphicsCommandList->SetComputeRootConstantBufferView(RegisterSlot, address);
 		}
+	}
+
+	void D3D12CommandList::SetComputeConstantBuffer(uint32 RegisterSlot, D3D12ConstantBuffer* pConstantBuffer)
+	{
+		const auto address = pConstantBuffer->GetBuffer()->GetGPUVirtualAddress();
+		m_GraphicsCommandList->SetComputeRootConstantBufferView(RegisterSlot, address);
 	}
 
 } // namespace Luden

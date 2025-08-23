@@ -97,13 +97,13 @@ namespace Luden
 	{
 	public:
 		D3D12DepthBuffer();
-		D3D12DepthBuffer(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
+		D3D12DepthBuffer(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT, float DepthValue = D3D12_MAX_DEPTH);
 		~D3D12DepthBuffer();
 
-		void Create(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
-		void Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT);
+		void Create(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT, float DepthValue = D3D12_MAX_DEPTH);
+		void Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format = DXGI_FORMAT_D32_FLOAT, float DepthValue = D3D12_MAX_DEPTH);
 
-		void Resize(uint32 Width, uint32 Height);
+		void Resize(uint32 Width, uint32 Height, float DepthValue = D3D12_MAX_DEPTH);
 
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor DepthStencilHandle;

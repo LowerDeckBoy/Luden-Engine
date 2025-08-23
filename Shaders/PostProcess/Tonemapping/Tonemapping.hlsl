@@ -23,6 +23,8 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	RWTexture2D<float4> scene = GetBindlessRWTexture<float4>(Constants.SceneImageIndex);
 	
 	float3 color = scene[DispatchThreadID.xy].rgb;
+	//color = max(GetLuminance(color), 0.0001f);
+	//scene[DispatchThreadID.xy] = float4(color, 1.0f);
 	scene[DispatchThreadID.xy] = float4(Tonemapping::ApplyTonemapping(color, Constants.Exposure, Constants.FilterType), 1.0f);
 
 }

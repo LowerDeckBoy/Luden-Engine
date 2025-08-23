@@ -27,6 +27,7 @@ namespace Luden
 
 		GBuffer			= new GeometryPass(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
 		LightingPass	= new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, pParentWindow->Width, pParentWindow->Height);
+
 		BloomPass		= new Bloom(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
 		FXAAPass		= new FXAA(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
 		TonemappingPass = new Tonemapping(pD3D12RHI, m_ShaderCompiler);
@@ -97,15 +98,16 @@ namespace Luden
 		{
 			auto& transformComponent = model->GetComponent<ecs::TransformComponent>();
 
+			auto& transform	= ActiveScene->Transforms.at(model->TransformID);
+
 			if (transformComponent.bDirty)
 			{
 				transformComponent.Update();
 			}
 
-			auto& transform	= ActiveScene->Transforms.at(model->TransformID);
 			transform.WVP			= transformComponent.WorldMatrix * Camera->GetViewProjection();
 			transform.World			= transformComponent.WorldMatrix;
-			transform.View			= Camera->GetView();
+			transform.PreviousWorld = transformComponent.PreviousPosition * Camera->GetViewProjection();
 		}
 
 		std::memcpy(ActiveScene->TransformsBuffer->GetBufferDesc().Data, ActiveScene->Transforms.data(), (ActiveScene->Transforms.size() * sizeof(ecs::ObjectTransforms)));
@@ -133,11 +135,11 @@ namespace Luden
 			{
 				GBuffer->Render(ActiveScene, Camera, *frame);
 			}
+			else
+			{
+				GBuffer->RenderIndirect(ActiveScene, Camera, *frame);
+			}
 			// Not used for now.
-			//else
-			//{
-			//	GBuffer->RenderIndirect(ActiveScene, Camera, *frame);
-			//}
 
 			if (Config::Get().bEnableSSAO)
 			{
@@ -145,6 +147,15 @@ namespace Luden
 				SSAOPass->Render(*frame, GBuffer, Camera);
 				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			}
+
+
+			// Open ComputeCommandList before dispatching Post-Processes and set DescriptorHeap once.
+			if (!frame->ComputeCommandList->IsOpen())
+			{
+				frame->ComputeCommandList->Open();
+			}
+
+			frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
 
 			// Light Pass
 			if (!Config::Get().bLightPassCompute)
@@ -159,14 +170,6 @@ namespace Luden
 			// Post-Processes
 			if (Config::Get().bEnablePostProcess)
 			{
-				// Open ComputeCommandList before dispatching Post-Processes and set DescriptorHeap once.
-				if (!frame->ComputeCommandList->IsOpen())
-				{
-					frame->ComputeCommandList->Open();
-				}
-
-				frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
-
 				frame->ComputeCommandList->ResourceTransition({
 					{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_COPY_SOURCE },
 					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_COPY_DEST }
@@ -184,8 +187,8 @@ namespace Luden
 
 				if (Config::Get().bEnableBloom)
 				{
-					BloomPass->Render(*frame, GBuffer->Emissive.RenderTargetHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
-					BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->BaseColor.ShaderResourceHandle.Index);
+					BloomPass->Render(*frame, GBuffer->Emissive.ShaderResourceHandle.Index, LightingPass->RenderTexture.ShaderResourceHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
+					BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->Emissive.ShaderResourceHandle.Index);
 				}
 
 				if (Config::Get().bEnableTonemapping)
@@ -211,10 +214,6 @@ namespace Luden
 				{ RaytracingOutput,		D3D12_RESOURCE_STATE_UNORDERED_ACCESS } });
 		}
 
-		//commandList->ResourceTransition({
-		//	{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &backbuffer,			D3D12_RESOURCE_STATE_RENDER_TARGET } });
-		
 		commandList->ResourceTransition(&backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		commandList->GetHandleRaw()->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
 		commandList->GetHandleRaw()->ClearRenderTargetView(rtvHandle, DefaultClearColor.data(), 0, nullptr);
@@ -235,8 +234,9 @@ namespace Luden
 
 	void Renderer::Present(uint32 SyncInterval)
 	{
+		auto presentBeginTime = Time::GetTimestamp();
 		m_D3D12RHI->Present(SyncInterval);
-		
+		PresentRenderTime = Time::GetDurationInMiliseconds(presentBeginTime);
 	}
 
 	void Renderer::Resize()
@@ -247,25 +247,27 @@ namespace Luden
 		for (uint32 i = 0; i < Config::Get().NumBackBuffers; ++i)
 		{
 			m_D3D12RHI->FrameSync.CurrentValues.at(i) = m_D3D12RHI->FrameSync.CurrentValues.at(BackBufferIndex);
-
 			m_D3D12RHI->Frames.at(i).GraphicsCommandList->Open();
-
 		}
 
 		m_ParentWindow->Resize();
-		m_D3D12RHI->SwapChain->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
-		m_D3D12RHI->SceneDepthBuffer->Resize(m_ParentWindow->Width, m_ParentWindow->Height, 1.0f);
 
-		SceneTextures.Scene.Resize(m_ParentWindow->Width, m_ParentWindow->Height);
-		GBuffer->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
-		LightingPass->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
-		BloomPass->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
-		FXAAPass->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
-		SSAOPass->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
+		const uint32 width  = m_ParentWindow->Width;
+		const uint32 height = m_ParentWindow->Height;
+
+		m_D3D12RHI->SwapChain->Resize(width, height);
+		m_D3D12RHI->SceneDepthBuffer->Resize(width, height, 1.0f);
+
+		SceneTextures.Scene.Resize(width, height);
+		GBuffer->Resize(width, height);
+		LightingPass->Resize(width, height);
+		BloomPass->Resize(width, height);
+		FXAAPass->Resize(width, height);
+		SSAOPass->Resize(width, height);
 
 		if (RaytracingBVH != nullptr)
 		{
-			RaytracingOutput->Resize(m_ParentWindow->Width, m_ParentWindow->Height);
+			RaytracingOutput->Resize(width, height);
 		}
 
 		std::vector<D3D12CommandList*> lists;
@@ -385,54 +387,52 @@ namespace Luden
 		pScene->SkyLight.AddComponent<ecs::DirectionalLightComponent>();
 
 		/*
+		*/
 		if (GBuffer->IndirectSignature != nullptr)
 		{
 			GBuffer->IndirectSignature->Release();
 			GBuffer->IndirectSignature = nullptr;
-
-			if (GBuffer->IndirectArgumentsBuffer != nullptr)
-			{
-				GBuffer->IndirectArgumentsBuffer->Release();
-				GBuffer->IndirectArgumentsBuffer = nullptr;
-			}
 		}
 
 		GBuffer->IndirectSignature = new D3D12CommandSignature(m_D3D12RHI->Device);
 		std::vector<FDispatchMeshCommand> drawCommands;
-		GBuffer->IndirectSignature->AddDispatchMeshCommand();
-		*/
-
+		//GBuffer->IndirectSignature->AddConstantsCommand(14, 1);
+		
 		for (auto& model : pScene->Models)
 		{
 			// Initialize resources.
 			model->Create(m_D3D12RHI->Device);
 
 			// Gather indirect arguments.
-			//for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
-			//{
-			//	auto& mesh = model->Meshes.at(meshIdx);
-			//
-			//	FDispatchMeshCommand command{};
-			//	command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
-			//	command.Argument.ThreadGroupCountY	= 1;
-			//	command.Argument.ThreadGroupCountZ	= 1;
-			//
-			//	command.MeshletBufferIndex			= mesh.MeshletsBuffer;
-			//	command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
-			//	command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
-			//	command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
-			//
-			//	command.TransformsBufferIndex		= pScene->TransformsBuffer->ShaderResourceView.Index;
-			//	command.MaterialsBufferIndex		= pScene->MaterialBuffer->ShaderResourceView.Index;
-			//	command.TransformID					= model->TransformID;
-			//	command.MaterialID					= mesh.MaterialID;
-			//
-			//	drawCommands.push_back(command);
-			//}
-		}
+			for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
+			{
+				auto& mesh = model->Meshes.at(meshIdx);
+			
+				FDispatchMeshCommand command{};
+				command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
+				command.Argument.ThreadGroupCountY	= 1;
+				command.Argument.ThreadGroupCountZ	= 1;
+			
+				
 
-		/*
-		// To finish:
+				command.VertexBufferIndex			= mesh.VertexBuffer;
+				command.MeshletBufferIndex			= mesh.MeshletsBuffer;
+				command.MeshletVerticesIndex		= mesh.MeshletVerticesBuffer;
+				command.MeshletTrianglesIndex		= mesh.MeshletTrianglesBuffer;
+				command.MeshletBoundsBufferIndex	= mesh.MeshletBoundsBuffer;
+			
+				command.TransformsBufferIndex		= pScene->TransformsBuffer->ShaderResourceView.Index;
+				command.MaterialsBufferIndex		= pScene->MaterialBuffer->ShaderResourceView.Index;
+				command.TransformID					= model->TransformID;
+				command.MaterialID					= mesh.MaterialID;
+
+				//GBuffer->IndirectSignature->AddConstantsCommand(14, 1);
+			GBuffer->IndirectSignature->AddConstantsCommand(14, 1);
+				drawCommands.push_back(command);
+			}
+		}
+		GBuffer->IndirectSignature->AddDispatchMeshCommand();
+
 		BufferDesc desc{};
 		desc.Data			= drawCommands.data();
 		desc.NumElements	= static_cast<uint32>(drawCommands.size());
@@ -440,13 +440,11 @@ namespace Luden
 		desc.Size			= static_cast<uint64>(desc.NumElements * desc.Stride);
 		desc.BufferUsage	= BufferUsageFlag::IndirectArgument;
 		desc.Name			= "D3D12 Command Signature Indirect Buffer";
-		//GBuffer->IndirectArgumentsBuffer = new D3D12Buffer(m_D3D12RHI->Device, desc);
+		
 		//VERIFY_D3D12_RESULT(GBuffer->IndirectSignature->Build(m_D3D12RHI->Device, &GBuffer->IndirectPipelineState.RootSignature));
 		//GBuffer->IndirectSignature->CreateCommandsBuffer(desc);
-		*/
 
 		//InitializeRaytracingResources();
-
 
 	}
 

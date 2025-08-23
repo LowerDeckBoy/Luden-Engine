@@ -12,7 +12,8 @@ namespace Luden
 		Reinhard,
 		GammaCorrection,
 		Uncharted2,
-		ACES
+		ACES,
+		Hable
 	};
 
 	class Tonemapping

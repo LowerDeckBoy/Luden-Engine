@@ -46,8 +46,8 @@ namespace Luden
 		switch (Desc.BufferUsage)
 		{
 		case BufferUsageFlag::AccelerationStructure:
-			//desc.Flags		= D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-			desc.Flags		= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+			desc.Flags		= D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+			//desc.Flags		= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 			resourceState	= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 			break;
 		case BufferUsageFlag::UnorderedAccess:
@@ -81,15 +81,6 @@ namespace Luden
 			nullptr,
 			&m_ResourceAllocation,
 			IID_PPV_ARGS(&m_Resource)));
-
-		//VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommittedResource2(
-		//	&heapProperties,
-		//	D3D12_HEAP_FLAG_NONE,
-		//	&desc,
-		//	resourceState,
-		//	nullptr,
-		//	nullptr,
-		//	IID_PPV_ARGS(&m_Resource)));
 
 		m_BufferDesc = Desc;
 
@@ -126,9 +117,9 @@ namespace Luden
 
 	D3D12DepthBuffer::D3D12DepthBuffer() = default;
 
-	D3D12DepthBuffer::D3D12DepthBuffer(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format)
+	D3D12DepthBuffer::D3D12DepthBuffer(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format, float DepthValue)
 	{
-		Create(pDevice, pViewport, Format);
+		Create(pDevice, pViewport, Format, DepthValue);
 	}
 	
 	D3D12DepthBuffer::~D3D12DepthBuffer()
@@ -136,23 +127,23 @@ namespace Luden
 
 	}
 
-	void D3D12DepthBuffer::Create(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format)
+	void D3D12DepthBuffer::Create(D3D12Device* pDevice, D3D12Viewport* pViewport, DXGI_FORMAT Format, float DepthValue)
 	{
 		Create(pDevice, 
 			static_cast<uint32>(pViewport->Viewport.Width), 
 			static_cast<uint32>(pViewport->Viewport.Height),
-			Format);
+			Format,
+			DepthValue);
 	}
 
-	void D3D12DepthBuffer::Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format)
+	void D3D12DepthBuffer::Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, float DepthValue)
 	{
 		m_Device = pDevice;
 
 		D3D12_CLEAR_VALUE clearValue{};
 		clearValue.Format = Format;
-		clearValue.DepthStencil.Depth = D3D12_MAX_DEPTH;
+		clearValue.DepthStencil.Depth = DepthValue;
 		clearValue.DepthStencil.Stencil = 0;
-	   // clearValue.DepthStencil.Stencil = 0;
 
 		D3D12_RESOURCE_DESC1 desc{};
 		desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -162,9 +153,8 @@ namespace Luden
 		desc.MipLevels          = 1;
 		desc.Format             = Format;
 		desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		//desc.Alignment          = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 		desc.SampleDesc         = { 1, 0 };
-		desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+		desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;// | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
 
 		m_Desc = desc;
 
@@ -180,7 +170,7 @@ namespace Luden
 			IID_PPV_ARGS(&m_Resource)));
 
 		m_Device->CreateDepthStencilView(this, DepthStencilHandle, Format);
-
+		D3D12Resource::SetResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE);
 		D3D12_DEPTH_STENCIL_VIEW_DESC readDesc{};
 		readDesc.Format = Format;
 		readDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
@@ -196,19 +186,18 @@ namespace Luden
 		}
 
 		m_Device->DepthStencilHeap->Allocate(DepthReadHandle);
-
-		m_Device->LogicalDevice->CreateDepthStencilView(GetHandleRaw(), &readDesc, DepthReadHandle.CpuHandle);
+		//m_Device->LogicalDevice->CreateDepthStencilView(GetHandleRaw(), &readDesc, DepthReadHandle.CpuHandle);
 
 	}
 
-	void D3D12DepthBuffer::Resize(uint32 Width, uint32 Height)
+	void D3D12DepthBuffer::Resize(uint32 Width, uint32 Height, float DepthValue)
 	{
 		if (IsValid())
 		{
 			Release();
 		}
 
-		Create(m_Device, Width, Height, m_Format);
+		Create(m_Device, Width, Height, m_Format, DepthValue);
 	}
 
 	D3D12ConstantBuffer::D3D12ConstantBuffer(D3D12Device* pDevice, void* pData, usize Size)

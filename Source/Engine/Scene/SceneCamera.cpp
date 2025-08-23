@@ -19,6 +19,7 @@ namespace Luden
 		XMStoreFloat4x4(&View, XMMatrixLookAtLH(XMLoadFloat3(&Position), XMLoadFloat4(&Target), XMLoadFloat3(&Up)));
 		AspectRatio = (f32)pWindow->Width / (f32)pWindow->Height;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
+		//XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zFar, zNear));
 
 		DirectInput8Create(pWindow->Instance, DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(&DxInput), NULL);
 		DxInput->CreateDevice(GUID_SysKeyboard, &DxKeyboard, NULL);
@@ -40,6 +41,7 @@ namespace Luden
 	{
 		AspectRatio = (f32)m_ParentWindow->Width / (f32)m_ParentWindow->Height;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
+		//XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zFar, zNear));
 	
 		//Update();
 	}
@@ -149,6 +151,7 @@ namespace Luden
 
 		XMStoreFloat4x4(&View, XMMatrixLookAtLH(position, target, up));
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
+		//XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zFar, zNear));
 
 		// Store vector and matrices.
 		XMStoreFloat3(&m_Forward, forward);

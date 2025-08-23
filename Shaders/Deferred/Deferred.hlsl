@@ -93,7 +93,6 @@ float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 	{
 		SpotLight light = SpotLights[spotLightIdx];
 		Lo += CalculateSpotLight(light, baseColor.rgb, N, V, NdotV, worldPosition, metalness, roughness);
-		//Lo += CalculatePointLight(light, baseColor.rgb, N, V, NdotV, worldPosition, metalness, roughness);
 	}
 	
 	// Single directional lighting.

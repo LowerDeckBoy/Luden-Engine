@@ -1,5 +1,7 @@
 #include "../Colors.hpp"
 #include "Components.hpp"
+#include "Tooltip.hpp"
+#include <Engine/ECS/Entity.hpp>
 #include <ImGui/imgui_stdlib.h>
 #include <ImGui/ImGuizmo.h>
 #include <FontAwsome6/IconsFontAwesome6.h>
@@ -13,9 +15,7 @@ namespace Luden::gui
 
 		ImGui::PushID(Label.data());
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
-		//ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth() * 1.25f);
-		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
-		//ImGui::PushMultiItemsWidths(3, ImGui::GetContentRegionAvail().x /3);// * 1.25f);
+		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth() - 6);
 
 		ImGui::PushStyleColor(ImGuiCol_Button, Color::Red);
 		if (ImGui::Button("##x")) 
@@ -166,12 +166,12 @@ namespace Luden::gui
 		}
 	}
 
-	void DrawNameComponent(ecs::NameComponent& Component)
+	void DrawNameComponent( ecs::NameComponent& Component)
 	{
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("Name:");
+		ImGui::Checkbox("##visible", &Component.bVisibleInScene);
 		ImGui::SameLine();
 		std::string last = Component.Name;
+		ImGui::AlignTextToFramePadding();
 		if (ImGui::InputText("##name", &Component.Name, ImGuiInputTextFlags_None))
 		{
 			if (Component.Name.empty())
@@ -196,13 +196,14 @@ namespace Luden::gui
 
 		if (ImGui::BeginTable("##pointLight", 2, ImGuiTableFlags_Resizable))
 		{
-			ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+			//ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 60.0f);
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 
 			ImGui::AlignTextToFramePadding();
 			ImGui::Text("Position");
 			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
 			Math::DrawFloat3("Position", Component.Position);
 
 			ImGui::TableNextRow();
@@ -210,6 +211,7 @@ namespace Luden::gui
 			ImGui::AlignTextToFramePadding();
 			ImGui::Text("Ambient");
 			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
 			Math::EditColor3("Ambient", Component.Ambient);
 
 			ImGui::TableNextRow();
@@ -217,9 +219,8 @@ namespace Luden::gui
 			ImGui::AlignTextToFramePadding();
 			ImGui::Text("Radius");
 			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
 			ImGui::DragFloat("##radius", &Component.Radius, 1.0f, 1.0f, 0.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-			
-			
 
 			ImGui::EndTable();
 		}

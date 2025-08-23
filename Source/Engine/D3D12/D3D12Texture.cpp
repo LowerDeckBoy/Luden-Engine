@@ -13,7 +13,7 @@ namespace Luden
 		Create(pDevice, Desc);
 	}
 
-	D3D12Texture::D3D12Texture(D3D12Device* pDevice, TextureDesc Desc, Filepath Path)
+	D3D12Texture::D3D12Texture(D3D12Device* pDevice, TextureDesc Desc, Filepath /* Path */)
 		: m_TextureDesc(Desc)
 	{
 		D3D12_RESOURCE_DESC1 desc{};
@@ -23,7 +23,7 @@ namespace Luden
 		desc.Height				= Desc.Height;
 		desc.DepthOrArraySize	= Desc.DepthOrArray;
 		desc.MipLevels			= Desc.NumMips;
-		desc.Layout				= D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		desc.Layout				= D3D12_TEXTURE_LAYOUT_UNKNOWN;
 		desc.Alignment			= D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 		desc.SampleDesc			= { 1, 0 };
 

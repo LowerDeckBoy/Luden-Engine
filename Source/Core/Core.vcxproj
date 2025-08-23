@@ -113,7 +113,8 @@
     <ClInclude Include="Math\Math.hpp" />
     <ClInclude Include="Math\Ray.hpp" />
     <ClInclude Include="Thread.hpp" />
-    <ClInclude Include="Timer.hpp" />
+    <ClInclude Include="Time\Time.hpp" />
+    <ClInclude Include="Time\Timer.hpp" />
     <ClInclude Include="RefPtr.hpp" />
     <ClInclude Include="String.hpp" />
     <ClInclude Include="Math\Vector.hpp" />

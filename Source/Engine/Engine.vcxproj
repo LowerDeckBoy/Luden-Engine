@@ -116,6 +116,8 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
   <ItemGroup>
     <ClInclude Include="Asset\AssetImporter.hpp" />
     <ClInclude Include="Asset\ShaderCache.hpp" />
+    <ClInclude Include="Renderer\Techniques\Atmosphere.hpp" />
+    <ClInclude Include="Renderer\Techniques\ChromaticAberration.hpp" />
     <ClInclude Include="Renderer\Techniques\Bloom.hpp" />
     <ClInclude Include="Config.hpp" />
     <ClInclude Include="D3D12\D3D12CommandSignature.hpp" />
@@ -181,11 +183,15 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Scene\SceneCamera.hpp" />
     <ClInclude Include="Scene\Scene.hpp" />
     <ClInclude Include="Asset\ShaderCompiler.hpp" />
+    <ClInclude Include="Renderer\Techniques\Tonemapping.hpp" />
+    <ClInclude Include="Renderer\Techniques\SSR.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Asset\AssetImporter.cpp" />
     <ClCompile Include="Asset\AssimpLoader.cpp" />
     <ClCompile Include="Asset\fastgltfLoader.cpp" />
+    <ClCompile Include="Renderer\Techniques\Atmosphere.cpp" />
+    <ClCompile Include="Renderer\Techniques\ChromaticAberration.cpp" />
     <ClCompile Include="Renderer\Techniques\Bloom.cpp" />
     <ClCompile Include="D3D12\D3D12CommandSignature.cpp" />
     <ClCompile Include="D3D12\D3D12ShaderTable.cpp" />
@@ -240,6 +246,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="ECS\Entity.cpp" />
     <ClCompile Include="ECS\World.cpp" />
     <ClCompile Include="Graphics\Model.cpp" />
+    <ClCompile Include="Renderer\Techniques\FXAA.cpp" />
     <ClCompile Include="Renderer\Techniques\GeometryPass.cpp" />
     <ClCompile Include="Renderer\Renderer.cpp" />
     <ClCompile Include="Renderer\RenderPass.cpp" />
@@ -250,6 +257,8 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="Scene\SceneCamera.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
     <ClCompile Include="Asset\ShaderCompiler.cpp" />
+    <ClCompile Include="Renderer\Techniques\Tonemapping.cpp" />
+    <ClCompile Include="Renderer\Techniques\SSR.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

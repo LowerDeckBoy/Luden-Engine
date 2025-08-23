@@ -5,7 +5,7 @@
 	"DENY_HULL_SHADER_ROOT_ACCESS |"\
 	"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
 	"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
-	"RootConstants(num32BitConstants=12, b1), "\
+	"RootConstants(num32BitConstants=14, b1), "\
 	"RootConstants(num32BitConstants=28, b2), "\
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_WRAP, "\

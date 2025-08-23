@@ -47,6 +47,7 @@
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Build\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
     <TargetName>LudenEngine</TargetName>
+    <EnableClangTidyCodeAnalysis>false</EnableClangTidyCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
@@ -112,6 +113,11 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Components\Components.cpp" />
+    <ClCompile Include="Dependencies\ImGui\GraphEditor.cpp" />
+    <ClCompile Include="Dependencies\ImGui\ImCurveEdit.cpp" />
+    <ClCompile Include="Dependencies\ImGui\ImGradient.cpp" />
+    <ClCompile Include="Dependencies\ImGui\ImGuizmo.cpp" />
+    <ClCompile Include="Dependencies\ImGui\ImSequencer.cpp" />
     <ClCompile Include="Panels\ConfigPanel.cpp" />
     <ClCompile Include="Panels\ContentBrowserPanel.cpp" />
     <ClCompile Include="Dependencies\ImGui\imgui.cpp" />
@@ -132,8 +138,13 @@
     <ClInclude Include="Components\Components.hpp" />
     <ClInclude Include="Components\GUI.hpp" />
     <ClInclude Include="Components\Helpers.hpp" />
-    <ClInclude Include="Components\Model.hpp" />
     <ClInclude Include="Components\Tooltip.hpp" />
+    <ClInclude Include="Dependencies\ImGui\GraphEditor.h" />
+    <ClInclude Include="Dependencies\ImGui\ImCurveEdit.h" />
+    <ClInclude Include="Dependencies\ImGui\ImGradient.h" />
+    <ClInclude Include="Dependencies\ImGui\ImGuizmo.h" />
+    <ClInclude Include="Dependencies\ImGui\ImSequencer.h" />
+    <ClInclude Include="Dependencies\ImGui\ImZoomSlider.h" />
     <ClInclude Include="Panels\ConfigPanel.hpp" />
     <ClInclude Include="Panels\ContentBrowserPanel.hpp" />
     <ClInclude Include="Dependencies\ImGui\imconfig.h" />

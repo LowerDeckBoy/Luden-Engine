@@ -1,0 +1,6 @@
+#ifndef ATMOSPHERE_RS_HLSLI
+#define ATMOSPHERE_RS_HLSLI
+
+#define ATMOSPHERE_RS ""
+
+#endif // ATMOSPHERE_RS_HLSLI

@@ -58,7 +58,7 @@ namespace Luden
 			// Target (i.e. vs_6_0)
 			L"-T", shaderType.c_str(),
 			// Include paths: without them, it can cause issues when trying to do includes inside hlsl
-			L"-I Shaders/",
+			L"-I ../../Shaders/",
 			L"-I ", parentPath.c_str(),
 			// HLSL version: 2021 is latest
 			L"-HV 2021",

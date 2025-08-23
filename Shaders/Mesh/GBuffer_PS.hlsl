@@ -3,16 +3,20 @@
 
 #include "GBuffer_RS.hlsli"
 #include "GBufferCommon.hlsli"
+#include "../Common/Bindless.hlsli"
+#include "../Common/Common.hlsli"
 
 SamplerState AnisotropicSampler : register(s0);
 
 struct GBuffers
 {
-	float4 BaseColor;
-	float4 Normal;
-	float4 MetallicRoughness;
-	float4 Emissive;
-	float4 WorldPosition;
+	float4 BaseColor			: SV_TARGET0;
+	float4 Normal				: SV_TARGET1;
+	float4 MotionVectors		: SV_TARGET2;
+	float4 MetallicRoughness	: SV_TARGET3;
+	float4 Emissive				: SV_TARGET4;
+	float4 WorldPosition		: SV_TARGET5;
+	float4 Depth				: SV_TARGET6;
 };
 
 int IsIndexValid(uint Index)
@@ -25,25 +29,27 @@ int IsIndexValid(uint Index)
 	return 1;
 }
 
-Texture2D GetTexture(in uint Index)
-{
-	Texture2D output = ResourceDescriptorHeap[Index];
-	
-	return output;
-}
-
 [earlydepthstencil]
 [RootSignature(GBUFFER_ROOT_SIG)]
-GBuffers PSMain(VertexOut pin) : SV_TARGET
+GBuffers PSMain(VertexOut pin) 
 {
 	GBuffers output = (GBuffers) 0;
+
+	const float z = 1.0f - (pin.Position.z / pin.Position.w);
+	output.Depth = float4(z, z, z, 1.0f);
+	
+	float2 a = (pin.CurrPosition.xy / pin.CurrPosition.w);
+	float2 b = (pin.PrevPosition.xy / pin.PrevPosition.w);
+	float2 motion = (a - b);
+	output.MotionVectors = float4(motion.xy , 0.0f, 1.0f);
 
 	StructuredBuffer<FMaterial> materialBuffer = ResourceDescriptorHeap[Constants.MaterialBuffer];
 	FMaterial material = materialBuffer[Constants.MaterialID];
 	
-	output.WorldPosition = float4(pin.WorldPosition.xyz, 0.0f);
+	output.WorldPosition = float4(pin.WorldPosition.xyz, z);
+	//output.WorldPosition = float4(GetWorldPosition(pin.Position, ), z);
 	
-	output.Emissive = float4(material.EmissiveFactor);
+	output.Emissive = float4(material.EmissiveFactor.rgb, material.EmissiveFactor.a);
 	if (IsIndexValid(material.EmissiveIndex))
 	{
 		Texture2D emissiveTexture = ResourceDescriptorHeap[material.EmissiveIndex];
@@ -51,12 +57,13 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 		output.Emissive *= material.EmissiveFactor;
 	}
 	
-	output.BaseColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
+	output.BaseColor = float4(material.BaseColorFactor.rgb, material.BaseColorFactor.a);
 	if (IsIndexValid(material.BaseColorIndex))
 	{
 		Texture2D baseColorTexture = GetTexture(material.BaseColorIndex);
 		
-		float4 baseColor = baseColorTexture.Sample(AnisotropicSampler, pin.TexCoord) * float4(material.BaseColorFactor.rgba);
+		float4 baseColor = baseColorTexture.Sample(AnisotropicSampler, pin.TexCoord);
+		baseColor.rgb *= material.BaseColorFactor.rgb;
 		
 		if (Constants.bAlphaMask)
 		{
@@ -66,7 +73,7 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 			}
 		}
 		
-		output.BaseColor = float4(baseColor.rgb + output.Emissive.rgb, 1.0f);
+		output.BaseColor = float4(baseColor.rgb + output.Emissive.rgb, baseColor.a);
 	}
 	
 	if (Constants.bDrawMeshlets)
@@ -77,17 +84,14 @@ GBuffers PSMain(VertexOut pin) : SV_TARGET
 	}
 	
 	output.Normal = float4(0.0f, 1.0f, 0.0f, 0.0f);
+
 	if (IsIndexValid(material.NormalIndex))
 	{
 		Texture2D normalTexture = ResourceDescriptorHeap[material.NormalIndex];
-		float4 normalMap = normalize(2.0f * normalTexture.Sample(AnisotropicSampler, pin.TexCoord) - float4(1.0f, 1.0f, 1.0f, 1.0f));
+		float4 normalMap = normalize(2.0f * normalTexture.Sample(AnisotropicSampler, pin.TexCoord) - 1.0f);
 		float4 n = float4(normalize(mul(pin.TBN, normalMap.xyz)), normalMap.w);
-		output.Normal = float4(n.rgb, normalMap.w);
+		output.Normal = float4(n);
 	}
-	
-	// Saving depth into unused Normal's W component.
-	const float z = 1.0f - (pin.Position.z / pin.Position.w);
-	output.Normal.w = z;
 
 	output.MetallicRoughness = float4(0.0f, material.Roughness, material.Metallic, 1.0f);
 	if (IsIndexValid(material.MetallicRoughnessIndex))

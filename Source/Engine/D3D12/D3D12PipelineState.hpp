@@ -71,6 +71,7 @@ namespace Luden
 		D3D12PipelineStateBuilder(D3D12Device* pDevice);
 
 		HRESULT Build(D3D12PipelineState& Pipeline);
+		HRESULT Build(D3D12Device* pDevice, D3D12Pipeline& Pipeline);
 
 		void SetRootSignature(D3D12RootSignature* pRootSignature);
 
@@ -159,7 +160,7 @@ namespace Luden
 	class D3D12ComputePipelineStateBuilder
 	{
 	public:
-		D3D12ComputePipelineStateBuilder(D3D12Device* pDevice);
+		D3D12ComputePipelineStateBuilder();
 
 		HRESULT Build(D3D12Device* pDevice, D3D12Pipeline& OutPipeline);
 

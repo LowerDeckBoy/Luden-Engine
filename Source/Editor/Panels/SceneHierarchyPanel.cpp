@@ -29,6 +29,7 @@ namespace Luden::Panel
 
 	void SceneHierarchyPanel::DrawPanel()
 	{
+		
 		if (ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			if (m_ActiveScene->Models.empty())
@@ -69,8 +70,8 @@ namespace Luden::Panel
 					ImGuiTreeNodeFlags flags =
 						((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
 						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanFullWidth;
-					ImGui::SetNextItemWidth(-1.0f);
 
+					ImGui::SetNextItemWidth(-1.0f);
 					ImGui::TreeNodeEx((void*)entity.GetHandle(), flags, name.Name.data());
 					if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 					{

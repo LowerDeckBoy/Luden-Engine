@@ -15,7 +15,7 @@ namespace Luden
 
 		SwapChain = new D3D12SwapChain(Device, GraphicsQueue, m_ParentWindow);
 
-		SceneDepthBuffer = new D3D12DepthBuffer(Device, &SwapChain->GetSwapChainViewport(), DXGI_FORMAT_D32_FLOAT);
+		SceneDepthBuffer = new D3D12DepthBuffer(Device, &SwapChain->GetSwapChainViewport(), DXGI_FORMAT_D32_FLOAT, 1.0f);
 
 		Frames.resize(Config::Get().NumBackBuffers);
 
@@ -23,7 +23,6 @@ namespace Luden
 		{
 			frame.GraphicsCommandList = new D3D12CommandList(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 			frame.ComputeCommandList  = new D3D12CommandList(Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-			//frame.ComputeCommandList  = new D3D12CommandList(Device, D3D12_COMMAND_LIST_TYPE_COMPUTE);
 		}
 
 		// Frame sync

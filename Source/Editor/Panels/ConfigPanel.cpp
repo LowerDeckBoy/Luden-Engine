@@ -15,7 +15,7 @@ namespace Luden::Panel
 
 	void ConfigPanel::DrawPanel()
 	{
-		ImGui::Begin("Config");
+		ImGui::Begin(ICON_FA_GEAR" Config");
 
 		DrawSceneConfig();
 		DrawSceneCameraConfig();
@@ -305,7 +305,16 @@ namespace Luden::Panel
 				ImGui::Text("Threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Threshold:", &m_Renderer->BloomPass->Parameters.Threshold, 0.0f, 10.0f);
+				ImGui::SliderFloat("##Threshold:", &m_Renderer->BloomPass->Parameters.Threshold, 0.0f, 5.0f);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Threshold Knee");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Threshold Knee:", &m_Renderer->BloomPass->Parameters.ThresholdKnee, 0.0f, 3.0f);
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -314,25 +323,10 @@ namespace Luden::Panel
 				ImGui::Text("Intensity");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Intensity:", &m_Renderer->BloomPass->Parameters.Intensity, 0.0f, 50.0f);
+				ImGui::SliderFloat("##Intensity:", &m_Renderer->BloomPass->Parameters.Intensity, 0.0f, 50.0f, "%.1f");
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Exposure");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Exposure:", &m_Renderer->BloomPass->Parameters.Exposure, 0.0f, 5.0f);
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Gamma");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Gamma:", &m_Renderer->BloomPass->Parameters.Gamma, 0.0f, 10.0f);
 
 				if (!Config::Get().bEnableBloom)
 				{
@@ -426,7 +420,7 @@ namespace Luden::Panel
 				ImGui::Text("Subpixel quality");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1);
-				ImGui::SliderFloat("##Subpixel quality:", &m_Renderer->FXAAPass->Parameters.QualitySubpixel, 0.0f, 8.0f);
+				ImGui::SliderFloat("##Subpixel quality:", &m_Renderer->FXAAPass->Parameters.QualitySubpixel, 0.0f, 8.0f, "%1.0f", ImGuiSliderFlags_AlwaysClamp);
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -435,7 +429,7 @@ namespace Luden::Panel
 				ImGui::Text("Threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Threshold:", &m_Renderer->FXAAPass->Parameters.EdgeThreshold, 0.1f, 5.0f);
+				ImGui::SliderFloat("##Threshold:", &m_Renderer->FXAAPass->Parameters.EdgeThreshold, 0.1f, 1.0f);
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -444,7 +438,7 @@ namespace Luden::Panel
 				ImGui::Text("Threshold Min");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Threshold Min:", &m_Renderer->FXAAPass->Parameters.EdgeThresholdMin, 0.1f, 5.0f);
+				ImGui::SliderFloat("##Threshold Min:", &m_Renderer->FXAAPass->Parameters.EdgeThresholdMin, 0.1f, 1.0f);
 
 				if (!Config::Get().bEnableFXAA)
 				{
@@ -485,7 +479,7 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[5] = { "None", "Reinhard", "Gamma Correction", "Uncharted2", "ACES" };
+				static const char* types[6] = { "None", "Reinhard", "Gamma Correction", "Uncharted2", "ACES", "Hable"};
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				ImGui::AlignTextToFramePadding();

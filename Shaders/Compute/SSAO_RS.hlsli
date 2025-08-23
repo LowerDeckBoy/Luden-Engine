@@ -11,6 +11,10 @@
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_CLAMP, "\
 		"addressV = TEXTURE_ADDRESS_CLAMP, "\
+		"filter = FILTER_MIN_MAG_MIP_LINEAR ),"\
+	"StaticSampler(s1, "\
+		"addressU = TEXTURE_ADDRESS_MIRROR, "\
+		"addressV = TEXTURE_ADDRESS_MIRROR, "\
 		"filter = FILTER_MIN_MAG_MIP_LINEAR )"
 
 #endif // SSAO_RS

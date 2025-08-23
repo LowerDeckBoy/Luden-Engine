@@ -66,12 +66,10 @@ namespace Luden
 		bool bEnableSSAO = false;
 
 		// Post-Processes
-		bool bEnableBloom = true;
-		bool bEnableFXAA  = true;
-
+		bool bEnablePostProcess	= true;
+		bool bEnableBloom		= true;
 		bool bEnableTonemapping = true;
-		bool bUseTonemappingReinhard = true;
-		bool bUseTonemappingGammaCorrection = false;
+		bool bEnableFXAA		= true;
 
 		bool bSSAOCompute = false;
 

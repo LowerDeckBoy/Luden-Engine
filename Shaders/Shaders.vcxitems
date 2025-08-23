@@ -23,6 +23,13 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\SSAO.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\SSAO_Test.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred_CS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
@@ -58,6 +65,22 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\ChromaticAberration\ChromaticAberration.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\FilmGrain\FilmGrain.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\FXAA\FXAA.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\ClosestHit.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\Miss.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\RayGen.hlsl" />
@@ -66,8 +89,11 @@
     <None Include="$(MSBuildThisFileDirectory)BRDF.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Bindless.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Camera.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Color.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Meshlet.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Samplers.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Common\Scene.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Compute\SSAO_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Deferred\Deferred_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Indirect\Indirect_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
@@ -78,8 +104,13 @@
     <None Include="$(MSBuildThisFileDirectory)PBR.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Bloom_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Common.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\ChromaticAberration\ChromaticAberration_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\DOF\DepthOfField_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\FilmGrain\FilmGrain_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\FXAA\FXAA_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Raytracing\Base\Common.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)Tonemapping.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)Common\Light.hlsli" />

@@ -7,11 +7,14 @@
 #include "Panels/PropertyPanel.hpp"
 #include "Panels/SceneHierarchyPanel.hpp"
 #include <Core/Core.hpp>
-#include <Core/Timer.hpp>
+#include <Core/Time/Timer.hpp>
 #include <Engine/Asset/AssetImporter.hpp>
+
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_impl_dx12.h>
 #include <ImGui/imgui_impl_win32.h>
+#define USE_IMGUI_API
+#include <ImGui/ImGuizmo.h>
 
 namespace Luden
 {

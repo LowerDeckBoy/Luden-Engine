@@ -105,7 +105,7 @@ namespace Luden::Platform
 		::RECT windowRect{};
 		::GetWindowRect(Handle, &windowRect);
 		//::GetClientRect(Handle, &windowRect);
-		//::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
+		::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
 
 		Width	= static_cast<uint32_t>(windowRect.right  + windowRect.left);
 		Height	= static_cast<uint32_t>(windowRect.bottom + windowRect.top);

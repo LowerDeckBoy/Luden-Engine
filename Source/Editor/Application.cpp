@@ -45,6 +45,7 @@ namespace Luden
 
 		MainScene = new Scene(&Importer);
 
+		//SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_sponza.json");
 		SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_test.json");
 
 		m_Renderer->BuildScene(MainScene);
@@ -114,22 +115,21 @@ namespace Luden
 			{
 				m_Renderer->Resize();
 				bIsResizing = false;
-				LOG_DEBUG("Resized to {0}x{1}", Window.Width, Window.Height);
-				
+					
 			}
 
 			m_Timer.GetFrameTime();
 			
+			
 			if (Config::Get().bAllowFixedFrameRate)
 			{
-				if (m_Timer.FrameTime < (1000.0 / (f64)m_Timer.FrameLimit))
+				if (m_Timer.FrameTime <= (1000.0 / (f64)m_Timer.FrameLimit))
 				{
 					continue;
 				}
 			}
 
 			m_Timer.Tick();
-
 			m_Renderer->Update(m_Timer.DeltaTime);
 
 			if (!Config::Get().bHideEditor)

@@ -53,6 +53,24 @@ namespace Luden
 		return m_Device->LogicalDevice->CreateGraphicsPipelineState(&m_Desc, IID_PPV_ARGS(&Pipeline.GetHandle()));
 	}
 
+	HRESULT D3D12PipelineStateBuilder::Build(D3D12Device* pDevice, D3D12Pipeline& Pipeline)
+	{
+		m_Desc.NodeMask = m_Device->NodeMask;
+
+		m_Desc.RasterizerState = m_RasterizerDesc;
+		m_Desc.RasterizerState.CullMode = m_CullMode;
+		m_Desc.RasterizerState.FillMode = m_FillMode;
+
+		m_Desc.DepthStencilState = m_DepthDesc;
+		m_Desc.BlendState = m_BlendDesc;
+		m_Desc.SampleMask = UINT_MAX;
+		m_Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+		m_Desc.DSVFormat = m_DepthFormat;
+		Pipeline.PipelineState.GetHandle().AddRef();
+		return pDevice->LogicalDevice->CreateGraphicsPipelineState(&m_Desc, IID_PPV_ARGS(&Pipeline.PipelineState.GetHandle()));
+	}
+
 	void D3D12PipelineStateBuilder::SetRootSignature(D3D12RootSignature* pRootSignature)
 	{
 		m_Desc.pRootSignature = pRootSignature->GetHandleRaw();
@@ -115,6 +133,7 @@ namespace Luden
 	{
 		m_RasterizerDesc	= CD3DX12_RASTERIZER_DESC2(D3D12_DEFAULT);
 		m_DepthDesc			= CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
+		//m_DepthDesc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 		m_BlendDesc			= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 
 		m_Desc.SampleDesc = DXGI_SAMPLE_DESC{ 1, 0 };
@@ -261,6 +280,7 @@ namespace Luden
 	void D3D12MeshPipelineStateBuilder::SetDefaultDepthDesc()
 	{
 		m_DepthDesc = CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
+		//m_DepthDesc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 	}
 
 	void D3D12MeshPipelineStateBuilder::SetAlphaBlendDepthDesc()
@@ -286,8 +306,7 @@ namespace Luden
 		m_DepthDesc.BackFace.StencilWriteMask		= D3D12_DEFAULT_STENCIL_WRITE_MASK;
 	}
 
-	D3D12ComputePipelineStateBuilder::D3D12ComputePipelineStateBuilder(D3D12Device* pDevice)
-		: m_Device(pDevice)
+	D3D12ComputePipelineStateBuilder::D3D12ComputePipelineStateBuilder()
 	{
 
 	}

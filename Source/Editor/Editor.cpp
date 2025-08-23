@@ -207,13 +207,14 @@ namespace Luden
 
 		ImGui::Begin("Hierarchy");
 
-
 		m_ConfigPanel.DrawPanel();
 		m_HierarchyPanel.DrawPanel();
 		m_ContentBrowserPanel.DrawPanel();
 		DrawPropertyPanel();
 
 		ImGui::End();
+
+		m_ConfigPanel.DrawDebugPanel();
 
 		DrawSceneImage();
 	}
@@ -300,9 +301,9 @@ namespace Luden
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Normal.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Normal TBN"))
+				else if (ImGui::MenuItem("Motion Vectors"))
 				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->NormalTBN.ShaderResourceHandle.GpuHandle.ptr;
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->MotionVectors.ShaderResourceHandle.GpuHandle.ptr;
 				}
 				else if (ImGui::MenuItem("Metallic-Roughness"))
 				{
@@ -331,10 +332,6 @@ namespace Luden
 				else if (ImGui::MenuItem("SSAO - Test"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("Anti-Aliasing Debug"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->FXAAPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 				}
 
 				ImGui::EndMenu();
