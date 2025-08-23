@@ -1,28 +1,25 @@
 #ifndef BLOOM_COMMON_HLSLI
 #define BLOOM_COMMON_HLSLI
 
-#define DISPATCH_GROUP 8
+#include "../../Common/Bindless.hlsli"
+#include "../../Common/Common.hlsli"
 
-struct BloomConstants
+#define DISPATCH_BLOCK 8
+
+struct BloomParameters
 {
-	uint	BaseColorIndex;
+	uint	EmissiveImageIndex;
 	uint	LightImageIndex;
 	uint	SceneImageIndex;
 	float	Threshold;
+	float	ThresholdKnee;
 	float	Intensity;
-	float	Exposure;
 	float	Gamma;
 	uint	MipIndex;
 };
 
-ConstantBuffer<BloomConstants> Constants : register(b0);
+ConstantBuffer<BloomParameters> Constants : register(b0);
 
-SamplerState linearClampSampler : register(s0);
-
-float Luminance(float3 Color)
-{
-	return dot(Color, float3(0.2126729f, 0.7151522f, 0.0721750f));
-}
-
+SamplerState TexSampler : register(s0, space0);
 
 #endif // BLOOM_COMMON_HLSLI

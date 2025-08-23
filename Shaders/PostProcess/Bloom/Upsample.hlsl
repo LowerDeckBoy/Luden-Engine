@@ -3,31 +3,52 @@
 
 #include "Common.hlsli"
 
-Texture2D<float4> GetTexture2D(uint Index)
+float3 Upsample(in Texture2D Texture, float2 UV, float2 Texel)
 {
-	
+	const float x = Texel.x;
+	const float y = Texel.y;
 
-	return ResourceDescriptorHeap[Index];
+	const float3 a = Texture.Sample(TexSampler, float2(UV.x - x,	UV.y + y)).rgb;
+	const float3 b = Texture.Sample(TexSampler, float2(UV.x,		UV.y + y)).rgb;
+	const float3 c = Texture.Sample(TexSampler, float2(UV.x + x,	UV.y + y)).rgb;
+	
+	const float3 d = Texture.Sample(TexSampler, float2(UV.x - x,	UV.y)).rgb;
+	const float3 e = Texture.Sample(TexSampler, float2(UV.x,		UV.y)).rgb;
+	const float3 f = Texture.Sample(TexSampler, float2(UV.x + x,	UV.y)).rgb;
+	
+	const float3 g = Texture.Sample(TexSampler, float2(UV.x - x,	UV.y - y)).rgb;
+	const float3 h = Texture.Sample(TexSampler, float2(UV.x,		UV.y - y)).rgb;
+	const float3 i = Texture.Sample(TexSampler, float2(UV.x + x,	UV.y - y)).rgb;
+
+	float3 result = e * 4.0f;
+	result += (b + d + f + h) * 2.0f;
+	result += (a + c + g + i);
+	result *= 1.0f / 16.0f;
+
+	return result;
 }
 
-[numthreads(DISPATCH_GROUP, DISPATCH_GROUP, 1)]
+[numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-	//Texture2D<float4> sourceTexture = ResourceDescriptorHeap[Constants.LightImageIndex];
-	Texture2D<float4> sourceTexture = GetTexture2D(Constants.LightImageIndex);
-	RWTexture2D<float4> output = ResourceDescriptorHeap[Constants.MipIndex];
+	Texture2D<float4> sourceTexture = GetTexture(Constants.LightImageIndex);
+	RWTexture2D<float4> output 		= GetRWTexture<float4>(Constants.MipIndex);
 	
-	float filterRadius = 0.005f;
+	const float2 textureSize  = GetTextureSize(output);
 	
-	float2 textureSize;
-	output.GetDimensions(textureSize.x, textureSize.y);
+	if (DispatchThreadID.x >= textureSize.x || DispatchThreadID.y >= textureSize.y)
+	{
+		return;
+	}
 
-	const float2 texelSize = 1.0f / textureSize;
-	const float2 texCoord = (float2(DispatchThreadID.xy) + 0.5f) / textureSize;
+	const float2 texelSize 		= GetTexelSize(textureSize);
+	//const float2 texCoord 		= (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
+	const float2 texCoord 		= (float2(DispatchThreadID.xy) + 0.5f) / textureSize;
 
+	const float filterRadius = 0.001f;
 	const float x = filterRadius;
 	const float y = filterRadius;
-	
+
 	//		  Texel
 	//	-----------------
 	//	a	-	b	-	c
@@ -37,26 +58,11 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
     //	g	-	h	-	i
 	//	-----------------
 
-	const float3 a = sourceTexture.Sample(linearClampSampler, float2(texCoord.x - x,	texCoord.y + y)).rgb;
-	const float3 b = sourceTexture.Sample(linearClampSampler, float2(texCoord.x,		texCoord.y + y)).rgb;
-	const float3 c = sourceTexture.Sample(linearClampSampler, float2(texCoord.x + x,	texCoord.y + y)).rgb;
-	
-	const float3 d = sourceTexture.Sample(linearClampSampler, float2(texCoord.x - x,	texCoord.y)).rgb;
-	const float3 e = sourceTexture.Sample(linearClampSampler, float2(texCoord.x,		texCoord.y)).rgb;
-	const float3 f = sourceTexture.Sample(linearClampSampler, float2(texCoord.x + x,	texCoord.y)).rgb;
-	
-	const float3 g = sourceTexture.Sample(linearClampSampler, float2(texCoord.x - x,	texCoord.y - y)).rgb;
-	const float3 h = sourceTexture.Sample(linearClampSampler, float2(texCoord.x,		texCoord.y - y)).rgb;
-	const float3 i = sourceTexture.Sample(linearClampSampler, float2(texCoord.x + x,	texCoord.y - y)).rgb;
-	
-	float3 result = e * 4.0f;
-	result += (b + d + f + h) * 2.0;
-	result += (a + c + g + i);
-	result *= 1.0 / 16.0;
-	
+	float3 result = Upsample(sourceTexture, texCoord, texelSize);
+
+	float3 sourceColor = sourceTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
 	float3 color = output[DispatchThreadID.xy].rgb;
-	
-	output[DispatchThreadID.xy] = float4(lerp(color, result, Constants.Gamma), 1.0f);
+	output[DispatchThreadID.xy] = float4(lerp(sourceColor, result, Constants.Gamma), 1.0f);
 	
 }
 

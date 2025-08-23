@@ -7,6 +7,7 @@ namespace Luden
 {
 	class ShaderCompiler;
 
+	/*
 	struct BloomParameters
 	{
 		// Temp
@@ -21,6 +22,7 @@ namespace Luden
 		// For Down and Up sampling textures.
 		uint32	MipIndex;
 	};
+	*/
 
 	class Bloom : public RenderPass
 	{
@@ -28,7 +30,7 @@ namespace Luden
 		Bloom(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height);
 		~Bloom();
 	
-		void Render(Frame& CurrentFrame, uint32 LightPassImageIndex, uint32 SceneImageIndex);
+		void Render(Frame& CurrentFrame, uint32 EmissiveImageIndex, uint32 LightPassImageIndex, uint32 SceneImageIndex);
 		void Resize(uint32 Width, uint32 Height) override;
 
 		void Combine(Frame& CurrentFrame, D3D12RenderTexture* pSceneImage, uint32 ImageIndex);
@@ -42,7 +44,20 @@ namespace Luden
 		D3D12Pipeline UpsamplePSO;
 		D3D12Pipeline CombinePSO;
 
-		BloomParameters Parameters{};
+		struct
+		{
+			uint32	EmissiveImage;
+			uint32	LightImage;
+			uint32	SceneImage;
+			float	Threshold		= 1.25f;
+			float	ThresholdKnee	= 0.5f;
+			float	Intensity		= 1.0f;
+			float	Gamma			= 1.0f;
+			// For Down and Up sampling textures.
+			uint32	MipIndex;
+		} Parameters;
+
+		//BloomParameters Parameters{};
 
 		std::vector<D3D12RenderTexture> DownsampleTextures;
 		std::vector<D3D12RenderTexture> UpsampleTextures;
