@@ -25,8 +25,8 @@ bool IsVisible(MeshletBound bounds, row_major float4x4 world, float3 viewPos)
 	return true;
 }
 
-static StructuredBuffer<MeshletBound>	MeshletBoundsBuffer = ResourceDescriptorHeap[Constants.MeshletBoundsIndex];
-static StructuredBuffer<Transform>		TransformBuffer		= ResourceDescriptorHeap[Constants.TransformBuffer];
+static StructuredBuffer<MeshletBound>	MeshletBoundsBuffer = GetBuffer<MeshletBound>(Constants.MeshletBoundsIndex);
+static StructuredBuffer<Transform>		TransformBuffer		= GetBuffer<Transform>(Constants.TransformBuffer);
 
 groupshared Payload sPayload;
 

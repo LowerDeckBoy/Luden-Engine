@@ -1,10 +1,7 @@
 #ifndef GBUFFER_PS_HLSL
 #define GBUFFER_PS_HLSL
 
-#include "GBuffer_RS.hlsli"
 #include "GBufferCommon.hlsli"
-#include "../Common/Bindless.hlsli"
-#include "../Common/Common.hlsli"
 
 SamplerState AnisotropicSampler : register(s0);
 
@@ -29,8 +26,8 @@ int IsIndexValid(uint Index)
 	return 1;
 }
 
+//[RootSignature(GBUFFER_ROOT_SIG)]
 [earlydepthstencil]
-[RootSignature(GBUFFER_ROOT_SIG)]
 GBuffers PSMain(VertexOut pin) 
 {
 	GBuffers output = (GBuffers) 0;
@@ -43,16 +40,16 @@ GBuffers PSMain(VertexOut pin)
 	float2 motion = (a - b);
 	output.MotionVectors = float4(motion.xy , 0.0f, 1.0f);
 
-	StructuredBuffer<FMaterial> materialBuffer = ResourceDescriptorHeap[Constants.MaterialBuffer];
+	StructuredBuffer<FMaterial> materialBuffer = GetBuffer<FMaterial>(Constants.MaterialBuffer);
 	FMaterial material = materialBuffer[Constants.MaterialID];
 	
 	output.WorldPosition = float4(pin.WorldPosition.xyz, z);
-	//output.WorldPosition = float4(GetWorldPosition(pin.Position, ), z);
-	
+
 	output.Emissive = float4(material.EmissiveFactor.rgb, material.EmissiveFactor.a);
+	output.Emissive *= material.EmissiveStrength;
 	if (IsIndexValid(material.EmissiveIndex))
 	{
-		Texture2D emissiveTexture = ResourceDescriptorHeap[material.EmissiveIndex];
+		Texture2D emissiveTexture = GetTexture(material.EmissiveIndex);
 		output.Emissive = emissiveTexture.Sample(AnisotropicSampler, pin.TexCoord);
 		output.Emissive *= material.EmissiveFactor;
 	}
@@ -73,7 +70,8 @@ GBuffers PSMain(VertexOut pin)
 			}
 		}
 		
-		output.BaseColor = float4(baseColor.rgb + output.Emissive.rgb, baseColor.a);
+		output.BaseColor = float4(baseColor.rgb, baseColor.a);
+		//output.BaseColor = float4(baseColor.rgb + output.Emissive.rgb, baseColor.a);
 	}
 	
 	if (Constants.bDrawMeshlets)
@@ -87,7 +85,7 @@ GBuffers PSMain(VertexOut pin)
 
 	if (IsIndexValid(material.NormalIndex))
 	{
-		Texture2D normalTexture = ResourceDescriptorHeap[material.NormalIndex];
+		Texture2D normalTexture = GetTexture(material.NormalIndex);
 		float4 normalMap = normalize(2.0f * normalTexture.Sample(AnisotropicSampler, pin.TexCoord) - 1.0f);
 		float4 n = float4(normalize(mul(pin.TBN, normalMap.xyz)), normalMap.w);
 		output.Normal = float4(n);
@@ -96,7 +94,7 @@ GBuffers PSMain(VertexOut pin)
 	output.MetallicRoughness = float4(0.0f, material.Roughness, material.Metallic, 1.0f);
 	if (IsIndexValid(material.MetallicRoughnessIndex))
 	{
-		Texture2D mrTexture = ResourceDescriptorHeap[material.MetallicRoughnessIndex];
+		Texture2D mrTexture = GetTexture(material.MetallicRoughnessIndex);
 		float4 mr = mrTexture.Sample(AnisotropicSampler, pin.TexCoord);
 		output.MetallicRoughness = float4(mr.r, mr.g * material.Roughness, mr.b * material.Metallic, 1.0f);
 	}

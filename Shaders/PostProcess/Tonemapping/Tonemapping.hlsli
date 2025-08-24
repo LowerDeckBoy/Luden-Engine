@@ -3,6 +3,7 @@
 
 // https://github.com/NVIDIA-RTX/RTXGI/blob/main/Samples/Pathtracer/Tonemapping.hlsl
 
+#include "../../Common/Bindless.hlsli"
 #include "../../Common/Color.hlsli"
 
 namespace Tonemapping
@@ -19,7 +20,6 @@ namespace Tonemapping
 		const float reinhard = luminance / (1.0f + luminance);
 		
 		return saturate(Color * (reinhard / luminance));
-		//return Color * (reinhard / luminance);
 	}
 	
 	float3 TonemapGammaCorrection(float3 Color)

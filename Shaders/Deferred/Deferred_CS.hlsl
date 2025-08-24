@@ -3,6 +3,7 @@
 
 #include "Deferred_RS.hlsli"
 #include "../PBR.hlsli"
+#include "../Common/Bindless.hlsli"
 #include "../Common/Light.hlsli"
 #include "../Common/Scene.hlsli"
 
@@ -24,30 +25,30 @@ ConstantBuffer<SceneConstants>	Scene		: register(b1);
 ConstantBuffer<PushConstants>	Constants	: register(b2);
 SamplerState					texSampler	: register(s0);
 
-[RootSignature(DEFERRED_ROOT_SIG)]
+[RootSignature(DEFERRED_RS)]
 [numthreads(8, 8, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-	RWTexture2D<float4> outputTexture = GetBindlessRWTexture<float4>(Constants.TextureOutputIndex);
+	RWTexture2D<float4> outputTexture = GetRWTexture<float4>(Constants.TextureOutputIndex);
 
-	float2 textureSize = GetTextureSize<float4>(outputTexture);
+	float2 textureSize = GetTextureSize(outputTexture);
 	if (textureSize.x < DispatchThreadID.x || textureSize.y < DispatchThreadID.y)
 	{
 		return;
 	}
 
-	Texture2D texBaseColor		= GetBindlessTexture(Constants.BaseColorIndex);
-	Texture2D texNormal			= GetBindlessTexture(Constants.NormalIndex);
-	Texture2D texMR				= GetBindlessTexture(Constants.MRIndex);
-	Texture2D texEmissive		= GetBindlessTexture(Constants.EmissiveIndex);
-	Texture2D texWorldPositon	= GetBindlessTexture(Constants.WorldPositionIndex);
+	Texture2D texBaseColor		= GetTexture(Constants.BaseColorIndex);
+	Texture2D texNormal			= GetTexture(Constants.NormalIndex);
+	Texture2D texMR				= GetTexture(Constants.MRIndex);
+	Texture2D texEmissive		= GetTexture(Constants.EmissiveIndex);
+	Texture2D texWorldPositon	= GetTexture(Constants.WorldPositionIndex);
 
 	const float3 uv = int3(DispatchThreadID.xy, 0.0f);
 	
-	const float4 baseColor			= texBaseColor.Load(uv);
+	const float3 emissive			= texEmissive.Load(uv).rgb;
+	const float4 baseColor			= texBaseColor.Load(uv) + float4(emissive, 1.0f);
 	const float4 normal				= texNormal.Load(uv);
 	const float3 metallicRoughness	= texMR.Load(uv).rgb;
-	const float3 emissive			= texEmissive.Load(uv).rgb;
 	const float3 worldPosition		= texWorldPositon.Load(uv).rgb;
 	
 	const float metalness = metallicRoughness.b;
@@ -69,7 +70,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	float3 scattering = float3(0.0f, 0.0f, 0.0f);
 	
 	// Point lights
-	StructuredBuffer<PointLight> PointLights = ResourceDescriptorHeap[Constants.PointLightBufferIndex];
+	StructuredBuffer<PointLight> PointLights = GetBuffer<PointLight>(Constants.PointLightBufferIndex);
 	for (uint pointLightIdx = 0; pointLightIdx < Constants.NumPointLights; pointLightIdx++)
 	{
 		PointLight light = PointLights[pointLightIdx];
@@ -77,7 +78,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	}
 	
 	// Spot lights
-	StructuredBuffer<SpotLight> SpotLights = ResourceDescriptorHeap[Constants.SpotLightBufferIndex];
+	StructuredBuffer<SpotLight> SpotLights =  GetBuffer<SpotLight>(Constants.SpotLightBufferIndex);
 	for (uint spotLightIdx = 0; spotLightIdx < Constants.NumSpotLights; spotLightIdx++)
 	{
 		SpotLight light = SpotLights[spotLightIdx];

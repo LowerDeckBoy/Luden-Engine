@@ -1,6 +1,7 @@
 #ifndef FXAA_HLSL
 #define FXAA_HLSL
 
+#include "../../Common/Bindless.hlsli"
 #include "../../Common/Common.hlsli"
 #include "FXAA_RS.hlsli"
 
@@ -19,12 +20,12 @@ ConstantBuffer<Parameters> Constants : register(b0);
 
 SamplerState texSampler : register(s0);
 
-[RootSignature(FXAA_ROOT_SIG)]
+[RootSignature(FXAA_RS)]
 [numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-	Texture2D<float4>	sceneTexture  = GetBindlessTexture(Constants.SceneImageIndex);
-	RWTexture2D<float4> outputTexture = GetBindlessRWTexture<float4>(Constants.DebugImageIndex);
+	Texture2D<float4>	sceneTexture  = GetTexture(Constants.SceneImageIndex);
+	RWTexture2D<float4> outputTexture = GetRWTexture<float4>(Constants.DebugImageIndex);
 	
 	const float2 textureSize = GetTextureSize(sceneTexture);
 	const float2 uv = (float2(DispatchThreadID.xy) + 0.5f) * (1.0f / textureSize);

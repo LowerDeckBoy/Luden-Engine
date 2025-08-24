@@ -20,7 +20,7 @@ ConstantBuffer<Parameters> Constants : register(b0);
 [numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-	RWTexture2D<float4> scene = GetBindlessRWTexture<float4>(Constants.SceneImageIndex);
+	RWTexture2D<float4> scene = GetRWTexture<float4>(Constants.SceneImageIndex);
 	
 	float3 color = scene[DispatchThreadID.xy].rgb;
 	//color = max(GetLuminance(color), 0.0001f);

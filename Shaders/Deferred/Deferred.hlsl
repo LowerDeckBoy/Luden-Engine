@@ -43,7 +43,7 @@ ScreenQuadOutput VSMain(uint VertexID : SV_VertexID)
 }
 
 [earlydepthstencil]
-[RootSignature(DEFERRED_ROOT_SIG)]
+[RootSignature(DEFERRED_RS)]
 float4 PSMain(ScreenQuadOutput pin) : SV_TARGET0
 {
 	const float2 uv = pin.Position.xy;

@@ -1,6 +1,9 @@
 #ifndef GBUFFER_COMMON_HLSLI
 #define GBUFFER_COMMON_HLSLI
 
+#include "GBuffer_RS.hlsli"
+#include "../Common/Bindless.hlsli"
+#include "../Common/Common.hlsli"
 #include "../Material.hlsli"
 #include "../Mesh.hlsli"
 
