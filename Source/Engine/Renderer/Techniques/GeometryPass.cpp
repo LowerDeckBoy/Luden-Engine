@@ -21,16 +21,13 @@ namespace Luden
 	{
 		Release();
 
-		DXGI_FORMAT swapChainFormat = pRHI->SwapChain->GetSwapChainFormat();
-
-		//RenderTargetClearColor
-		BaseColor.Create(pRHI->Device, Width, Height,			swapChainFormat,				RenderTargetClearColor, "GBuffer BaseColor");
-		Normal.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R32G32B32A32_FLOAT, RenderTargetClearColor, "GBuffer Normal");
-		MotionVectors.Create(pRHI->Device, Width, Height,		DXGI_FORMAT_R32G32B32A32_FLOAT, RenderTargetClearColor, "GBuffer Motion Vectors");
-		MetallicRoughness.Create(pRHI->Device, Width, Height,	DXGI_FORMAT_R8G8B8A8_UNORM,		RenderTargetClearColor, "GBuffer MetallicRoughness");
-		Emissive.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R32G32B32A32_FLOAT, RenderTargetClearColor, "GBuffer Emissive");
-		WorldPosition.Create(pRHI->Device, Width, Height,		DXGI_FORMAT_R16G16B16A16_FLOAT, RenderTargetClearColor, "GBuffer WorldPosition");
-		Depth.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R16G16B16A16_FLOAT, RenderTargetClearColor, "GBuffer Depth");
+		BaseColor.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,	RenderTargetClearColor, "GBuffer BaseColor");
+		Normal.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Normal");
+		MotionVectors.Create(pRHI->Device, Width, Height,		DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Motion Vectors");
+		MetallicRoughness.Create(pRHI->Device, Width, Height,	DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,	RenderTargetClearColor, "GBuffer MetallicRoughness");
+		Emissive.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Emissive");
+		WorldPosition.Create(pRHI->Device, Width, Height,		DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer WorldPosition");
+		Depth.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Depth");
 
 		m_RenderTargetHandles.push_back(&BaseColor.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&Normal.RenderTargetHandle);
@@ -94,13 +91,9 @@ namespace Luden
 			builder.SetPixelShader(&BlendPipelineState.Pixel);
 			builder.SetCullMode(D3D12_CULL_MODE_NONE);
 			builder.SetAlphaModeBlend(0);
-			//builder.SetAlphaModeAdditive(0);
 			builder.SetAlphaBlendDepthDesc();
 			builder.SetRenderTargetFormats({
 				BaseColor.GetFormat(),
-				//Normal.GetFormat(),
-				//MetallicRoughness.GetFormat(),
-				//Emissive.GetFormat()
 				});
 
 			VERIFY_D3D12_RESULT(builder.Build(BlendPipelineState.PipelineState));
@@ -181,8 +174,7 @@ namespace Luden
 			// Works, but gotta rework it later.
 			// It's gonna require changes inside of Editor hierarchy and selection, tho.
 			// :(
-			//if (!model->GetComponent<ecs::NameComponent>().bVisibleInScene) continue;
-			if (!model->bVisibleInScene) continue;
+			if (!model->GetComponent<ecs::NameComponent>().bVisibleInScene) continue;
 
 			for (auto& mesh : model->OpaqueMeshes)
 			{
