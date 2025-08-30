@@ -21,6 +21,7 @@ namespace Luden::Panel
 		DrawSceneCameraConfig();
 		DrawPostProcessConfig();
 		DrawAmbientOcclusionConfig();
+		DrawSpaceScreenReflectionsConfig();
 
 		ImGui::End();
 	}
@@ -86,6 +87,28 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->FXAAPass->RenderTime);
+			}
+
+			if (Config::Get().bEnableFilmEffects)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("FilmEffects:");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Text("%.3f ms", m_Renderer->FilmEffectsPass->RenderTime);
+			}
+
+			if (Config::Get().bEnableSSR)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("SSR:");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Text("%.3f ms", m_Renderer->SSRPass->RenderTime);
 			}
 
 			ImGui::EndTable();
@@ -273,6 +296,7 @@ namespace Luden::Panel
 			DrawBloomConfig();
 			DrawTonemappingConfig();
 			DrawAntiAliasingConfig();
+			DrawFilmEffectsConfig();
 		}
 	}
 
@@ -394,6 +418,106 @@ namespace Luden::Panel
 		}
 	}
 
+	void ConfigPanel::DrawSpaceScreenReflectionsConfig()
+	{
+		if (ImGui::CollapsingHeader("Screen Space Reflections"))
+		{
+			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Enable", &Config::Get().bEnableSSR);
+
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Ray steps");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##steps", &m_Renderer->SSRPass->Parameters.RaySteps, 0.0f, 10.0f);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Ray threshold");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, 0.0f, 10.0f);
+
+
+				ImGui::EndTable();
+			}
+		}
+	}
+
+	void ConfigPanel::DrawFilmEffectsConfig()
+	{
+		if (ImGui::TreeNodeEx("Film Effects", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
+		{
+			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Enable", &Config::Get().bEnableFilmEffects);
+
+				if (!Config::Get().bEnableFilmEffects)
+				{
+					ImGui::BeginDisabled();
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable Chromatic Aberration");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Enable Chromatic Aberration", &Config::Get().bEnableChromaticAberration);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable Film Grain");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Enable Film Grain", &Config::Get().bEnableFilmGrain);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Enable Lens Distortion");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Enable Lens Distortion", &Config::Get().bEnableLensDistortion);
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Lens Distortion Intensity");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Lens Distortion Intensity", &m_Renderer->FilmEffectsPass->Parameters.LensDistortionIntensity, 0.0f, 1.0f);
+
+				if (!Config::Get().bEnableFilmEffects)
+				{
+					ImGui::EndDisabled();
+				}
+
+				ImGui::EndTable();
+			}
+
+			ImGui::TreePop();
+		}
+	}
+
 	void ConfigPanel::DrawAntiAliasingConfig()
 	{
 		if (ImGui::TreeNodeEx("Anti-Aliasing", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
@@ -483,10 +607,10 @@ namespace Luden::Panel
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Type");
+				ImGui::Text("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Combo("##Type", &m_Renderer->TonemappingPass->Type, types, IM_ARRAYSIZE(types));
+				ImGui::Combo("##Mode", &m_Renderer->TonemappingPass->Mode, types, IM_ARRAYSIZE(types));
 
 				if (!Config::Get().bEnableTonemapping)
 				{
