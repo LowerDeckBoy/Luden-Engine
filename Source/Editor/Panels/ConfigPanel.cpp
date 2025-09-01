@@ -20,8 +20,7 @@ namespace Luden::Panel
 		DrawSceneConfig();
 		DrawSceneCameraConfig();
 		DrawPostProcessConfig();
-		DrawAmbientOcclusionConfig();
-		DrawSpaceScreenReflectionsConfig();
+		
 
 		ImGui::End();
 	}
@@ -296,6 +295,8 @@ namespace Luden::Panel
 			DrawBloomConfig();
 			DrawTonemappingConfig();
 			DrawAntiAliasingConfig();
+			DrawAmbientOcclusionConfig();
+			DrawSpaceScreenReflectionsConfig();
 			DrawFilmEffectsConfig();
 		}
 	}
@@ -366,7 +367,7 @@ namespace Luden::Panel
 
 	void ConfigPanel::DrawAmbientOcclusionConfig()
 	{
-		if (ImGui::CollapsingHeader("SSAO"))
+		if (ImGui::TreeNodeEx("SSAO", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
 			{
@@ -415,12 +416,14 @@ namespace Luden::Panel
 
 				ImGui::EndTable();
 			}
+
+			ImGui::TreePop();
 		}
 	}
 
 	void ConfigPanel::DrawSpaceScreenReflectionsConfig()
 	{
-		if (ImGui::CollapsingHeader("Screen Space Reflections"))
+		if (ImGui::TreeNodeEx("Screen Space Reflections", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
 			{
@@ -449,9 +452,10 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, 0.0f, 10.0f);
 
-
 				ImGui::EndTable();
 			}
+
+			ImGui::TreePop();
 		}
 	}
 
