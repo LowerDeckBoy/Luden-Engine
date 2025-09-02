@@ -8,7 +8,7 @@
 	"DENY_HULL_SHADER_ROOT_ACCESS |"\
 	"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
 	"DENY_PIXEL_SHADER_ROOT_ACCESS),"\
-	"RootConstants(num32BitConstants = 54, b0),"\
+	"RootConstants(num32BitConstants = 56, b0),"\
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_CLAMP,"\
 		"addressV = TEXTURE_ADDRESS_CLAMP,"\
