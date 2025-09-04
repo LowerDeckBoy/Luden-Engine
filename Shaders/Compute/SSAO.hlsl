@@ -2,14 +2,17 @@
 #define SSAO_HLSL
 
 #include "../Common/Common.hlsli"
+#include "../Common/Bindless.hlsli"
 #include "SSAO_RS.hlsli"
+
+#define DISPATCH_BLOCK 16
 
 const static uint KernelSize = 64;
 
 struct SSAOParameters
 {
-	 float4x4 Projection;
-	row_major float4x4 InvViewProjection;
+	float4x4 Projection;
+	float4x4 InvProjection;
 
 	uint OutputImageIndex;
 	uint BaseColorIndex;
@@ -17,88 +20,83 @@ struct SSAOParameters
 	uint WorldPositionIndex;
 	
 	float Radius;
-	float Bias;
+	float Power;
 	uint pad;
 	uint pad2;
 	
 	float4 Samples[64];
-	float4 Noise[16];
 };
 
 ConstantBuffer<SSAOParameters> Constants : register(b0);
-SamplerState texSampler : register(s0);
+SamplerState LinearBorderSampler : register(s0);
+SamplerState PointWrapSampler : register(s1);
 
-float2 hash2(inout float HASH2SEED)
+float3 GetViewPosition(float2 UV, float Depth)
 {
-	HASH2SEED += 0.1f;
-	float2 x = frac(sin(float2(HASH2SEED, HASH2SEED + 0.1f)) * float2(43758.5453123, 22578.1459123));
-	HASH2SEED += 0.2f;
-	return x;
+	float2 ndc = UV * 2.0f - 1.0f;
+	ndc.y *= -1.0f;
+	float4 clipPos = float4(ndc, Depth, 1.0f);
+
+	float4 viewPosH = mul(clipPos, Constants.InvProjection);
+
+	return viewPosH.xyz / viewPosH.w;
+}
+
+float LinearDepthToNDC(float z, float4x4 projection)
+{
+	return (z * projection[2][2] + projection[3][2]) / z;
 }
 
 [RootSignature(SSAO_ROOT_SIG)]
-[numthreads(16, 16, 1)]
+[numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-	const uint2 uv = DispatchThreadID.xy;
-
-	RWTexture2D<float4> output = ResourceDescriptorHeap[Constants.OutputImageIndex];
+	RWTexture2D<float4> output = GetRWTexture<float4>(Constants.OutputImageIndex);
 	
-	float2 textureSize;
-	output.GetDimensions(textureSize.x, textureSize.y);
-	const float2 texelSize = 1.0f / textureSize;
-	const float2 texCoord = (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
-	
-	Texture2D<float3> texBaseColor		= ResourceDescriptorHeap[Constants.BaseColorIndex];
-	Texture2D<float4> texNormal			= ResourceDescriptorHeap[Constants.NormalIndex];
-	Texture2D<float4> texWorldPosition	= ResourceDescriptorHeap[Constants.WorldPositionIndex];
+	float2 textureSize 	= GetTextureSize(output);
+	float2 texelSize 	= GetTexelSize(textureSize);
+	float2 texCoord 	= (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
 
-	//float4 normal = texNormal.Load(int3(uv, 0.0f));
-	float4 normal = texNormal.Load(int3(uv, 0.0f));
-	const float3 N = normal.rgb;
+	Texture2D<float4> texNormal			= GetTexture(Constants.NormalIndex);
+	Texture2D<float4> texWorldPosition	= GetTexture(Constants.WorldPositionIndex);
+	Texture2D<float4> texNoise			= GetTexture(Constants.BaseColorIndex);
 
-	const float3 worldPosition = texWorldPosition.Load(int3(uv, 0.0f)).rgb;
-	//output[DispatchThreadID.xy] = float4(worldPosition, 1.0f);
-	//return;
+	float4 normal 	= normalize(texNormal.Sample(LinearBorderSampler, texCoord) * 2.0f - 1.0f);
+	float3 N 		= normal.rgb;
 
-	// Test
-	float seed;
-	seed = (texCoord.x * texCoord.y) * textureSize.y;
-	float3 randomVec = float3(hash2(seed), hash2(seed).x);
-	
-	 // Create TBN
-	float3 tangent = normalize(randomVec - N * dot(randomVec, N));
-	float3 bitangent = cross(N, tangent);
-	float3x3 TBN = float3x3(tangent, bitangent, N);
-	
+	float depth = 1.0f - texWorldPosition.Sample(LinearBorderSampler, texCoord).w;
+	depth = LinearDepthToNDC(depth, Constants.Projection);
+	float3 viewPosition = GetViewPosition(texCoord, depth);
+
+	float2 noiseDimensions = GetTextureSize(texNoise);
+	float2 noiseScale = textureSize / noiseDimensions;
+	float3 randomVector = normalize(texNoise.Sample(PointWrapSampler, texCoord * noiseScale).xyz * 2.0f - 1.0f);
+
+	float3 tangent 		= normalize(randomVector - N * dot(randomVector, N));
+	float3 bitangent 	= cross(N, tangent);
+	float3x3 TBN 		= transpose(float3x3(tangent, bitangent, N));
 	
 	float occlusion = 0.0f;
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < KernelSize; ++i)
 	{
-		//float3 samplePos = worldPosition + Constants.Samples[i].xyz;
-		//float3 samplePos = N * Constants.Samples[i].xyz;
-		float3 samplePos = mul((float3x3)TBN, Constants.Samples[i].xyz);
-		//float3 samplePos = N * Constants.Samples[i].xyz;
-		samplePos = worldPosition + samplePos * Constants.Radius; // 
-	
-		float4 offset = float4(samplePos, 1.0f);
-		offset = mul(Constants.Projection, offset);
-		//offset = mul(offset, Constants.Projection);
-		offset.xy /= offset.w;
-		//offset.xy = offset.xy * 0.5f + float2(0.5f, 0.5f);
-		offset.x = offset.x * 0.5f + 0.5f;
-		offset.y = -offset.y * 0.5f + 0.5f;
+		float3 sampleDir = mul(TBN, Constants.Samples[i].xyz);
+		float3 samplePos = viewPosition + sampleDir * Constants.Radius;
 		
-		//float Depth = texBaseColor.Sample(texSampler, offset.xy).x;
+		float4 offset = float4(samplePos, 1.0f);
+		offset = mul(offset, Constants.Projection);
+		offset.xy /= offset.w;
+		offset.xy = offset.xy * float2(1.0f, -1.0f) * 0.5f + 0.5f;
 
-	//	float Depth = texWorldPosition.Sample(texSampler, offset.xy).w;
-		float Depth = texWorldPosition.Sample(texSampler, offset.xy).w;
-		float rangeCheck = smoothstep(0.0f, 1.0f, Constants.Radius / abs(worldPosition.z - Depth));
-		occlusion += (Depth >= samplePos.z + Constants.Bias ? 1.0f : 0.0f) * rangeCheck;
+		float sampledDepth = 1.0f - texWorldPosition.Sample(LinearBorderSampler, offset.xy).w;
+		sampledDepth = LinearDepthToNDC(sampledDepth, Constants.Projection);
+		sampledDepth = GetViewPosition(offset.xy, sampledDepth).z;
+	
+		float rangeCheck = smoothstep(0.0f, 1.0f, Constants.Radius / abs(viewPosition.z - sampledDepth));
+		occlusion += (sampledDepth >= samplePos.z ? 0.0f : 1.0f) * rangeCheck;
 	}
 	
-	occlusion = 1.0f - (occlusion / 64.0f);
-	occlusion = pow(occlusion, 2.0f);
+	occlusion = 1.0f - (occlusion / KernelSize);
+	//occlusion = pow(abs(occlusion), Constants.Power);
 	output[DispatchThreadID.xy] = float4(occlusion, occlusion, occlusion, 1.0f);
 
 }

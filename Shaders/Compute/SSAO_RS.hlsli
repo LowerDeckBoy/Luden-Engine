@@ -9,12 +9,12 @@
 	"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
 	"CBV(b0, space=0),"\
 	"StaticSampler(s0, "\
-		"addressU = TEXTURE_ADDRESS_CLAMP, "\
-		"addressV = TEXTURE_ADDRESS_CLAMP, "\
+		"addressU = TEXTURE_ADDRESS_BORDER, "\
+		"addressV = TEXTURE_ADDRESS_BORDER, "\
 		"filter = FILTER_MIN_MAG_MIP_LINEAR ),"\
 	"StaticSampler(s1, "\
-		"addressU = TEXTURE_ADDRESS_MIRROR, "\
-		"addressV = TEXTURE_ADDRESS_MIRROR, "\
-		"filter = FILTER_MIN_MAG_MIP_LINEAR )"
+		"addressU = TEXTURE_ADDRESS_WRAP, "\
+		"addressV = TEXTURE_ADDRESS_WRAP, "\
+		"filter = FILTER_MIN_MAG_MIP_POINT )"
 
 #endif // SSAO_RS
