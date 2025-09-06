@@ -7,6 +7,15 @@
 
 namespace Luden::Panel
 {
+	static void TableNextRowBegin(std::string_view Text)
+	{
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text("%s", Text.data());
+	}
+
 	void ConfigPanel::Initialize(Renderer* pRenderer, Core::Timer* pTimer)
 	{
 		m_Renderer = pRenderer;
@@ -31,36 +40,27 @@ namespace Luden::Panel
 
 		if (ImGui::BeginTable("##timers", 2))
 		{
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::Text("Present:");
+			ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+			TableNextRowBegin("Present");
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1.0f);
 			ImGui::Text("%.3f ms", m_Renderer->PresentRenderTime);
-			
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::Text("G-Buffer:");
+
+			TableNextRowBegin("G-Buffer");
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1.0f);
 			ImGui::Text("%.3f ms", m_Renderer->GBuffer->RenderTime);
 
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::Text("LightPass:");
+			TableNextRowBegin("LightPass");
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1.0f);
 			ImGui::Text("%.3f ms", m_Renderer->LightingPass->RenderTime);
 
 			if (Config::Get().bEnableBloom)
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Bloom:");
+				TableNextRowBegin("Bloom");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->BloomPass->RenderTime);
@@ -68,10 +68,7 @@ namespace Luden::Panel
 
 			if (Config::Get().bEnableTonemapping)
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Tonemapping:");
+				TableNextRowBegin("Tonemapping");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->TonemappingPass->RenderTime);
@@ -79,10 +76,7 @@ namespace Luden::Panel
 
 			if (Config::Get().bEnableFXAA)
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("FXAA:");
+				TableNextRowBegin("FXAA");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->FXAAPass->RenderTime);
@@ -90,10 +84,7 @@ namespace Luden::Panel
 
 			if (Config::Get().bEnableFilmEffects)
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("FilmEffects:");
+				TableNextRowBegin("FilmEffects");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->FilmEffectsPass->RenderTime);
@@ -101,18 +92,22 @@ namespace Luden::Panel
 
 			if (Config::Get().bEnableSSR)
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("SSR:");
+				TableNextRowBegin("SSR");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->SSRPass->RenderTime);
 			}
 
+			if (Config::Get().bEnableSSAO)
+			{
+				TableNextRowBegin("SSAO");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Text("%.3f ms", m_Renderer->SSAOPass->RenderTime);
+			}
+
 			ImGui::EndTable();
 		}
-
 
 		ImGui::End();
 	}
@@ -123,14 +118,13 @@ namespace Luden::Panel
 		{
 			auto& config = Config::Get();
 
-			if (ImGui::BeginTable("##data", 2))
+			if (ImGui::BeginTable("##data", 2, ImGuiTableFlags_SizingFixedFit))
 			{
-				// Row 0
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
 
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("V-Sync:");
+				// Row 0
+				TableNextRowBegin("V-Sync");
 				static const char* syncing[]{ "Off", "On", "Half", "Third", "Quarter" };
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
@@ -151,69 +145,37 @@ namespace Luden::Panel
 					if (config.bAllowFixedFrameRate)
 					{
 						ImGui::AlignTextToFramePadding();
-						ImGui::Text("Frame rate:");
+						ImGui::Text("Frame rate");
 						ImGui::TableNextColumn();
-						ImGui::SliderInt("##Frame rate:", &m_Timer->FrameLimit, 24, 240);
+						ImGui::SliderInt("##Frame rate", &m_Timer->FrameLimit, 24, 240);
 					}
 				}
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Draw Meshlets: ");
+				TableNextRowBegin("Draw meshlets");
 				gui::OnItemHover("Check to draw debug meshlet instances.");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##Draw Meshlets", &config.bDrawMeshlets);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Meshlet culling: ");
+				TableNextRowBegin("Meshlet GPU culling");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##Meshlet culling", &config.bMeshletCulling);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("LightPass Compute: ");
-				gui::OnItemHover("Check to switch between dispatching LightPass as Compute or Pixel\nCurrently for testing only.");
-				ImGui::TableNextColumn();
-				ImGui::Checkbox("##LightPass Compute", &config.bLightPassCompute);
-
 				// Row 3;
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Raytracing: ");
+				TableNextRowBegin("Raytracing");
 				gui::OnItemHover("Check to dispatch ray tracing.");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##raytracing", &config.bRaytracing);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Alpha mask: ");
+				TableNextRowBegin("Alpha masking");
 				gui::OnItemHover("Check to enable alpha mask cutoff in pixel shaders.");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##bAlphaMask", &config.bAlphaMask);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Draw Indirect: ");
+				TableNextRowBegin("Draw Indirect");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##bDrawIndirect", &config.bDrawIndirect);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable Post-Process: ");
+				TableNextRowBegin("Enable Post-Process");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##Post-Process", &config.bEnablePostProcess);
 
@@ -228,12 +190,10 @@ namespace Luden::Panel
 		{
 			if (ImGui::BeginTable("##cameraPanel", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame))
 			{
-				//ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch, 100.0f);
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
 
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Position");
+				TableNextRowBegin("Position");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				if (gui::Math::DrawFloat3("Position", m_Renderer->Camera->Position))
@@ -241,19 +201,13 @@ namespace Luden::Panel
 					m_Renderer->Camera->Update();
 				}
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Speed");
+				TableNextRowBegin("Speed");
 				gui::OnItemHover("Speed is controlable when mouse scroll is used when RBM is hold.");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Speed", &m_Renderer->Camera->CameraSpeed, 1.0f, 1.0f, 250.0f);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Field of View");
+				TableNextRowBegin("Field of View");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				if (ImGui::DragFloat("##fov", &m_Renderer->Camera->FieldOfView, 1.0f, 1.0f, 90.0f))
@@ -261,21 +215,14 @@ namespace Luden::Panel
 					m_Renderer->Camera->Resize();
 				}
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Near Z");
+				TableNextRowBegin("Near Z");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				if (ImGui::DragFloat("##zNear", &m_Renderer->Camera->zNear, 0.1f, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
 				{
 					m_Renderer->Camera->Resize();
 				}
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Far Z");
+				TableNextRowBegin("Far Z");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				if (ImGui::DragFloat("##zFar", &m_Renderer->Camera->zFar, 1.0f, 1000.0f, 0.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp))
@@ -303,18 +250,14 @@ namespace Luden::Panel
 
 	void ConfigPanel::DrawBloomConfig()
 	{
-		if (ImGui::TreeNodeEx("Bloom", ImGuiTreeNodeFlags_FramePadding))
+		if (ImGui::TreeNodeEx("Bloom", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_SizingFixedFit))
 			{
-				
 				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
 				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable");
+				TableNextRowBegin("Enable");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##Enable", &Config::Get().bEnableBloom);
 
@@ -323,29 +266,17 @@ namespace Luden::Panel
 					ImGui::BeginDisabled();
 				}
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Threshold");
+				TableNextRowBegin("Threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Threshold:", &m_Renderer->BloomPass->Parameters.Threshold, 0.0f, 5.0f);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Threshold Knee");
+				TableNextRowBegin("Threshold Knee");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Threshold Knee:", &m_Renderer->BloomPass->Parameters.ThresholdKnee, 0.0f, 3.0f);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Intensity");
+				TableNextRowBegin("Intensity");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Intensity:", &m_Renderer->BloomPass->Parameters.Intensity, 0.0f, 50.0f, "%.1f");
@@ -369,45 +300,30 @@ namespace Luden::Panel
 	{
 		if (ImGui::TreeNodeEx("SSAO", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
-			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
+			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_SizingFixedSame))
 			{
-				ImGui::TableNextRow();
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+				TableNextRowBegin("Enable");
 				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable");
-				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Enable", &Config::Get().bEnableSSAO);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn(); ImGui::Text("");
 				if (!Config::Get().bEnableSSAO)
 				{
 					ImGui::BeginDisabled();
 				}
 
-				ImGui::TableNextRow();
+				TableNextRowBegin("Radius");
 				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Radius", &m_Renderer->SSAOPass->Parameters.Radius, 0.5f, 10.0f, "%.1f");
 
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Compute - test");
+				TableNextRowBegin("Power");
 				ImGui::TableNextColumn();
-				ImGui::Checkbox("##Compute", &Config::Get().bSSAOCompute);
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Radius");
-				ImGui::TableNextColumn();
-				ImGui::SliderFloat("##Radius", &m_Renderer->SSAOPass->Parameters.Radius, 0.0f, 10.0f);
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Bias");
-				ImGui::TableNextColumn();
-				ImGui::SliderFloat("##Bias", &m_Renderer->SSAOPass->Parameters.Bias, 0.0f, 10.0f);
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Power", &m_Renderer->SSAOPass->Parameters.Power, 0.1f, 10.0f, "%.1f");
 
 				if (!Config::Get().bEnableSSAO)
 				{
@@ -427,27 +343,20 @@ namespace Luden::Panel
 		{
 			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable");
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+				TableNextRowBegin("Enable");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Enable", &Config::Get().bEnableSSR);
 
-
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Ray steps");
+				TableNextRowBegin("Ray steps");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##steps", &m_Renderer->SSRPass->Parameters.RaySteps, 0.0f, 10.0f);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Ray threshold");
+				TableNextRowBegin("Ray threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, 0.0f, 10.0f);
@@ -463,12 +372,12 @@ namespace Luden::Panel
 	{
 		if (ImGui::TreeNodeEx("Film Effects", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
-			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
+			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_SizingFixedSame))
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable");
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+				TableNextRowBegin("Enable");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Enable", &Config::Get().bEnableFilmEffects);
@@ -478,34 +387,22 @@ namespace Luden::Panel
 					ImGui::BeginDisabled();
 				}
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable Chromatic Aberration");
+				TableNextRowBegin("Enable Chromatic Aberration");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Enable Chromatic Aberration", &Config::Get().bEnableChromaticAberration);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable Film Grain");
+				TableNextRowBegin("Enable Film Grain");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Enable Film Grain", &Config::Get().bEnableFilmGrain);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable Lens Distortion");
+				TableNextRowBegin("Enable Lens Distortion");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Enable Lens Distortion", &Config::Get().bEnableLensDistortion);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Lens Distortion Intensity");
+				TableNextRowBegin("Lens Distortion Intensity");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Lens Distortion Intensity", &m_Renderer->FilmEffectsPass->Parameters.LensDistortionIntensity, 0.0f, 1.0f);
@@ -526,13 +423,12 @@ namespace Luden::Panel
 	{
 		if (ImGui::TreeNodeEx("Anti-Aliasing", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
-			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
+			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_SizingFixedSame))
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
 
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable FXAA");
+				TableNextRowBegin("Enable FXAA");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##Enable:", &Config::Get().bEnableFXAA);
 
@@ -541,29 +437,17 @@ namespace Luden::Panel
 					ImGui::BeginDisabled();
 				}
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Subpixel quality");
+				TableNextRowBegin("Subpixel quality");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1);
 				ImGui::SliderFloat("##Subpixel quality:", &m_Renderer->FXAAPass->Parameters.QualitySubpixel, 0.0f, 8.0f, "%1.0f", ImGuiSliderFlags_AlwaysClamp);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Threshold");
+				TableNextRowBegin("Threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Threshold:", &m_Renderer->FXAAPass->Parameters.EdgeThreshold, 0.1f, 1.0f);
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Threshold Min");
+				TableNextRowBegin("Threshold Min");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Threshold Min:", &m_Renderer->FXAAPass->Parameters.EdgeThresholdMin, 0.1f, 1.0f);
@@ -584,12 +468,12 @@ namespace Luden::Panel
 	{
 		if (ImGui::TreeNodeEx("Tonemapping", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
-			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedSame))
+			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_SizingFixedSame))
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Enable");
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+				TableNextRowBegin("Enable");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Enable", &Config::Get().bEnableTonemapping);
@@ -599,19 +483,13 @@ namespace Luden::Panel
 					ImGui::BeginDisabled();
 				}
 
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Exposure");
+				TableNextRowBegin("Exposure");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
 				static const char* types[6] = { "None", "Reinhard", "Gamma Correction", "Uncharted2", "ACES", "Hable"};
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text("Mode");
+				TableNextRowBegin("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Combo("##Mode", &m_Renderer->TonemappingPass->Mode, types, IM_ARRAYSIZE(types));
