@@ -12,7 +12,8 @@ namespace Tonemapping
 	static const uint TypeGammaCorrection	= 2;
 	static const uint TypeUncharted2		= 3;
 	static const uint TypeACESFilm			= 4;
-	static const uint TypeHable				= 5;
+	static const uint TypeAGX				= 5;
+	static const uint TypeHable				= 6;
 
 	float3 TonemapReinhard(float3 Color)
 	{
@@ -72,6 +73,55 @@ namespace Tonemapping
 
 		return saturate(Color);
 	}
+
+	float3 AGXCurve3(float3 Color)
+	{
+		const float threshold 	= 0.6060606060606061f;
+   		const float aUp 		= 69.86278913545539f;
+   		const float aDown 		= 59.507875f;
+   		const float bUp 		= 13.0f / 4.0f;
+   		const float bDown 		= 3.0f / 1.0f;
+   		const float cUp 		= -4.0f / 13.0f;
+   		const float cDown 		= -1.0f / 3.0f;
+
+    	float3 mask = step(Color, float3(threshold, threshold, threshold));
+    	float3 a = aUp + (aDown - aUp) * mask;
+    	float3 b = bUp + (bDown - bUp) * mask;
+    	float3 c = cUp + (cDown - cUp) * mask;
+
+    	return 0.5f + (((-2.0f * threshold)) + 2.0f * Color) * pow(1.0f + a * pow(abs(Color - threshold), b), c);
+	}
+
+	float3 TonemapAGX(float3 Color)
+	{
+		Color = pow(Color, 2.2);
+
+ 		const float minEv 			= -12.473931188332413f;
+    	const float maxEv 			= 4.026068811667588f;
+    	const float dynamicRange 	= maxEv - minEv;
+
+    	const float3x3 agxMatrix = float3x3(
+			0.8424010709504686f, 	0.04240107095046854f, 	0.04240107095046854f, 
+			0.07843650156180276f, 	0.8784365015618028f, 	0.07843650156180276f, 
+			0.0791624274877287f, 	0.0791624274877287f, 	0.8791624274877287f
+			);
+
+    	const float3x3 agxMatrixInv = float3x3(
+			1.1969986613119143f, 	-0.053001338688085674f, 	-0.053001338688085674f,
+			-0.09804562695225345f, 	1.1519543730477466f, 		-0.09804562695225345f, 
+			-0.09895303435966087f, 	-0.09895303435966087f, 		1.151046965640339f
+			);
+
+    	Color = mul(Color, agxMatrix);
+
+   		float3 ct = saturate(log2(Color) * (1.0 / dynamicRange) - (minEv / dynamicRange));
+   		float3 output = AGXCurve3(ct);
+
+    	output = mul(output, agxMatrixInv);
+
+    	return output;
+	}
+
 	
 	float3 ApplyTonemapping(float3 Color, float ExposureScale, uint Type)
 	{
@@ -90,6 +140,8 @@ namespace Tonemapping
 				return TonemapUncharted2(output);
 			case TypeACESFilm:
 				return TonemapACES(output);
+			case TypeAGX:
+				return TonemapAGX(output);
 			case TypeHable:
 				return TonemapHable(output);
 			default:

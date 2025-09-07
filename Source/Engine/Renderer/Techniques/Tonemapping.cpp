@@ -37,18 +37,18 @@ namespace Luden
 		{
 			uint32		ImageIndex;
 			float		Exposure;
-			int32		Type;
+			int32		Mode;
 		} constants
 		{
 			.ImageIndex = SceneImageIndex,
 			.Exposure	= Exposure,
-			.Type		= Type
+			.Mode		= Mode
 		};
 
 		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 3, &constants, 0);
 
-		const uint32 dispatchX = Math::RoundUp(Width  / 8u);
-		const uint32 dispatchY = Math::RoundUp(Height / 8u);
+		const uint32 dispatchX = Math::RoundUp(Width  / 16u);
+		const uint32 dispatchY = Math::RoundUp(Height / 16u);
 		commandList->Dispatch(dispatchX, dispatchY, 1);
 
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);

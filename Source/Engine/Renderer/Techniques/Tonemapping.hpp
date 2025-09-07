@@ -6,13 +6,14 @@ namespace Luden
 {
 	class ShaderCompiler;
 
-	enum TonemapType : int32
+	enum TonemapMode : int32
 	{
 		None,
 		Reinhard,
 		GammaCorrection,
 		Uncharted2,
 		ACES,
+		AGX,
 		Hable
 	};
 
@@ -25,7 +26,7 @@ namespace Luden
 		void Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 Width, uint32 Height);
 
 		float Exposure = 1.45f;
-		int32 Type = TonemapType::ACES;
+		int32 Mode = TonemapMode::ACES;
 
 		double RenderTime = 0.0;
 
