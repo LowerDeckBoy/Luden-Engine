@@ -9,10 +9,11 @@ namespace Luden
 {
 	SceneRenderTargets Renderer::SceneTextures = {};
 
-	Renderer::Renderer(Platform::Window* pParentWindow, D3D12RHI* pD3D12RHI)
+	Renderer::Renderer(Platform::Window* pParentWindow, D3D12RHI* pD3D12RHI, AssetImporter* pAssetImporter)
 		: m_ParentWindow(pParentWindow)
 	{
 		m_D3D12RHI = pD3D12RHI;
+		m_AssetImporter = pAssetImporter;
 
 		SceneTextures.Scene.Create(m_D3D12RHI->Device,
 			static_cast<uint32>(m_D3D12RHI->SwapChain->GetSwapChainViewport().Viewport.Width),
@@ -25,13 +26,22 @@ namespace Luden
 
 		Camera = new SceneCamera(pParentWindow);
 
-		GBuffer			= new GeometryPass(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
-		LightingPass	= new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, pParentWindow->Width, pParentWindow->Height);
+		const uint32 width  = pParentWindow->Width;
+		const uint32 height = pParentWindow->Height;
 
-		BloomPass		= new Bloom(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
-		FXAAPass		= new FXAA(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
+		NoiseTexture = new D3D12Texture();
+
+		GBuffer			= new GeometryPass(pD3D12RHI, m_ShaderCompiler, width, height);
+		LightingPass	= new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, pParentWindow->Width, height);
+
+		BloomPass		= new Bloom(pD3D12RHI, m_ShaderCompiler, width, height);
+		FXAAPass		= new FXAA(pD3D12RHI, m_ShaderCompiler, width, height);
 		TonemappingPass = new Tonemapping(pD3D12RHI, m_ShaderCompiler);
-		SSAOPass		= new SSAO(pD3D12RHI, m_ShaderCompiler, pParentWindow->Width, pParentWindow->Height);
+		FilmEffectsPass = new FilmEffects(pD3D12RHI, m_ShaderCompiler, width, height);
+		SSAOPass		= new SSAO(pD3D12RHI, m_ShaderCompiler, m_AssetImporter, width, height);
+		SSRPass			= new SSR(pD3D12RHI, m_ShaderCompiler, width, height);
+		ScatteringPass	= new Scattering(pD3D12RHI, m_ShaderCompiler, width, height);
+		AtmospherePass	= new Atmosphere(pD3D12RHI, m_ShaderCompiler, width, height);
 
 	}
 
@@ -51,7 +61,13 @@ namespace Luden
 			delete ClosestHitShader;
 		}
 
+		delete NoiseTexture;
+
+		delete AtmospherePass;
+		delete ScatteringPass;
+		delete SSRPass;
 		delete FXAAPass;
+		delete FilmEffectsPass;
 		delete TonemappingPass;
 		delete SSAOPass;
 		delete BloomPass;
@@ -141,14 +157,6 @@ namespace Luden
 			}
 			// Not used for now.
 
-			if (Config::Get().bEnableSSAO)
-			{
-				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
-				SSAOPass->Render(*frame, GBuffer, Camera);
-				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-			}
-
-
 			// Open ComputeCommandList before dispatching Post-Processes and set DescriptorHeap once.
 			if (!frame->ComputeCommandList->IsOpen())
 			{
@@ -157,15 +165,13 @@ namespace Luden
 
 			frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
 
+			if (Config::Get().bEnableSSAO)
+			{
+				SSAOPass->Render(*frame, GBuffer, NoiseTexture->ShaderResourceHandle.Index, Camera);
+			}
+
 			// Light Pass
-			if (!Config::Get().bLightPassCompute)
-			{
-				LightingPass->Render(ActiveScene, *frame, Camera);
-			}
-			else
-			{
-				LightingPass->RenderCompute(ActiveScene, *frame, Camera);
-			}
+			LightingPass->Render(ActiveScene, *frame, Camera);
 
 			// Post-Processes
 			if (Config::Get().bEnablePostProcess)
@@ -180,6 +186,32 @@ namespace Luden
 					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_UNORDERED_ACCESS }
 					});
 
+				if (Config::Get().bEnableAtmosphere)
+				{
+					auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
+
+					AtmospherePass->Render(*frame, Camera, 
+						SceneTextures.Scene.ShaderResourceHandle.Index,
+						GBuffer->WorldPosition.ShaderResourceHandle.Index,
+						GBuffer->Depth.ShaderResourceHandle.Index,
+						directional.Direction);
+				}
+
+				if (Config::Get().bEnableSSR)
+				{
+					SSRPass->Render(frame, 
+						SceneTextures.Scene.ShaderResourceHandle.Index, 
+						GBuffer->Normal.ShaderResourceHandle.Index, 
+						//GBuffer->NormalVS.ShaderResourceHandle.Index, 
+						GBuffer->MetallicRoughness.ShaderResourceHandle.Index,
+						GBuffer->WorldPosition.ShaderResourceHandle.Index,
+						GBuffer->Depth.ShaderResourceHandle.Index, 
+						Camera);
+
+				}
+
+				
+
 				if (Config::Get().bEnableFXAA)
 				{
 					FXAAPass->Render(*frame, LightingPass->RenderTexture.ShaderResourceHandle.Index, SceneTextures.Scene.ShaderResourceHandle.Index);
@@ -189,6 +221,17 @@ namespace Luden
 				{
 					BloomPass->Render(*frame, GBuffer->Emissive.ShaderResourceHandle.Index, LightingPass->RenderTexture.ShaderResourceHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
 					BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->Emissive.ShaderResourceHandle.Index);
+				}
+
+				if (Config::Get().bEnableScattering)
+				{
+					auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
+					ScatteringPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, directional.Direction);
+				}
+
+				if (Config::Get().bEnableFilmEffects)
+				{
+					FilmEffectsPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
 				}
 
 				if (Config::Get().bEnableTonemapping)
@@ -201,9 +244,9 @@ namespace Luden
 		}
 		else
 		{
-			commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			//commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			DispatchRayTracing(*frame);
-			commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_GENERIC_READ);
+			//commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 			commandList->ResourceTransition({
 				{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_COPY_DEST },
@@ -263,6 +306,7 @@ namespace Luden
 		LightingPass->Resize(width, height);
 		BloomPass->Resize(width, height);
 		FXAAPass->Resize(width, height);
+		SSRPass->Resize(width, height);
 		SSAOPass->Resize(width, height);
 
 		if (RaytracingBVH != nullptr)
@@ -387,7 +431,7 @@ namespace Luden
 		pScene->SkyLight.AddComponent<ecs::DirectionalLightComponent>();
 
 		/*
-		*/
+		
 		if (GBuffer->IndirectSignature != nullptr)
 		{
 			GBuffer->IndirectSignature->Release();
@@ -397,7 +441,7 @@ namespace Luden
 		GBuffer->IndirectSignature = new D3D12CommandSignature(m_D3D12RHI->Device);
 		std::vector<FDispatchMeshCommand> drawCommands;
 		//GBuffer->IndirectSignature->AddConstantsCommand(14, 1);
-		
+		*/
 		for (auto& model : pScene->Models)
 		{
 			// Initialize resources.
@@ -406,8 +450,8 @@ namespace Luden
 			// Gather indirect arguments.
 			for (usize meshIdx = 0; meshIdx < model->Meshes.size(); ++meshIdx)
 			{
-				auto& mesh = model->Meshes.at(meshIdx);
-			
+				//auto& mesh = model->Meshes.at(meshIdx);
+				/*
 				FDispatchMeshCommand command{};
 				command.Argument.ThreadGroupCountX	= mesh.NumMeshlets;
 				command.Argument.ThreadGroupCountY	= 1;
@@ -427,10 +471,12 @@ namespace Luden
 				command.MaterialID					= mesh.MaterialID;
 
 				//GBuffer->IndirectSignature->AddConstantsCommand(14, 1);
-			GBuffer->IndirectSignature->AddConstantsCommand(14, 1);
+				GBuffer->IndirectSignature->AddConstantsCommand(14, 1);
 				drawCommands.push_back(command);
+				*/
 			}
 		}
+		/*
 		GBuffer->IndirectSignature->AddDispatchMeshCommand();
 
 		BufferDesc desc{};
@@ -440,12 +486,13 @@ namespace Luden
 		desc.Size			= static_cast<uint64>(desc.NumElements * desc.Stride);
 		desc.BufferUsage	= BufferUsageFlag::IndirectArgument;
 		desc.Name			= "D3D12 Command Signature Indirect Buffer";
-		
 		//VERIFY_D3D12_RESULT(GBuffer->IndirectSignature->Build(m_D3D12RHI->Device, &GBuffer->IndirectPipelineState.RootSignature));
 		//GBuffer->IndirectSignature->CreateCommandsBuffer(desc);
+		*/
 
 		//InitializeRaytracingResources();
 
+		//m_D3D12RHI->Wait();
 	}
 
 	void Renderer::ReleaseActiveScene()
@@ -608,6 +655,7 @@ namespace Luden
 		desc.RayGenerationShaderRecord.SizeInBytes  = RaytracingShaderTable->RayGenTable.GetSizeInBytes();
 
 		desc.MissShaderTable.StartAddress	= desc.RayGenerationShaderRecord.StartAddress + RaytracingShaderTable->MissOffset;
+		//desc.MissShaderTable.StartAddress	= desc.RayGenerationShaderRecord.StartAddress + (uint64)64u;
 		desc.MissShaderTable.SizeInBytes	= RaytracingShaderTable->MissTable.GetSizeInBytes();
 		desc.MissShaderTable.StrideInBytes	= RaytracingShaderTable->MissTable.GetStride();
 

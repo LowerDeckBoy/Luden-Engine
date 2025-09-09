@@ -6,13 +6,18 @@
 #include <Core/Core.hpp>
 #include "RHI/Constants.hpp"
 #include "Asset/ShaderCompiler.hpp"
+#include "Asset/AssetImporter.hpp"
 
 #include "Techniques/GeometryPass.hpp"
 #include "Techniques/LightPass.hpp"
 #include "Techniques/Bloom.hpp"
 #include "Techniques/FXAA.hpp"
 #include "Techniques/SSAO.hpp"
+#include "Techniques/SSR.hpp"
 #include "Techniques/Tonemapping.hpp"
+#include "Techniques/FilmEffects.hpp"
+#include "Techniques/Scattering.hpp"
+#include "Techniques/Atmosphere.hpp"
 
 // Test
 #include "D3D12/D3D12StateObject.hpp"
@@ -38,7 +43,7 @@ namespace Luden
 	class Renderer
 	{
 	public:
-		Renderer(Platform::Window* pParentWindow, D3D12RHI* pD3D12RHI);
+		Renderer(Platform::Window* pParentWindow, D3D12RHI* pD3D12RHI, AssetImporter* pAssetImporter);
 		~Renderer();
 
 		void BeginFrame();
@@ -74,15 +79,22 @@ namespace Luden
 		Bloom*			BloomPass;
 		FXAA*			FXAAPass;
 		Tonemapping*	TonemappingPass;
+		FilmEffects*	FilmEffectsPass;
+		SSR*			SSRPass;
 		SSAO*			SSAOPass;
+		Scattering*		ScatteringPass;
+		Atmosphere*		AtmospherePass;
 
 		double PresentRenderTime = 0.0;
+
+		D3D12Texture* NoiseTexture = nullptr;
 	
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;
 		Platform::Window* m_ParentWindow = nullptr;
 
 		ShaderCompiler* m_ShaderCompiler;
+		AssetImporter* m_AssetImporter;
 
 	public:
 		// Test

@@ -6,6 +6,8 @@
 
 namespace Luden
 {
+	class ShaderCompiler;
+
 	// Base class for Render Pass functionality.
 	// Makes it easier to store and iterate over different techniques,
 	// like resizing and releasing.
