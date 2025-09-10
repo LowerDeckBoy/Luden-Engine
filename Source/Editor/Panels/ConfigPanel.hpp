@@ -38,6 +38,8 @@ namespace Luden::Panel
 		void DrawAntiAliasingConfig();
 		void DrawTonemappingConfig();
 		void DrawAmbientOcclusionConfig();
+		void DrawScatteringConfig();
+		void DrawAtmosphereConfig();
 
 		void DrawSpaceScreenReflectionsConfig();
 

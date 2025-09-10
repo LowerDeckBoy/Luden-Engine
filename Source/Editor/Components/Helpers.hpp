@@ -3,6 +3,18 @@
 #include <Core/String.hpp>
 //#include <ImGui/imgui_internal.h>
 
+namespace Luden
+{
+	inline void TableNextRowBegin(std::string_view Text)
+	{
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text("%s", Text.data());
+	}
+} // namespace Luden
+
 namespace Luden::gui
 {
 	inline void SeparatorVertical()
@@ -19,5 +31,4 @@ namespace Luden::gui
 	{
 		ImGui::SeparatorText(Text.data());
 	}
-
 } // namespace Luden::gui

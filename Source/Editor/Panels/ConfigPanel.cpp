@@ -1,5 +1,6 @@
 #include <Engine/Renderer/Renderer.hpp>
 #include "../Components/Tooltip.hpp"
+#include "../Components/Helpers.hpp"
 #include "ConfigPanel.hpp"
 #include <FontAwsome6/IconsFontAwesome6.h>
 #include "../Components/Components.hpp"
@@ -7,15 +8,6 @@
 
 namespace Luden::Panel
 {
-	static void TableNextRowBegin(std::string_view Text)
-	{
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%s", Text.data());
-	}
-
 	void ConfigPanel::Initialize(Renderer* pRenderer, Core::Timer* pTimer)
 	{
 		m_Renderer = pRenderer;
@@ -244,7 +236,9 @@ namespace Luden::Panel
 			DrawAntiAliasingConfig();
 			DrawAmbientOcclusionConfig();
 			DrawSpaceScreenReflectionsConfig();
+			DrawScatteringConfig();
 			DrawFilmEffectsConfig();
+			DrawAtmosphereConfig();
 		}
 	}
 
@@ -329,6 +323,48 @@ namespace Luden::Panel
 				{
 					ImGui::EndDisabled();
 				}
+
+				ImGui::EndTable();
+			}
+
+			ImGui::TreePop();
+		}
+	}
+
+	void ConfigPanel::DrawScatteringConfig()
+	{
+		if (ImGui::TreeNodeEx("Volumetric Scattering", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
+		{
+			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+				TableNextRowBegin("Enable");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Enable", &Config::Get().bEnableScattering);
+
+				ImGui::EndTable();
+			}
+
+			ImGui::TreePop();
+		}
+	}
+
+	void ConfigPanel::DrawAtmosphereConfig()
+	{
+		if (ImGui::TreeNodeEx("Atmosphere Scattering", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
+		{
+			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+				TableNextRowBegin("Enable");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Enable", &Config::Get().bEnableAtmosphere);
 
 				ImGui::EndTable();
 			}
@@ -488,7 +524,7 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[6] = { "None", "Reinhard", "Gamma Correction", "Uncharted2", "ACES", "Hable"};
+				static const char* types[7] = { "None", "Reinhard", "Gamma Correction", "Uncharted2", "ACES", "AgX", "Hable" };
 				TableNextRowBegin("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);

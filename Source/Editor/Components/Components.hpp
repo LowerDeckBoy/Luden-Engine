@@ -18,8 +18,6 @@ namespace Luden::gui
 	{
 		extern bool DrawFloat3(std::string_view Label, DirectX::XMFLOAT3& Float3);
 
-		extern void DrawFloat4(std::string_view Label, DirectX::XMFLOAT4& Float4);
-
 		extern void EditColor3(std::string_view Label, DirectX::XMFLOAT3& Float3);
 
 	} // namespace Math
@@ -33,7 +31,5 @@ namespace Luden::gui
 	extern void DrawSpotLightComponent(ecs::SpotLightComponent& Component);
 
 	extern void DrawDirectionalLightComponent(ecs::DirectionalLightComponent& Component);
-
-	extern void AddOrRemoveComponent(Entity& Target);
 
 } // namespace Luden::gui
