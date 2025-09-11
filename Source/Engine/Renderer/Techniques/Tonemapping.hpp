@@ -9,11 +9,12 @@ namespace Luden
 	enum TonemapMode : int32
 	{
 		None,
+		ACES,
+		AgX,
+		AgX_Punchy,
 		Reinhard,
 		GammaCorrection,
 		Uncharted2,
-		ACES,
-		AGX,
 		Hable
 	};
 

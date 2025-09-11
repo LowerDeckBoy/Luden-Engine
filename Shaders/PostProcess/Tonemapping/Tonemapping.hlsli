@@ -8,12 +8,13 @@
 
 namespace Tonemapping
 {
-	static const uint TypeReinhard			= 1;
-	static const uint TypeGammaCorrection	= 2;
-	static const uint TypeUncharted2		= 3;
-	static const uint TypeACESFilm			= 4;
-	static const uint TypeAGX				= 5;
-	static const uint TypeHable				= 6;
+	static const uint TypeACESFilm			= 1;
+	static const uint TypeAgX				= 2;
+	static const uint TypeAgXPunchy			= 3;
+	static const uint TypeReinhard			= 4;
+	static const uint TypeGammaCorrection	= 5;
+	static const uint TypeUncharted2		= 6;
+	static const uint TypeHable				= 7;
 
 	float3 TonemapReinhard(float3 Color)
 	{
@@ -91,35 +92,101 @@ namespace Tonemapping
 
     	return 0.5f + (((-2.0f * threshold)) + 2.0f * Color) * pow(1.0f + a * pow(abs(Color - threshold), b), c);
 	}
-
-	float3 TonemapAGX(float3 Color)
+	
+	float3 AgXContrastApproximation(float3 Color)
 	{
-		Color = pow(Color, 2.2);
+		float3 x2 = Color * Color;
+		float3 x4 = x2 * x2;
+		
+		return  +15.5	  * x4 * x2
+				- 40.14	  * x4 * Color
+				+ 31.96	  * x4
+				- 6.868	  * x2 * Color
+				+ 0.4298  * x2
+				+ 0.1191  * Color
+				- 0.00232;
+	}
+
+	float3 TonemapAgX(float3 Color)
+	{
+		Color = pow(Color, 2.2f);
 
  		const float minEv 			= -12.473931188332413f;
     	const float maxEv 			= 4.026068811667588f;
     	const float dynamicRange 	= maxEv - minEv;
 
-    	const float3x3 agxMatrix = float3x3(
+    	const float3x3 transform = float3x3(
 			0.8424010709504686f, 	0.04240107095046854f, 	0.04240107095046854f, 
 			0.07843650156180276f, 	0.8784365015618028f, 	0.07843650156180276f, 
 			0.0791624274877287f, 	0.0791624274877287f, 	0.8791624274877287f
 			);
 
-    	const float3x3 agxMatrixInv = float3x3(
-			1.1969986613119143f, 	-0.053001338688085674f, 	-0.053001338688085674f,
-			-0.09804562695225345f, 	1.1519543730477466f, 		-0.09804562695225345f, 
-			-0.09895303435966087f, 	-0.09895303435966087f, 		1.151046965640339f
+		const float3x3 transformInv = float3x3(
+			 1.1969986613119143f, 	-0.053001338688085674f, 	-0.053001338688085674f,
+			-0.09804562695225345f, 	 1.1519543730477466f, 		-0.09804562695225345f, 
+			-0.09895303435966087f, 	-0.09895303435966087f, 		 1.151046965640339f
 			);
 
-    	Color = mul(Color, agxMatrix);
+		Color = mul(transform, Color);
 
-   		float3 ct = saturate(log2(Color) * (1.0 / dynamicRange) - (minEv / dynamicRange));
-   		float3 output = AGXCurve3(ct);
+		Color = clamp(log2(Color), minEv, maxEv);
+		Color = (Color - minEv) / (maxEv - minEv);
+		float3 output = AgXContrastApproximation(Color);
 
-    	output = mul(output, agxMatrixInv);
+		float luma = GetLuminance(Color);
+  
+		float3	offset		= 0.0;
+		float3	slope		= 1.0;
+		float3	power		= 1.0;
+		float	saturation	= 1.0f;
+  
+		output = pow(output * slope + offset, power);
+		output = luma + saturation * (output - luma);
+		
+		output = mul(transformInv, output);
+		
+		return saturate(output);
+	}
+	
+	float3 TonemapAgXPunchy(float3 Color)
+	{
+		Color = pow(Color, 2.2f);
+		
+		const float minEv = -12.473931188332413f;
+		const float maxEv = 4.026068811667588f;
+		const float dynamicRange = maxEv - minEv;
 
-    	return output;
+		const float3x3 transform = float3x3(
+			0.8424010709504686f, 0.04240107095046854f, 0.04240107095046854f,
+			0.07843650156180276f, 0.8784365015618028f, 0.07843650156180276f,
+			0.0791624274877287f, 0.0791624274877287f, 0.8791624274877287f
+			);
+
+		const float3x3 transformInv = float3x3(
+			 1.1969986613119143f, -0.053001338688085674f, -0.053001338688085674f,
+			-0.09804562695225345f, 1.1519543730477466f, -0.09804562695225345f,
+			-0.09895303435966087f, -0.09895303435966087f, 1.151046965640339f
+			);
+
+		Color = mul(transform, Color);
+
+		Color = clamp(log2(Color), minEv, maxEv);
+		Color = (Color - minEv) / (maxEv - minEv);
+		float3 output = AgXContrastApproximation(Color);
+
+		float luma = GetLuminance(Color);
+  
+		float3	offset		= 0.0f;
+		float3	slope		= 1.0f;
+		float3	power		= 1.35f;
+		float	saturation	= 1.4;
+  
+		output = pow(output * slope + offset, power);
+		output = luma + saturation * (output - luma);
+		
+		output = mul(output, transformInv);
+		
+		return saturate(output);
 	}
 
 	
@@ -130,22 +197,14 @@ namespace Tonemapping
 		
 		switch (Type)
 		{
-			case 0:	// No filter.
-				return Color;
-			case TypeReinhard:
-				return TonemapReinhard(output * ExposureScale);
-			case TypeGammaCorrection:
-				return TonemapGammaCorrection(output);
-			case TypeUncharted2:
-				return TonemapUncharted2(output);
-			case TypeACESFilm:
-				return TonemapACES(output);
-			case TypeAGX:
-				return TonemapAGX(output);
-			case TypeHable:
-				return TonemapHable(output);
-			default:
-				return Color;
+			case 0:							return Color;
+			case TypeACESFilm:				return TonemapACES(output);
+			case TypeAgX:					return TonemapAgX(output);
+			case TypeReinhard:				return TonemapReinhard(output * ExposureScale);
+			case TypeGammaCorrection:		return TonemapGammaCorrection(output);
+			case TypeUncharted2:			return TonemapUncharted2(output);
+			case TypeHable:					return TonemapHable(output);
+			default:						return Color;
 		}
 	}
 	
