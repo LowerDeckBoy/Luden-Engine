@@ -19,11 +19,14 @@ Repo does not provide model assets.
 	- Post-Process:
 		- [x] Bloom
 		- [x] FXAA
+		- [ ] Screen Space Reflections - WIP
+		- [ ] Screen Space Ambient Occlusion - WIP
 		- [x] Tonemapping:
+			- [x] ACES
+			- [x] AgX
 			- [x] Reinhard
 			- [x] Gamma Correction
 			- [x] Uncharted2
-			- [x] ACES
 - Scene
 	- Loading and unloading JSON-based scenes at runtime
 	- Adding models to scene at runtime
@@ -50,7 +53,8 @@ Repo does not provide model assets.
 - [ImGui](https://github.com/ocornut/imgui)
 - [assimp](https://github.com/assimp/assimp)
 - [fastgltf](https://github.com/spnda/fastgltf)
-- [EnTT](https://github.com/skypjack/entt)
 - [meshoptimizer](https://github.com/zeux/meshoptimizer)
+- [EnTT](https://github.com/skypjack/entt)
 - [D3D12MemoryAlloctor](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
+- [DirectXTex](https://github.com/microsoft/DirectXTex)
 - [json](https://github.com/nlohmann/json)
