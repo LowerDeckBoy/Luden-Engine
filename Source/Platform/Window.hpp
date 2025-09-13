@@ -45,6 +45,9 @@ namespace Luden::Platform
 		uint32_t Width	= 1920;
 		uint32_t Height	= 1080;
 
+		uint32_t HostImageWidth;
+		uint32_t HostImageHeight;
+
 		::HINSTANCE Instance = nullptr;
 		::HWND Handle = nullptr;
 

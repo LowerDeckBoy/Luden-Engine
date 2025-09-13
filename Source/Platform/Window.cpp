@@ -48,10 +48,13 @@ namespace Luden::Platform
 		Height	= Desc.Height;
 
 		::RECT windowRect = { 0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height) };
-		//::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
+		::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
 
 		Width  = static_cast<uint32_t>(windowRect.right  - windowRect.left);
 		Height = static_cast<uint32_t>(windowRect.bottom - windowRect.top);
+
+		
+		
 
 		Handle = ::CreateWindowExA(WS_EX_OVERLAPPEDWINDOW,
 			wcex.lpszClassName, Desc.Title,
@@ -84,7 +87,12 @@ namespace Luden::Platform
 		{
 
 		}
-		
+
+		::RECT clientRect{};
+		::GetClientRect(Handle, &clientRect);
+		HostImageWidth  = static_cast<uint32_t>(clientRect.right  + clientRect.left);
+		HostImageHeight = static_cast<uint32_t>(clientRect.bottom - clientRect.top);
+
 	}
 
 	void Window::Shutdown()
@@ -102,13 +110,19 @@ namespace Luden::Platform
 
 	void Window::Resize()
 	{
+		// Update Window dimensions.
 		::RECT windowRect{};
 		::GetWindowRect(Handle, &windowRect);
-		//::GetClientRect(Handle, &windowRect);
 		::AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, false, WS_EX_OVERLAPPEDWINDOW);
 
 		Width	= static_cast<uint32_t>(windowRect.right  + windowRect.left);
 		Height	= static_cast<uint32_t>(windowRect.bottom + windowRect.top);
+
+		// Update display image dimensions.
+		::RECT clientRect{};
+		::GetClientRect(Handle, &clientRect);
+		HostImageWidth = static_cast<uint32_t>(clientRect.right + clientRect.left);
+		HostImageHeight = static_cast<uint32_t>(clientRect.bottom - clientRect.top);
 	}
 
 	void Window::ProcessMessages()
