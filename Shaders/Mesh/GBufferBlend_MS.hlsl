@@ -3,6 +3,8 @@
 
 #include "../Material.hlsli"
 #include "../Mesh.hlsli"
+#include "../Common/Common.hlsli"
+#include "../Common/Bindless.hlsli"
 		
 #define AS_GROUP_SIZE 32
 
@@ -10,24 +12,30 @@
 	"DENY_HULL_SHADER_ROOT_ACCESS |"\
 	"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
 	"DENY_GEOMETRY_SHADER_ROOT_ACCESS),"\
-	"CBV(b0, space=0), "\
-	"RootConstants(num32BitConstants=8, b1), "\
-	"RootConstants(num32BitConstants=20, b2), "\
+	"RootConstants(num32BitConstants=14, b1), "\
+	"RootConstants(num32BitConstants=28, b2), "\
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_WRAP, "\
 		"addressV = TEXTURE_ADDRESS_WRAP, "\
-		"filter = FILTER_MAXIMUM_ANISOTROPIC )"
+		"filter = FILTER_MIN_MAG_MIP_LINEAR )"
 
-struct SceneConstants
+struct Payload
 {
-	float4x4 View;
-	float4x4 Projection;
+	uint MeshletIndices[AS_GROUP_SIZE];
 };
-
+		
 struct Transform
 {
-	row_major float4x4 WVP;
-	row_major float4x4 World;
+	float4x4 WVP;
+	float4x4 World;
+	float4x4 PreviousWorld;
+};
+
+struct CameraConsts
+{
+	float3 Position;
+	uint pad;
+	float4 Planes[6];
 };
 
 // Indices to buffers.
@@ -40,8 +48,13 @@ struct PushConstants
 	uint MeshletBoundsIndex;
 	uint bDrawMeshlets;
 	uint bMeshletCulling;
-	//uint bAlphaMask;
-	uint GBufferBaseColor;
+	uint bAlphaMask;
+	uint TransformBuffer;
+	uint MaterialBuffer;
+	uint MaterialID;
+	uint TransformID;
+	float NearZ;
+	float FarZ;
 };
 
 struct Vertex
@@ -57,41 +70,43 @@ struct VertexOut
 {
 	float4 Position : SV_POSITION;
 	float4 WorldPosition : WORLD_POSITION;
+	float4 CurrPosition : CURR_POSITION;
+	float4 PrevPosition : PREV_POSITION;
 	float2 TexCoord : TEXCOORD;
 	float3x3 TBN : TBN;
+	float4 NormalsVS : NORMAL_VS;
 	uint MeshletIndex : COLOR0;
 };
-
-ConstantBuffer<Transform> Transforms : register(b0);
+groupshared Payload sPayload;
 ConstantBuffer<PushConstants> Constants : register(b1);
-ConstantBuffer<FMaterial> Material : register(b2);
+ConstantBuffer<CameraConsts> CameraConstants : register(b2);
 
 VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 {
 	VertexOut vout;
 	
-	vout.Position = mul(Transforms.WVP, float4(InVertex.Position, 1.0f));
-	vout.WorldPosition = mul(Transforms.World, float4(InVertex.Position, 1.0f));
-	vout.TexCoord = InVertex.TexCoord;
+	StructuredBuffer<Transform> transformBuffer = ResourceDescriptorHeap[Constants.TransformBuffer];
+	Transform transform = transformBuffer[Constants.TransformID];
 	
-	float3 N = normalize(mul((float3x3) Transforms.World, InVertex.Normal));
-	float3 T = normalize(mul((float3x3) Transforms.World, InVertex.Tangent));
-	float3 B = normalize(mul((float3x3) Transforms.World, InVertex.Bitangent));
+	const float4x4 world = transform.World;
+	vout.Position		= mul(transform.WVP, float4(InVertex.Position, 1.0f));
+	vout.CurrPosition	= mul(transform.WVP, float4(InVertex.Position, 1.0f));
+	vout.PrevPosition	= mul(transform.PreviousWorld, float4(InVertex.Position, 1.0f));
+	vout.WorldPosition	= mul(world, float4(InVertex.Position, 1.0f));
 
-	vout.TBN = float3x3(T, B, N);
-	vout.TBN = mul((float3x3) Transforms.World, transpose(vout.TBN));
+	vout.TexCoord = InVertex.TexCoord;
 
+	float3 N = normalize(mul((float3x3)world, InVertex.Normal));
+	float3 T = normalize(mul((float3x3)world, InVertex.Tangent));
+	float3 B = normalize(mul((float3x3)world, InVertex.Bitangent));
+	
+	vout.TBN = mul((float3x3)world, transpose(float3x3(T, B, N)));
+	vout.NormalsVS = float4(N, 1.0f);
+	
 	vout.MeshletIndex = MeshletIndex;
 	
 	return vout;
 }
-
-struct Payload
-{
-	uint MeshletIndices[AS_GROUP_SIZE];
-};
-
-groupshared Payload sPayload;
 
 [NumThreads(AS_GROUP_SIZE, 1, 1)]
 void ASMain(
@@ -140,8 +155,17 @@ void MSMain(
 	}
 
 }
-
-SamplerState AnisotropicSampler : register(s0);
+struct GBuffers
+{
+	float4 BaseColor : SV_TARGET0;
+	float4 Normal : SV_TARGET1;
+	float4 NormalVS : SV_TARGET2;
+	float4 MotionVectors : SV_TARGET3;
+	float4 MetallicRoughness : SV_TARGET4;
+	float4 Emissive : SV_TARGET5;
+	float4 WorldPosition : SV_TARGET6;
+	float4 Depth : SV_TARGET7;
+};
 
 int IsIndexValid(uint Index)
 {
@@ -153,59 +177,63 @@ int IsIndexValid(uint Index)
 	return 1;
 }
 
-Texture2D GetTexture(in uint Index)
-{
-	Texture2D output = ResourceDescriptorHeap[Index];
-	return output;
-}
+SamplerState AnisotropicSampler : register(s0);
 
-#define NEAR_PLANE 0.1f
-#define FAR_PLANE 10000.0f
-
-[RootSignature(GBUFFER_ROOT_SIG)]
-float4 PSMain(VertexOut pin) : SV_TARGET0
+GBuffers PSMain(VertexOut pin)
 {
-	float4 output = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	GBuffers output = (GBuffers) 0;
+
+	StructuredBuffer<FMaterial> materialBuffer = GetBuffer<FMaterial>(Constants.MaterialBuffer);
+	FMaterial material = materialBuffer[Constants.MaterialID];
 	
-	
-	if (IsIndexValid(Material.BaseColorIndex))
+	output.WorldPosition = float4(pin.WorldPosition.xyz, 1.0f);
+
+	output.Emissive = float4(material.EmissiveFactor.rgb, material.EmissiveFactor.a);
+	output.Emissive *= material.EmissiveStrength;
+	if (IsIndexValid(material.EmissiveIndex))
 	{
-		Texture2D baseColorTexture = GetTexture(Material.BaseColorIndex);
+		Texture2D emissiveTexture = GetTexture(material.EmissiveIndex);
+		output.Emissive = emissiveTexture.Sample(AnisotropicSampler, pin.TexCoord);
+		output.Emissive *= material.EmissiveFactor;
+	}
+	
+	output.BaseColor = float4(material.BaseColorFactor.rgb, 1.0f);
+	if (IsIndexValid(material.BaseColorIndex))
+	{
+		Texture2D baseColorTexture = GetTexture(material.BaseColorIndex);
 		
 		float4 baseColor = baseColorTexture.Sample(AnisotropicSampler, pin.TexCoord);
-	
-		if (baseColor.a == 0.0)
-		{
-			//baseColor.rgb *= Material.IndexOfRefraction;
-			baseColor.rgb = lerp(baseColor.rgb, baseColor.rgb, Material.IndexOfRefraction);
-			//discard;
-		}
-	
-		if (Constants.bDrawMeshlets)
-		{
-			float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
-			return float4(meshletColor, 1.0f);
-		}
+		baseColor.rgb *= material.BaseColorFactor.rgb;
 		
-		output = baseColor;
+		output.BaseColor = float4(baseColor.rgb, baseColor.a);
 	}
 	
-	if (IsIndexValid(Material.EmissiveIndex))
+	if (Constants.bDrawMeshlets)
 	{
-		Texture2D emissiveTexture = GetTexture(Material.EmissiveIndex);
+		float3 meshletColor = GetMeshletColorHashed(pin.MeshletIndex);
 		
-		float4 emissiveColor = emissiveTexture.Sample(AnisotropicSampler, pin.TexCoord);
-		
-		output.rgb += emissiveColor.rgb;
+		output.BaseColor = float4(meshletColor, 1.0f);
 	}
 	
-	
-	//return output;
-	//const float z = 1.0f - (pin.Position.z / pin.Position.w);
-	
-	//return float4(z, z, z, output.a);
-	return float4(output.rgb, output.a);
-	
+	output.Normal = float4(0.0f, 1.0f, 0.0f, 0.0f);
+	output.NormalVS = float4(pin.NormalsVS.rgb, 1.0f);
+	if (IsIndexValid(material.NormalIndex))
+	{
+		Texture2D normalTexture = GetTexture(material.NormalIndex);
+		float4 normalMap = normalize(2.0f * normalTexture.Sample(AnisotropicSampler, pin.TexCoord) - 1.0f);
+		float4 n = float4(normalize(mul(pin.TBN, normalMap.xyz)), normalMap.w);
+		output.Normal = float4(n);
+	}
+
+	output.MetallicRoughness = float4(0.0f, material.Roughness, material.Metallic, 1.0f);
+	if (IsIndexValid(material.MetallicRoughnessIndex))
+	{
+		Texture2D mrTexture = GetTexture(material.MetallicRoughnessIndex);
+		float4 mr = mrTexture.Sample(AnisotropicSampler, pin.TexCoord);
+		output.MetallicRoughness = float4(mr.r, mr.g * material.Roughness, mr.b * material.Metallic, 1.0f);
+	}
+
+	return output;
 }
 
 #endif // GBUFFER_MS_HLSL

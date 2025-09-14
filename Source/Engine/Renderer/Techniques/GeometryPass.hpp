@@ -25,11 +25,13 @@ namespace Luden
 
 		//void Render(Frame& CurrentFrame, std::function<void()> const& DrawFunction);
 		void Render(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
+		void RenderTransparent(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
 		// Test. TODO now.
 		void RenderIndirect(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
 
 		D3D12RenderTexture BaseColor;
 		D3D12RenderTexture Normal;
+		D3D12RenderTexture NormalWS;
 		D3D12RenderTexture MotionVectors;
 		D3D12RenderTexture MetallicRoughness;
 		D3D12RenderTexture Emissive;
@@ -37,9 +39,6 @@ namespace Luden
 		D3D12RenderTexture Depth;
 
 		D3D12CommandSignature* IndirectSignature = nullptr;
-		//D3D12RootSignature IndirectRS;
-		//D3D12Buffer* IndirectArgumentsBuffer = nullptr;
-		//D3D12Buffer* IndirectOutputBuffer = nullptr;
 
 		D3D12Pipeline BlendPipelineState;
 		D3D12Pipeline IndirectPipelineState;

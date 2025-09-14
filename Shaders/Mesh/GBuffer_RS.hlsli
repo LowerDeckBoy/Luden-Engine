@@ -10,6 +10,6 @@
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_WRAP, "\
 		"addressV = TEXTURE_ADDRESS_WRAP, "\
-		"filter = FILTER_MAXIMUM_ANISOTROPIC )"
+		"filter = FILTER_MIN_MAG_MIP_LINEAR )"
 
 #endif // GBUFFER_RS_HLSLI

@@ -15,9 +15,11 @@ namespace Luden
 		m_D3D12RHI = pD3D12RHI;
 		m_AssetImporter = pAssetImporter;
 
+		const uint32 width  = pParentWindow->HostImageWidth;
+		const uint32 height = pParentWindow->HostImageHeight;
+
 		SceneTextures.Scene.Create(m_D3D12RHI->Device,
-			static_cast<uint32>(m_D3D12RHI->SwapChain->GetSwapChainViewport().Viewport.Width),
-			static_cast<uint32>(m_D3D12RHI->SwapChain->GetSwapChainViewport().Viewport.Height),
+			width, height,
 			m_D3D12RHI->SwapChain->GetSwapChainFormat(),
 			DefaultClearColor,
 			"Scene Output Render Texture");
@@ -26,13 +28,10 @@ namespace Luden
 
 		Camera = new SceneCamera(pParentWindow);
 
-		const uint32 width  = pParentWindow->Width;
-		const uint32 height = pParentWindow->Height;
-
 		NoiseTexture = new D3D12Texture();
 
 		GBuffer			= new GeometryPass(pD3D12RHI, m_ShaderCompiler, width, height);
-		LightingPass	= new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, pParentWindow->Width, height);
+		LightingPass	= new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, width, height);
 
 		BloomPass		= new Bloom(pD3D12RHI, m_ShaderCompiler, width, height);
 		FXAAPass		= new FXAA(pD3D12RHI, m_ShaderCompiler, width, height);
@@ -106,6 +105,8 @@ namespace Luden
 
 	void Renderer::Update(f64 DeltaTime)
 	{
+		const auto updateBeginTime = Time::GetTimestamp();
+
 		Camera->Tick(DeltaTime);
 
 		ActiveScene->UpdateSceneBufferData(Camera);
@@ -114,13 +115,12 @@ namespace Luden
 		{
 			auto& transformComponent = model->GetComponent<ecs::TransformComponent>();
 
-			auto& transform	= ActiveScene->Transforms.at(model->TransformID);
-
 			if (transformComponent.bDirty)
 			{
 				transformComponent.Update();
 			}
 
+			auto& transform	= ActiveScene->Transforms.at(model->TransformID);
 			transform.WVP			= transformComponent.WorldMatrix * Camera->GetViewProjection();
 			transform.World			= transformComponent.WorldMatrix;
 			transform.PreviousWorld = transformComponent.PreviousPosition * Camera->GetViewProjection();
@@ -128,6 +128,7 @@ namespace Luden
 
 		std::memcpy(ActiveScene->TransformsBuffer->GetBufferDesc().Data, ActiveScene->Transforms.data(), (ActiveScene->Transforms.size() * sizeof(ecs::ObjectTransforms)));
 
+		UpdateRenderTime = Time::GetDurationInMiliseconds(updateBeginTime);
 	}
 
 	void Renderer::Render(Scene* /* pScene */)
@@ -138,7 +139,8 @@ namespace Luden
 
 		auto& depthStencilView = m_D3D12RHI->SceneDepthBuffer->DepthStencilHandle;
 
-		commandList->ClearDepthStencilView(depthStencilView);
+		
+		//commandList->ClearDepthStencilView(depthStencilView);
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3D12RHI->SwapChain->GetSwapChainDescriptorHeap().GetCpuStartHandle(), BackBufferIndex, m_D3D12RHI->SwapChain->GetSwapChainDescriptorHeap().GetDescriptorIncrementSize());
 
@@ -149,7 +151,11 @@ namespace Luden
 			// G-Buffer
 			if (!Config::Get().bDrawIndirect)
 			{
+				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+				commandList->ClearDepthStencilView(depthStencilView);
 				GBuffer->Render(ActiveScene, Camera, *frame);
+				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
+				GBuffer->RenderTransparent(ActiveScene, Camera, *frame);
 			}
 			else
 			{
@@ -202,7 +208,7 @@ namespace Luden
 					SSRPass->Render(frame, 
 						SceneTextures.Scene.ShaderResourceHandle.Index, 
 						GBuffer->Normal.ShaderResourceHandle.Index, 
-						//GBuffer->NormalVS.ShaderResourceHandle.Index, 
+						//GBuffer->NormalWS.ShaderResourceHandle.Index, 
 						GBuffer->MetallicRoughness.ShaderResourceHandle.Index,
 						GBuffer->WorldPosition.ShaderResourceHandle.Index,
 						GBuffer->Depth.ShaderResourceHandle.Index, 
@@ -295,8 +301,8 @@ namespace Luden
 
 		m_ParentWindow->Resize();
 
-		const uint32 width  = m_ParentWindow->Width;
-		const uint32 height = m_ParentWindow->Height;
+		const uint32 width  = m_ParentWindow->HostImageWidth;
+		const uint32 height = m_ParentWindow->HostImageHeight;
 
 		m_D3D12RHI->SwapChain->Resize(width, height);
 		m_D3D12RHI->SceneDepthBuffer->Resize(width, height, 1.0f);
@@ -554,13 +560,13 @@ namespace Luden
 		textureDesc.Format	= m_D3D12RHI->SwapChain->GetSwapChainFormat();
 		textureDesc.Usage	= TextureUsageFlag::UnorderedAccess;
 		
-		RaytracingOutput	= new D3D12Texture(m_D3D12RHI->Device, textureDesc);
-		RaytracingOutput->Subresource.RowPitch = textureDesc.Width;
-		RaytracingOutput->Subresource.SlicePitch = 4 * RaytracingOutput->Subresource.RowPitch;
+		RaytracingOutput = new D3D12Texture(m_D3D12RHI->Device, textureDesc);
+		//RaytracingOutput->Subresource.RowPitch = textureDesc.Width;
+		//RaytracingOutput->Subresource.SlicePitch = 4 * RaytracingOutput->Subresource.RowPitch;
 		RaytracingOutput->SetDebugName("D3D12 Raytracing Output Texture");
 		
-		D3D12UploadContext::UploadTexture(RaytracingOutput);
-		D3D12UploadContext::Upload();
+		//D3D12UploadContext::UploadTexture(RaytracingOutput);
+		//D3D12UploadContext::Upload();
 
 		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl",		false, "RayGen"));
 		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl",		false, "Miss"));
@@ -578,7 +584,7 @@ namespace Luden
 		builder.AddMiss(MissShader, { L"Miss" });
 		builder.AddClosestHit(ClosestHitShader, { L"ClosestHit" });
 		builder.SetPayloadSize(16);
-		builder.SetMaxRayRecursion(0);
+		builder.SetMaxRayRecursion(1);
 		//builder.SetGlobalRootSignature(RaytracingRS, { L"RayGen" });
 		
 		FHitGroup hitGroup{};

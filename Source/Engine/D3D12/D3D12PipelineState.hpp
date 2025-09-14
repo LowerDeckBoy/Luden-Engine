@@ -139,6 +139,7 @@ namespace Luden
 		void SetAlphaModeOpaque(uint32 RenderTargetIndex);
 		void SetAlphaModeBlend(uint32 RenderTargetIndex);
 		void SetAlphaModeAdditive(uint32 RenderTargetIndex);
+		void SetAlphaModePremultiplied(uint32 RenderTargetIndex);
 
 		void SetDefaultDepthDesc();
 		void SetAlphaBlendDepthDesc();

@@ -64,6 +64,7 @@ struct VertexOut
 	float4		PrevPosition	: PREV_POSITION;
 	float2		TexCoord		: TEXCOORD;
 	float3x3	TBN				: TBN;
+	float4		NormalsVS		: NORMAL_VS;
 	uint		MeshletIndex	: COLOR0;
 };
 
@@ -90,7 +91,8 @@ VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 	float3 B = normalize(mul((float3x3)world, InVertex.Bitangent));
 	
 	vout.TBN = mul((float3x3)world, transpose(float3x3(T, B, N)));
-
+	vout.NormalsVS = float4(N, 1.0f);
+	//vout.NormalsVS = float4(InVertex.Normal, 1.0f);
 	vout.MeshletIndex = MeshletIndex;
 	
 	return vout;

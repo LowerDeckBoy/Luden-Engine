@@ -133,7 +133,6 @@ namespace Luden
 	{
 		m_RasterizerDesc	= CD3DX12_RASTERIZER_DESC2(D3D12_DEFAULT);
 		m_DepthDesc			= CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
-		//m_DepthDesc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 		m_BlendDesc			= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 
 		m_Desc.SampleDesc = DXGI_SAMPLE_DESC{ 1, 0 };
@@ -148,8 +147,6 @@ namespace Luden
 		m_Desc.DepthStencilState	= m_DepthDesc;
 		m_Desc.BlendState			= m_BlendDesc;
 		m_Desc.DSVFormat			= DXGI_FORMAT_D32_FLOAT;
-		
-		//m_Desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 		m_Desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
@@ -234,7 +231,7 @@ namespace Luden
 		desc.LogicOp				= D3D12_LOGIC_OP_NOOP;
 		desc.RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
 
-		m_BlendDesc.AlphaToCoverageEnable			= false;
+		m_BlendDesc.AlphaToCoverageEnable			= true;
 		m_BlendDesc.IndependentBlendEnable			= false;
 		m_BlendDesc.RenderTarget[RenderTargetIndex] = desc;
 	}
@@ -247,8 +244,8 @@ namespace Luden
 		desc.SrcBlend				= D3D12_BLEND_SRC_ALPHA;
 		desc.DestBlend				= D3D12_BLEND_INV_SRC_ALPHA;
 		desc.BlendOp				= D3D12_BLEND_OP_ADD;
-		desc.SrcBlendAlpha			= D3D12_BLEND_ONE;
-		desc.DestBlendAlpha			= D3D12_BLEND_ONE;
+		desc.SrcBlendAlpha			= D3D12_BLEND_SRC_ALPHA;
+		desc.DestBlendAlpha			= D3D12_BLEND_INV_SRC_ALPHA;
 		desc.BlendOpAlpha			= D3D12_BLEND_OP_ADD;
 		desc.LogicOp				= D3D12_LOGIC_OP_NOOP;
 		desc.RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
@@ -277,15 +274,33 @@ namespace Luden
 		m_BlendDesc.RenderTarget[RenderTargetIndex] = desc;
 	}
 
+	void D3D12MeshPipelineStateBuilder::SetAlphaModePremultiplied(uint32 RenderTargetIndex)
+	{
+		D3D12_RENDER_TARGET_BLEND_DESC desc{};
+		desc.BlendEnable			= true;
+		desc.LogicOpEnable			= false;
+		desc.SrcBlend				= D3D12_BLEND_ONE;
+		desc.DestBlend				= D3D12_BLEND_INV_SRC_ALPHA;
+		desc.SrcBlendAlpha			= D3D12_BLEND_ONE;
+		desc.DestBlendAlpha			= D3D12_BLEND_INV_SRC_ALPHA;
+		desc.BlendOp				= D3D12_BLEND_OP_ADD;
+		desc.BlendOpAlpha			= D3D12_BLEND_OP_ADD;
+		desc.LogicOp				= D3D12_LOGIC_OP_NOOP;
+		desc.RenderTargetWriteMask	= D3D12_COLOR_WRITE_ENABLE_ALL;
+
+		m_BlendDesc.AlphaToCoverageEnable			= false;
+		m_BlendDesc.IndependentBlendEnable			= false;
+		m_BlendDesc.RenderTarget[RenderTargetIndex] = desc;
+	}
+
 	void D3D12MeshPipelineStateBuilder::SetDefaultDepthDesc()
 	{
 		m_DepthDesc = CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
-		//m_DepthDesc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 	}
 
 	void D3D12MeshPipelineStateBuilder::SetAlphaBlendDepthDesc()
 	{
-		m_DepthDesc.DepthEnable						= true;
+		m_DepthDesc.DepthEnable						= false;
 		m_DepthDesc.DepthFunc						= D3D12_COMPARISON_FUNC_LESS_EQUAL;
 		m_DepthDesc.DepthWriteMask					= D3D12_DEPTH_WRITE_MASK_ALL;
 		m_DepthDesc.DepthBoundsTestEnable			= false;

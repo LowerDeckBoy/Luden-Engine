@@ -86,6 +86,7 @@ namespace Luden
 		Atmosphere*		AtmospherePass;
 
 		double PresentRenderTime = 0.0;
+		double UpdateRenderTime = 0.0;
 
 		D3D12Texture* NoiseTexture = nullptr;
 	
