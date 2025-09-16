@@ -89,7 +89,9 @@ namespace Luden::gui
 				{
 					Component.bDirty = true;
 				}
+
 				TableNextRowBegin("Rotation");
+				ImGui::TableNextColumn();
 				if (Math::DrawFloat3("Rotation", *(DirectX::XMFLOAT3*)&Component.Rotation))
 				{
 					Component.bDirty = true;

@@ -287,8 +287,6 @@ namespace Luden
 		{
 			if (ImGui::BeginMenu(ICON_FA_IMAGE" Render Target"))
 			{
-				//static const char* items[] = { "Scene", "BaseColor", "Normal", "Normal TBN", "Metallic-Roughness", "Emissive", "Depth", "LightPass", "Raytracing", "Bloom - Test"};
-
 				if (ImGui::MenuItem("Scene"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->SceneTextures.Scene.ShaderResourceHandle.GpuHandle.ptr;
@@ -297,9 +295,13 @@ namespace Luden
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->BaseColor.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Normal"))
+				else if (ImGui::MenuItem("Normal TBN"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Normal.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Normal WorldSpace"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->NormalWS.ShaderResourceHandle.GpuHandle.ptr;
 				}
 				else if (ImGui::MenuItem("Motion Vectors"))
 				{
@@ -332,6 +334,22 @@ namespace Luden
 				else if (ImGui::MenuItem("SSAO - Test"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("FilmEffects - Test"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->FilmEffectsPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("ScreenSpaceReflections - Test"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->SSRPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Scattering - Test"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->ScatteringPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+				}
+				else if (ImGui::MenuItem("Atmosphere - Test"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->AtmospherePass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 				}
 
 				ImGui::EndMenu();

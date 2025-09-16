@@ -40,6 +40,11 @@ namespace Luden::Panel
 			ImGui::SetNextItemWidth(-1.0f);
 			ImGui::Text("%.3f ms", m_Renderer->PresentRenderTime);
 
+			TableNextRowBegin("Update");
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1.0f);
+			ImGui::Text("%.3f ms", m_Renderer->UpdateRenderTime);
+
 			TableNextRowBegin("G-Buffer");
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1.0f);
@@ -524,7 +529,7 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[7] = { "None", "Reinhard", "Gamma Correction", "Uncharted2", "ACES", "AgX", "Hable" };
+				static const char* types[8] = { "None", "ACES", "AgX", "AgX Punchy", "Reinhard", "Gamma Correction", "Uncharted2", "Hable" };
 				TableNextRowBegin("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
