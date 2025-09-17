@@ -315,6 +315,10 @@ namespace Luden
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Emissive.ShaderResourceHandle.GpuHandle.ptr;
 				}
+				else if (ImGui::MenuItem("World Position"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->WorldPosition.ShaderResourceHandle.GpuHandle.ptr;
+				}
 				else if (ImGui::MenuItem("Depth"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Depth.ShaderResourceHandle.GpuHandle.ptr;

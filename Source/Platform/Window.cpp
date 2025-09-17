@@ -53,9 +53,6 @@ namespace Luden::Platform
 		Width  = static_cast<uint32_t>(windowRect.right  - windowRect.left);
 		Height = static_cast<uint32_t>(windowRect.bottom - windowRect.top);
 
-		
-		
-
 		Handle = ::CreateWindowExA(WS_EX_OVERLAPPEDWINDOW,
 			wcex.lpszClassName, Desc.Title,
 			WS_OVERLAPPEDWINDOW,
@@ -74,8 +71,8 @@ namespace Luden::Platform
 		BOOL bDarkMode = TRUE;
 		::DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &bDarkMode, sizeof(bDarkMode));
 
-		//::COLORREF captionColor = DarkThemeBackground;
-		//::DwmSetWindowAttribute(Handle, DWMWA_CAPTION_COLOR, &captionColor, sizeof(captionColor));
+		::COLORREF captionColor = DarkThemeBackground;
+		::DwmSetWindowAttribute(Handle, DWMWA_CAPTION_COLOR, &captionColor, sizeof(captionColor));
 
 		::ShowWindow(Handle, (Desc.bMaximize) ? SW_SHOWMAXIMIZED : SW_SHOW);
 		::SetForegroundWindow(Handle);
