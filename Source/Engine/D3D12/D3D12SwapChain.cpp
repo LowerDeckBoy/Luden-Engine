@@ -20,10 +20,20 @@ namespace Luden
 
 		bIsDisplayHDR = IsDisplayHDR();
 
-		if (bIsDisplayHDR)
+		switch (m_DisplayMode)
 		{
+		case Luden::DisplayMode::SDR: // SDR
+			m_SwapChainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+			m_ColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+			break;
+		case Luden::DisplayMode::HDR_PQ:
 			m_SwapChainFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
 			m_ColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+			break;
+		case Luden::DisplayMode::HDR_scRGB:
+			m_SwapChainFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+			m_ColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+			break;
 		}
 
 		CreateSwapChain(pDevice, pCommandQueue, pWindow);
@@ -47,8 +57,8 @@ namespace Luden
 		desc.SwapEffect		= DXGI_SWAP_EFFECT_FLIP_DISCARD;
 		desc.BufferCount	= Config::Get().NumBackBuffers;
 		desc.Format			= m_SwapChainFormat;
-		desc.Width			= pWindow->Width;
-		desc.Height			= pWindow->Height;
+		desc.Width			= pWindow->HostImageWidth;
+		desc.Height			= pWindow->HostImageHeight;
 		desc.AlphaMode		= DXGI_ALPHA_MODE_UNSPECIFIED;
 		desc.Scaling		= DXGI_SCALING_NONE;
 		desc.Stereo			= FALSE;
@@ -134,7 +144,7 @@ namespace Luden
 		// Refresh display information.
 		QueryDisplayInfo();
 
-		return m_DisplayOutputDesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+		return m_DisplayOutputDesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 || DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
 	}
 	
 	void D3D12SwapChain::QueryDisplayInfo()
@@ -146,7 +156,20 @@ namespace Luden
 		
 		output.As(m_DisplayOutput);
 		VERIFY_D3D12_RESULT(m_DisplayOutput->GetDesc1(&m_DisplayOutputDesc));
-		
+
+		switch (m_DisplayOutputDesc.ColorSpace)
+		{
+		case DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709:
+			m_DisplayMode = DisplayMode::SDR;
+			break;
+		case DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020:
+			m_DisplayMode = DisplayMode::HDR_PQ;
+			break;
+		case DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709:
+			m_DisplayMode = DisplayMode::HDR_scRGB;
+			break;
+		}
+
 	}
 
 } // namespace Luden

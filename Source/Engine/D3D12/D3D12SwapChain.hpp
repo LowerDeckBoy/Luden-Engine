@@ -10,6 +10,13 @@ namespace Luden
 	class D3D12Device;
 	class D3D12CommandQueue;
 
+	enum class DisplayMode
+	{
+		SDR,
+		HDR_PQ,
+		HDR_scRGB
+	};
+
 	class D3D12Viewport
 	{
 	public:
@@ -108,6 +115,8 @@ namespace Luden
 
 		Ref<IDXGIOutput6> m_DisplayOutput{};
 		DXGI_OUTPUT_DESC1 m_DisplayOutputDesc{};
+
+		DisplayMode m_DisplayMode = DisplayMode::SDR;
 
 		bool bIsDisplayHDR = false;
 
