@@ -22,7 +22,8 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID )
 	float3 scene = sceneTexture[DispatchThreadID.xy].rgb;
 	float3 bloom = bloomImage.Sample(TexSampler, texCoord).rgb;
 	
-	sceneTexture[DispatchThreadID.xy] = float4(lerp(scene.rgb, scene.rgb + bloom, Constants.Gamma), 1.0f);
+	sceneTexture[DispatchThreadID.xy] = float4(lerp(scene.rgb, scene.rgb + bloom, Constants.Intensity), 1.0f);
+	//sceneTexture[DispatchThreadID.xy] = float4(lerp(scene.rgb, scene.rgb + bloom, Constants.Gamma), 1.0f);
 }
 
 #endif // BLOOM_COMBINE_HLSL
