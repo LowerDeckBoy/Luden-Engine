@@ -2,6 +2,7 @@
 #define GBUFFER_PS_HLSL
 
 #include "GBufferCommon.hlsli"
+#include "../Common/Bindless.hlsli"
 
 SamplerState AnisotropicSampler : register(s0);
 
@@ -9,7 +10,7 @@ struct GBuffers
 {
 	float4 BaseColor			: SV_TARGET0;
 	float4 Normal				: SV_TARGET1;
-	float4 NormalVS				: SV_TARGET2;
+	float4 NormalWS				: SV_TARGET2;
 	float4 MotionVectors		: SV_TARGET3;
 	float4 MetallicRoughness	: SV_TARGET4;
 	float4 Emissive				: SV_TARGET5;
@@ -17,7 +18,7 @@ struct GBuffers
 	float4 Depth				: SV_TARGET7;
 };
 
-int IsIndexValid(uint Index)
+static int IsIndexValid(uint Index)
 {
 	if (Index == 0xFFFFFFFF)
 	{
@@ -27,11 +28,10 @@ int IsIndexValid(uint Index)
 	return 1;
 }
 
-//[earlydepthstencil]
 GBuffers PSMain(VertexOut pin) 
 {
 	GBuffers output = (GBuffers) 0;
-	//1.0f - 
+	
 	const float z = (pin.Position.z / pin.Position.w);
 	output.Depth = float4(z, z, z, 1.0f);
 	
@@ -72,7 +72,6 @@ GBuffers PSMain(VertexOut pin)
 		}
 		
 		output.BaseColor = float4(baseColor.rgb, 1.0f);
-		//output.BaseColor = float4(baseColor.rgb + output.Emissive.rgb, baseColor.a);
 	}
 	
 	if (Constants.bDrawMeshlets)
@@ -83,7 +82,7 @@ GBuffers PSMain(VertexOut pin)
 	}
 	
 	output.Normal = float4(0.0f, 1.0f, 0.0f, 0.0f);
-	output.NormalVS = float4(pin.NormalsVS.rgb, 1.0f);
+	output.NormalWS = float4(normalize(pin.NormalsWS.rgb), 1.0f);
 	if (IsIndexValid(material.NormalIndex))
 	{
 		Texture2D normalTexture = GetTexture(material.NormalIndex);

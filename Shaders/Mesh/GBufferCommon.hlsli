@@ -2,8 +2,8 @@
 #define GBUFFER_COMMON_HLSLI
 
 #include "GBuffer_RS.hlsli"
-#include "../Common/Bindless.hlsli"
 #include "../Common/Common.hlsli"
+#include "../Common/Bindless.hlsli"
 #include "../Material.hlsli"
 #include "../Mesh.hlsli"
 
@@ -64,7 +64,7 @@ struct VertexOut
 	float4		PrevPosition	: PREV_POSITION;
 	float2		TexCoord		: TEXCOORD;
 	float3x3	TBN				: TBN;
-	float4		NormalsVS		: NORMAL_VS;
+	float4		NormalsWS		: NORMAL_VS;
 	uint		MeshletIndex	: COLOR0;
 };
 
@@ -79,20 +79,20 @@ VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 	Transform transform = transformBuffer[Constants.TransformID];
 	
 	float4x4 world = transform.World;
-	vout.Position		= mul(transform.WVP,			float4(InVertex.Position, 1.0f));
-	vout.CurrPosition	= mul(transform.WVP,			float4(InVertex.Position, 1.0f));
-	vout.PrevPosition	= mul(transform.PreviousWorld,	float4(InVertex.Position, 1.0f));
-	vout.WorldPosition	= mul(world,					float4(InVertex.Position, 1.0f));
+	vout.Position		= mul(float4(InVertex.Position, 1.0f), transpose(transform.WVP));
+	vout.CurrPosition	= mul(float4(InVertex.Position, 1.0f), transpose(transform.WVP));
+	vout.PrevPosition   = mul(float4(InVertex.Position, 1.0f), transpose(transform.PreviousWorld));
+	vout.WorldPosition	= mul(float4(InVertex.Position, 1.0f), world);
 
-	vout.TexCoord		= InVertex.TexCoord;
+	vout.TexCoord = InVertex.TexCoord;
 
-	float3 N = normalize(mul((float3x3)world, InVertex.Normal));
-	float3 T = normalize(mul((float3x3)world, InVertex.Tangent));
-	float3 B = normalize(mul((float3x3)world, InVertex.Bitangent));
+	float3 N = normalize(mul(InVertex.Normal,	 (float3x3)world));
+	float3 T = normalize(mul(InVertex.Tangent,	 (float3x3)world));
+	float3 B = normalize(mul(InVertex.Bitangent, (float3x3)world));
 	
 	vout.TBN = mul((float3x3)world, transpose(float3x3(T, B, N)));
-	vout.NormalsVS = float4(N, 1.0f);
-	//vout.NormalsVS = float4(InVertex.Normal, 1.0f);
+	vout.NormalsWS = float4(N, 1.0f);
+	
 	vout.MeshletIndex = MeshletIndex;
 	
 	return vout;
