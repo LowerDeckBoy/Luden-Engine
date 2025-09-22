@@ -45,7 +45,7 @@ namespace Tonemapping
 
 	float3 TonemapACES(float3 Color)
 	{
-		Color  *= 0.6f;
+		//Color  *= 0.6f;
 		const float a = 2.51f;
 		const float b = 0.03f;
 		const float c = 2.43f;
@@ -73,24 +73,6 @@ namespace Tonemapping
 		Color /= white;
 
 		return saturate(Color);
-	}
-
-	float3 AGXCurve3(float3 Color)
-	{
-		const float threshold 	= 0.6060606060606061f;
-   		const float aUp 		= 69.86278913545539f;
-   		const float aDown 		= 59.507875f;
-   		const float bUp 		= 13.0f / 4.0f;
-   		const float bDown 		= 3.0f / 1.0f;
-   		const float cUp 		= -4.0f / 13.0f;
-   		const float cDown 		= -1.0f / 3.0f;
-
-    	float3 mask = step(Color, float3(threshold, threshold, threshold));
-    	float3 a = aUp + (aDown - aUp) * mask;
-    	float3 b = bUp + (bDown - bUp) * mask;
-    	float3 c = cUp + (cDown - cUp) * mask;
-
-    	return 0.5f + (((-2.0f * threshold)) + 2.0f * Color) * pow(1.0f + a * pow(abs(Color - threshold), b), c);
 	}
 	
 	float3 AgXContrastApproximation(float3 Color)
@@ -197,14 +179,15 @@ namespace Tonemapping
 		
 		switch (Type)
 		{
-			case 0:							return Color;
+			case 0:							return saturate(Color);
 			case TypeACESFilm:				return TonemapACES(output);
 			case TypeAgX:					return TonemapAgX(output);
+			case TypeAgXPunchy:				return TonemapAgXPunchy(output);
 			case TypeReinhard:				return TonemapReinhard(output * ExposureScale);
 			case TypeGammaCorrection:		return TonemapGammaCorrection(output);
 			case TypeUncharted2:			return TonemapUncharted2(output);
 			case TypeHable:					return TonemapHable(output);
-			default:						return Color;
+			default:						return saturate(Color);
 		}
 	}
 	
