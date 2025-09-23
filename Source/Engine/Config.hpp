@@ -10,6 +10,9 @@
 
 namespace Luden
 {
+	// TODO:
+	// Config requires either repacking to keep 4 byte strides
+	// or changing types from bools to uint32.
 	struct Config
 	{
 		static Config& Get()
@@ -29,7 +32,7 @@ namespace Luden
 		// 2 - VSync half
 		// 3 - VSync third
 		// 4 - VSync quarter
-		int32 SyncInterval = 1;
+		int32 SyncInterval = 2;
 
 		bool bEnableDebugLayer = true;
 
@@ -53,8 +56,8 @@ namespace Luden
 		bool bAlphaMask = true;
 
 		// Temporarly
-		bool bLightPassCompute = true;
-
+		//bool bLightPassCompute = true;
+		bool padding;
 		bool bDrawIndirect = false;
 
 		// True, to dispatch Raytracing.
@@ -63,15 +66,27 @@ namespace Luden
 
 		bool bHideEditor = false;
 		
+		//bool bEnableAO = false;
 		bool bEnableSSAO = false;
+		//bool bEnableHBAO = false;
 
-		// Post-Processes
+		bool bEnableAtmosphere = true;
+		bool bEnableSSR = true;
+
+		/* =============== Post - Processing =============== */
+		// Whether to enable PostProcessing or not.
 		bool bEnablePostProcess	= true;
 		bool bEnableBloom		= true;
 		bool bEnableTonemapping = true;
 		bool bEnableFXAA		= true;
+		bool bEnableScattering	= true;
 
-		bool bSSAOCompute = false;
+
+		//
+		bool bEnableFilmEffects			= false;
+		bool bEnableChromaticAberration = false;
+		bool bEnableLensDistortion		= false;
+		bool bEnableFilmGrain			= false;
 
 	};
 } // namespace Luden
