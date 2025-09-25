@@ -21,8 +21,7 @@ namespace Luden::Panel
 		DrawSceneConfig();
 		DrawSceneCameraConfig();
 		DrawPostProcessConfig();
-		
-
+	
 		ImGui::End();
 	}
 
@@ -111,7 +110,7 @@ namespace Luden::Panel
 
 	void ConfigPanel::DrawSceneConfig()
 	{
-		if (ImGui::CollapsingHeader("Config"))
+		if (ImGui::CollapsingHeader("Config", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			auto& config = Config::Get();
 

@@ -42,8 +42,11 @@ namespace Luden::Panel
 				return;
 			}
 
-			if (ImGui::BeginTable("hierachy", 2, ImGuiTableFlags_SizingStretchProp))
+			if (ImGui::BeginTable("hierachy", 2, ImGuiTableFlags_SizingFixedFit))
 			{
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
 				// Iterate over every entity that owns a NameComponent.
 				const auto& view = m_ActiveScene->GetRegistry()->view<ecs::NameComponent>();
 
