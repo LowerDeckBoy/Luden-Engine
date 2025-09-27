@@ -112,7 +112,7 @@ namespace Luden
 	void D3D12SwapChain::Present(uint32 SyncInterval)
 	{
 		HRESULT present = m_SwapChain->Present(SyncInterval, (SyncInterval == 0) ? DXGI_PRESENT_ALLOW_TEARING : 0);
-		if (present == DXGI_ERROR_DEVICE_REMOVED)
+		if (present == DXGI_ERROR_DEVICE_HUNG || present == DXGI_ERROR_DEVICE_REMOVED)
 		{
 			VERIFY_D3D12_RESULT(m_ParentDevice->LogicalDevice->GetDeviceRemovedReason());
 		}

@@ -50,7 +50,7 @@ namespace Luden
 
 	private:
 		Ref<IDXGIDebug1>		m_DXGIDebug;
-		Ref<ID3D12DebugDevice2> m_Debug;
+		Ref<ID3D12DebugDevice2> m_DebugDevice2;
 		Ref<ID3D12InfoQueue1>	m_InfoQueue;
 		DWORD					m_DebugCallbackCookie = 0;
 		

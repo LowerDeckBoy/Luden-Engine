@@ -107,7 +107,6 @@ namespace Luden
 
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor DepthStencilHandle;
-		D3D12Descriptor DepthReadHandle;
 		
 	private:
 		D3D12Device* m_Device = nullptr;

@@ -17,6 +17,7 @@ namespace Luden
 			VERIFY_D3D12_RESULT(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&m_DXGIDebug)));
 			VERIFY_D3D12_RESULT(LogicalDevice->QueryInterface(IID_PPV_ARGS(&m_InfoQueue)));
 			m_InfoQueue->RegisterMessageCallback(&DebugCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &m_DebugCallbackCookie);
+			
 		}
 
 		D3D12MA::ALLOCATOR_DESC allocatorDesc{};

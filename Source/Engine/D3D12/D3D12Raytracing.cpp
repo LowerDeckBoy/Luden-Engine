@@ -207,11 +207,11 @@ namespace Luden
 
 		m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandle()->BuildRaytracingAccelerationStructure(&TLAS->BuildDesc, 0, nullptr);
 
-		//D3D12_RESOURCE_BARRIER uavBarrier{};
-		//uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-		//uavBarrier.UAV.pResource = TLAS->AccelerationStructure->GetHandleRaw();
-		//uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		//m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandle()->ResourceBarrier(1, &uavBarrier);
+		D3D12_RESOURCE_BARRIER uavBarrier{};
+		uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		uavBarrier.UAV.pResource = TLAS->AccelerationStructure->GetHandleRaw();
+		uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandle()->ResourceBarrier(1, &uavBarrier);
 
 		m_D3D12RHI->Device->ShaderResourceHeap->Allocate(TLAS->AccelerationStructure->ShaderResourceView);
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};

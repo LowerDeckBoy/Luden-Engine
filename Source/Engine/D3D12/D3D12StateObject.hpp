@@ -36,7 +36,7 @@ namespace Luden
 		Ref<ID3D12StateObject>				m_StateObject;
 		Ref<ID3D12StateObjectProperties>	m_StateObjectProperties;
 	private:
-		CD3DX12_STATE_OBJECT_DESC			m_StateObjectDesc{};
+		//CD3DX12_STATE_OBJECT_DESC			m_StateObjectDesc{};
 
 	};
 
@@ -76,10 +76,10 @@ namespace Luden
 	private:
 		CD3DX12_STATE_OBJECT_DESC m_Desc{};
 
-		uint32 m_MaxRecursion = 1;
-		uint32 m_PayloadSize = 16;
-		uint32 m_AttributeSize = D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES;
-
+		uint32 m_MaxRecursion	= 1;
+		uint32 m_PayloadSize	= sizeof(DirectX::XMFLOAT3);
+		uint32 m_AttributeSize  = sizeof(DirectX::XMFLOAT2);
+		
 		std::vector<FHitGroup> m_HitGroups;
 
 	};

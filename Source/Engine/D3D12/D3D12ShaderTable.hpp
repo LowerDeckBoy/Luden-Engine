@@ -16,7 +16,7 @@ namespace Luden
 			std::memcpy(Data, pData, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
 		}
 
-		std::byte* Data;
+		void* Data;
 		const uint32 SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 	};
 
@@ -44,43 +44,35 @@ namespace Luden
 	class D3D12ShaderTable
 	{
 	public:
-		D3D12ShaderTable() = default;
+		D3D12ShaderTable();
+		~D3D12ShaderTable();
 
 		void Create(D3D12Device* pDevice);
-
-		void Map(uint8* pDestination)
-		{
-			for (auto& record : m_Records)
-			{
-				//std::memcpy(pDestination, &record, sizeof(record));
-				std::memcpy(pDestination, record.Identifier.Data, record.TotalSize);
-				//pDestination += GetStride();
-				
-			}
-		}
 
 		void AddRecord(const FShaderTableRecord& Record)
 		{
 			m_Records.push_back(Record);
-			//Map(MappedData);
-		}
-
-		//uint64 GetTotalSizeInBytes();
-
-		uint64 GetSizeInBytes()
-		{
-			return m_Records.size() * Math::Align<uint64>(sizeof(FShaderTableRecord), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+			
+			m_Stride	= GetStrideInBytes();
+			m_TotalSize = GetTotalSizeInBytes();
 		}
 
 		// Clamp to max 4096 bytes?
-		uint64 GetStride() const
+		uint64 GetStrideInBytes() const
 		{
 			return Math::Align<uint64>(sizeof(FShaderTableRecord), D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
 		}
+		
+		uint64 GetTotalSizeInBytes()
+		{
+			uint64 size = static_cast<uint64>(m_Records.size() * GetStrideInBytes());
+			return Math::Align<uint64>(size, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
+		}
 
-		uint8* MappedData;
-
-		D3D12Resource* StorageBuffer;
+		// Structured Buffer to hold and upload all records.
+		uint32 StorageBuffer;
+		
+		uint64 GetTotalSize() const { return m_TotalSize; }
 
 	private:
 		uint64 m_TotalSize = 0;
@@ -98,7 +90,7 @@ namespace Luden
 
 		void Create(D3D12Device* pDevice);
 
-		void WriteRecords(uint8* pDestination);
+		//void WriteRecords(uint8* pDestination);
 
 		D3D12ShaderTable RayGenTable;
 		D3D12ShaderTable MissTable;

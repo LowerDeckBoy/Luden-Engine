@@ -14,6 +14,7 @@ namespace Luden
 		{
 			VERIFY_D3D12_RESULT(D3D12GetDebugInterface(IID_PPV_ARGS(&m_DebugDevice)));
 			m_DebugDevice->EnableDebugLayer();
+			//m_DebugDevice->SetEnableGPUBasedValidation(TRUE);
 
 			dxgiFactoryFlag |= DXGI_CREATE_FACTORY_DEBUG;
 			LOG_DEBUG("D3D12 Debug Layer is enabled.");

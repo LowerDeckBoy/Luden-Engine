@@ -40,6 +40,8 @@ namespace Luden
 		// aka Budget.
 		f64 GetDeviceTotalMemory() const;
 
+		Ref<ID3D12Debug6>& GetDebugDevice() { return m_DebugDevice; }
+
 	private:
 		Ref<ID3D12Debug6> m_DebugDevice;
 		

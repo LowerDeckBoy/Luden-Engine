@@ -90,6 +90,7 @@ namespace Luden
 
 		void Dispatch(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ);
 		void DispatchMesh(uint32 DispatchThreadX, uint32 DispatchThreadY, uint32 DispatchThreadZ);
+		void DispatchRays(D3D12_DISPATCH_RAYS_DESC& DispatchRaysDesc);
 
 		void Draw(uint32 VertexCount);
 		void DrawIndexed(uint32 IndexCount, uint32 BaseIndex, uint32 BaseVertex);

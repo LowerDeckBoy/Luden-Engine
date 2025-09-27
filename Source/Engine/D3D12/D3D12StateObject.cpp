@@ -43,15 +43,17 @@ namespace Luden
 			{
 				hitGroup->SetClosestHitShaderImport(std::wstring(record.ClosestHitName.begin(), record.ClosestHitName.end()).c_str());
 			}
-			else if (!record.AnyHitName.empty())
+
+			if (!record.AnyHitName.empty())
 			{
 				hitGroup->SetAnyHitShaderImport(std::wstring(record.AnyHitName.begin(), record.AnyHitName.end()).c_str());
 			}
-			else if (!record.IntersectionName.empty())
+
+			if (!record.IntersectionName.empty())
 			{
 				hitGroup->SetIntersectionShaderImport(std::wstring(record.IntersectionName.begin(), record.IntersectionName.end()).c_str());
 			}
-		}
+		}	
 
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateStateObject(m_Desc, IID_PPV_ARGS(&Output.GetHandle())));
 		VERIFY_D3D12_RESULT(Output.GetHandle()->QueryInterface(IID_PPV_ARGS(&Output.m_StateObjectProperties)));
@@ -106,7 +108,8 @@ namespace Luden
 
 	void D3D12StateObjectBuilder::SetStateObjectType(D3D12_STATE_OBJECT_TYPE Type)
 	{
-		m_Desc.SetStateObjectType(Type);
+		m_Desc = CD3DX12_STATE_OBJECT_DESC{ Type };
+		//m_Desc.SetStateObjectType(Type);
 	}
 
 	void D3D12StateObjectBuilder::SetGlobalRootSignature(D3D12RootSignature* pRootSignature)
@@ -123,7 +126,6 @@ namespace Luden
 		auto associations = m_Desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
 		associations->SetSubobjectToAssociate(*globalRootSignature);
 		associations->AddExports(Exports.data(), static_cast<uint32>(Exports.size()));
-		//rayGenAssociation->AddExport(Exports.at(0));
 	}
 
 } // namespace Luden

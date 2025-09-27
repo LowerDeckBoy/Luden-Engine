@@ -158,7 +158,17 @@ namespace Luden
 		request.UploadType = EUploadType::Texture;
 		request.Resource = pTexture;
 
-		const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(pTexture->Subresource.SlicePitch);
+
+		CD3DX12_RESOURCE_DESC uploadBufferDesc;
+		
+		if (pTexture->Subresource.SlicePitch > 0)
+		{
+			uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(pTexture->Subresource.SlicePitch);
+		}
+		else
+		{
+			uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(pTexture->Subresource.RowPitch);
+		}
 
 		auto heapProperties = D3D::HeapPropertiesUpload();
 

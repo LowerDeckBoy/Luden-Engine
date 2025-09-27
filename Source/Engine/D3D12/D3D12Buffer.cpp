@@ -164,29 +164,25 @@ namespace Luden
 			&heapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&desc,
-			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
 			&clearValue,
 			nullptr,
 			IID_PPV_ARGS(&m_Resource)));
 
 		m_Device->CreateDepthStencilView(this, DepthStencilHandle, Format);
-		D3D12Resource::SetResourceState(D3D12_RESOURCE_STATE_DEPTH_WRITE);
-		D3D12_DEPTH_STENCIL_VIEW_DESC readDesc{};
-		readDesc.Format = Format;
-		readDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+		D3D12Resource::SetResourceState(D3D12_RESOURCE_STATE_GENERIC_READ);
+		
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		srvDesc.Texture2D.PlaneSlice = 0;
+		srvDesc.Texture2D.ResourceMinLODClamp = 0;
+		srvDesc.Shader4ComponentMapping  = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-		if (GetDesc().SampleDesc.Count == 1)
-		{
-			readDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-			readDesc.Texture2D.MipSlice = 0;
-		}
-		else
-		{
-			readDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
-		}
-
-		m_Device->DepthStencilHeap->Allocate(DepthReadHandle);
-		//m_Device->LogicalDevice->CreateDepthStencilView(GetHandleRaw(), &readDesc, DepthReadHandle.CpuHandle);
+		m_Device->ShaderResourceHeap->Allocate(ShaderResourceHandle);
+		m_Device->LogicalDevice->CreateShaderResourceView(GetHandleRaw(), &srvDesc, ShaderResourceHandle.CpuHandle);
 
 	}
 

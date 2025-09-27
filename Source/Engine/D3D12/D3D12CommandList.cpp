@@ -276,6 +276,11 @@ namespace Luden
 		m_GraphicsCommandList->DispatchMesh(DispatchThreadX, DispatchThreadY, DispatchThreadZ);
 	}
 
+	void D3D12CommandList::DispatchRays(D3D12_DISPATCH_RAYS_DESC& DispatchRaysDesc)
+	{
+		m_GraphicsCommandList->DispatchRays(&DispatchRaysDesc);
+	}
+
 	void D3D12CommandList::Draw(uint32 VertexCount)
 	{
 		m_GraphicsCommandList->DrawInstanced(VertexCount, 1, 0, 0);

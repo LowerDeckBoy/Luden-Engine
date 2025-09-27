@@ -11,10 +11,6 @@ namespace Luden
 	struct StaticMesh;
 	class Model;
 
-	//
-	//https://renderingpixels.com/2022/07/getting-started-with-directx-raytracing/#bottom-level-acceleration-structure
-	//
-
 	class D3D12AccelerationStructure
 	{
 	public:
@@ -42,15 +38,14 @@ namespace Luden
 		void Create(D3D12Device* pDevice);
 
 		void AddGeometryDesc(D3D12Device* pDevice, StaticMesh& Mesh);
-
+		
 		D3D12_RAYTRACING_GEOMETRY_DESC GeometryDesc{};
 		// TODO:
 		// Put model's meshes into single BLAS
 		std::vector<D3D12_RAYTRACING_GEOMETRY_DESC>				GeometryDescs;
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS	Inputs{};
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC		BuildDesc{};
-		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS		Flags{};
-		
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS		BuildFlags{};
 		
 	}; // class D3D12BLAS
 
