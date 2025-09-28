@@ -120,10 +120,11 @@ namespace Luden
 				transformComponent.Update();
 			}
 
+			const auto viewProjection = Camera->GetViewProjection();
 			auto& transform	= ActiveScene->Transforms.at(model->TransformID);
-			transform.WVP			= transformComponent.WorldMatrix * Camera->GetViewProjection();
+			transform.WVP			= transformComponent.WorldMatrix * viewProjection;
 			transform.World			= transformComponent.WorldMatrix;
-			transform.PreviousWorld = transformComponent.PreviousPosition * Camera->GetViewProjection();
+			transform.PreviousWorld = transformComponent.PreviousPosition * viewProjection;
 		}
 
 		std::memcpy(ActiveScene->TransformsBuffer->GetBufferDesc().Data, ActiveScene->Transforms.data(), (ActiveScene->Transforms.size() * sizeof(ecs::ObjectTransforms)));
@@ -139,7 +140,6 @@ namespace Luden
 
 		auto& depthStencilView = m_D3D12RHI->SceneDepthBuffer->DepthStencilHandle;
 
-		
 		//commandList->ClearDepthStencilView(depthStencilView);
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_D3D12RHI->SwapChain->GetSwapChainDescriptorHeap().GetCpuStartHandle(), BackBufferIndex, m_D3D12RHI->SwapChain->GetSwapChainDescriptorHeap().GetDescriptorIncrementSize());
@@ -154,8 +154,8 @@ namespace Luden
 				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 				commandList->ClearDepthStencilView(depthStencilView);
 				GBuffer->Render(ActiveScene, Camera, *frame);
-				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
 				GBuffer->RenderTransparent(ActiveScene, Camera, *frame);
+				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
 			}
 			else
 			{
@@ -250,6 +250,13 @@ namespace Luden
 		}
 		else
 		{
+			if (!frame->ComputeCommandList->IsOpen())
+			{
+				frame->ComputeCommandList->Open();
+			}
+
+			frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
+
 			//commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			DispatchRayTracing(*frame);
 			//commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -498,7 +505,8 @@ namespace Luden
 
 		//InitializeRaytracingResources();
 
-		//m_D3D12RHI->Wait();
+		m_D3D12RHI->Wait();
+		m_D3D12RHI->Flush();
 	}
 
 	void Renderer::ReleaseActiveScene()
@@ -555,18 +563,13 @@ namespace Luden
 		RaytracingBVH->CreateTLAS();
 
 		TextureDesc textureDesc{};
-		textureDesc.Width	= m_ParentWindow->Width;
-		textureDesc.Height	= m_ParentWindow->Height;
+		textureDesc.Width	= m_ParentWindow->HostImageWidth;
+		textureDesc.Height	= m_ParentWindow->HostImageHeight;
 		textureDesc.Format	= m_D3D12RHI->SwapChain->GetSwapChainFormat();
 		textureDesc.Usage	= TextureUsageFlag::UnorderedAccess;
 		
 		RaytracingOutput = new D3D12Texture(m_D3D12RHI->Device, textureDesc);
-		//RaytracingOutput->Subresource.RowPitch = textureDesc.Width;
-		//RaytracingOutput->Subresource.SlicePitch = 4 * RaytracingOutput->Subresource.RowPitch;
 		RaytracingOutput->SetDebugName("D3D12 Raytracing Output Texture");
-		
-		//D3D12UploadContext::UploadTexture(RaytracingOutput);
-		//D3D12UploadContext::Upload();
 
 		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl",		false, "RayGen"));
 		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl",		false, "Miss"));
@@ -585,11 +588,11 @@ namespace Luden
 		builder.AddClosestHit(ClosestHitShader, { L"ClosestHit" });
 		builder.SetPayloadSize(16);
 		builder.SetMaxRayRecursion(1);
-		//builder.SetGlobalRootSignature(RaytracingRS, { L"RayGen" });
-		
+
+		// Primary hit ray
 		FHitGroup hitGroup{};
-		hitGroup.Name			= "HitGroup";
 		hitGroup.Type			= D3D12_HIT_GROUP_TYPE_TRIANGLES;
+		hitGroup.Name			= "HitGroup";
 		hitGroup.ClosestHitName = "ClosestHit";
 
 		builder.AddHitGroup(hitGroup);
@@ -607,14 +610,14 @@ namespace Luden
 			.pDescriptorHeap = reinterpret_cast<uint64*>(m_D3D12RHI->Device->ShaderResourceHeap->GetGpuStartHandlePtr())
 		};
 
-		//FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")));
-		FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")), &args, sizeof(globalArgs));
-		//RaytracingShaderTable->RayGenTable.AddRecord(raygenRecord);
+		//FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")), &args, sizeof(globalArgs));
+		FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")));
+		RaytracingShaderTable->RayGenTable.AddRecord(raygenRecord);
 
 		FShaderTableRecord missRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"Miss")));
 		RaytracingShaderTable->MissTable.AddRecord(missRecord);
 
-		FShaderTableRecord hitRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"HitGroup")));
+		FShaderTableRecord hitRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"HitGroup")), &hitGroup, sizeof(hitGroup));
 		RaytracingShaderTable->HitTable.AddRecord(hitRecord);
 
 		RaytracingShaderTable->Create(m_D3D12RHI->Device);
@@ -624,9 +627,9 @@ namespace Luden
 
 	void Renderer::DispatchRayTracing(Frame& CurrentFrame)
 	{
-		auto* commandList = CurrentFrame.GraphicsCommandList;
+		auto commandList = CurrentFrame.ComputeCommandList;
 
-		commandList->SetRootSignature(RaytracingRS);
+		commandList->SetComputeRootSignature(RaytracingRS);
 		commandList->SetPipelineState1(RaytracingPSO);
 
 		struct constData
@@ -642,48 +645,35 @@ namespace Luden
 			.View				= Camera->GetView(),
 			.Projection			= Camera->GetProjection(),
 			.ViewProjection		= DirectX::XMMatrixTranspose(Camera->GetViewProjection()),
-			//.ViewProjection		= DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, Camera->GetViewProjection())),
 			.CameraPosition		= Camera->Position,
 			.RaytracingImage	= RaytracingOutput->UnorderedAccessHandle.Index,
 			.RaytracingTopLevel = RaytracingBVH->TLAS->AccelerationStructure->ShaderResourceView.Index
-
 		};
-		commandList->GetHandle()->SetComputeRoot32BitConstants(0, 54, &consts, 0);
-		//commandList->GetHandle()->SetComputeRootShaderResourceView(1, RaytracingBVH->TLAS->AccelerationStructure->GetGpuAddress());
-		//commandList->GetHandle()->SetComputeRootUnorderedAccessView(2, RaytracingOutput->GetGpuAddress());
+
+		commandList->PushComputeConstants(0, 54, &consts);
 
 		D3D12_DISPATCH_RAYS_DESC desc{};
 		desc.Width  = static_cast<uint32>(RaytracingOutput->GetDesc().Width);
-		desc.Height = RaytracingOutput->GetDesc().Height;
+		desc.Height = static_cast<uint32>(RaytracingOutput->GetDesc().Height);
 
+		const auto& raygenTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->RayGenTable.StorageBuffer);
+		const auto& missTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->MissTable.StorageBuffer);
+		const auto& hitTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->HitTable.StorageBuffer);
+
+		desc.RayGenerationShaderRecord.StartAddress = raygenTable->GetGpuAddress();
+		desc.RayGenerationShaderRecord.SizeInBytes  = RaytracingShaderTable->RayGenTable.GetTotalSizeInBytes();
+
+		desc.MissShaderTable.StartAddress			= missTable->GetGpuAddress();
+		desc.MissShaderTable.SizeInBytes			= RaytracingShaderTable->MissTable.GetTotalSizeInBytes();
+		desc.MissShaderTable.StrideInBytes			= RaytracingShaderTable->MissTable.GetStrideInBytes();
+
+		desc.HitGroupTable.StartAddress				= hitTable->GetGpuAddress();
+		desc.HitGroupTable.SizeInBytes				= RaytracingShaderTable->HitTable.GetTotalSizeInBytes();
+		desc.HitGroupTable.StrideInBytes			= RaytracingShaderTable->HitTable.GetStrideInBytes();
 		
-		desc.RayGenerationShaderRecord.StartAddress = RaytracingShaderTable->m_StorageBuffer->GetGpuAddress() + RaytracingShaderTable->RayGenOffset;
-		desc.RayGenerationShaderRecord.SizeInBytes  = RaytracingShaderTable->RayGenTable.GetSizeInBytes();
-
-		desc.MissShaderTable.StartAddress	= desc.RayGenerationShaderRecord.StartAddress + RaytracingShaderTable->MissOffset;
-		//desc.MissShaderTable.StartAddress	= desc.RayGenerationShaderRecord.StartAddress + (uint64)64u;
-		desc.MissShaderTable.SizeInBytes	= RaytracingShaderTable->MissTable.GetSizeInBytes();
-		desc.MissShaderTable.StrideInBytes	= RaytracingShaderTable->MissTable.GetStride();
-
-		desc.HitGroupTable.StartAddress		= desc.RayGenerationShaderRecord.StartAddress + RaytracingShaderTable->HitOffset;
-		desc.HitGroupTable.SizeInBytes		= RaytracingShaderTable->HitTable.GetSizeInBytes();
-		desc.HitGroupTable.StrideInBytes	= RaytracingShaderTable->HitTable.GetStride();
-		
-		/*
-		desc.RayGenerationShaderRecord.StartAddress = (UINT64)RaytracingShaderTable->RayGenTable.MappedData + RaytracingShaderTable->RayGenOffset;
-		desc.RayGenerationShaderRecord.SizeInBytes = RaytracingShaderTable->RayGenTable.GetSizeInBytes();
-
-		desc.MissShaderTable.StartAddress = (UINT64)RaytracingShaderTable->MissTable.MappedData;
-		desc.MissShaderTable.SizeInBytes = RaytracingShaderTable->MissTable.GetSizeInBytes();
-		desc.MissShaderTable.StrideInBytes = RaytracingShaderTable->MissTable.GetStride();
-
-		desc.HitGroupTable.StartAddress = (UINT64)RaytracingShaderTable->HitTable.MappedData;
-		desc.HitGroupTable.SizeInBytes = RaytracingShaderTable->HitTable.GetSizeInBytes();
-		desc.HitGroupTable.StrideInBytes = RaytracingShaderTable->HitTable.GetStride();
-		*/
 		desc.Depth = 1;
 
-		CurrentFrame.GraphicsCommandList->GetHandle()->DispatchRays(&desc);
+		commandList->DispatchRays(desc);
 		
 	}
 
