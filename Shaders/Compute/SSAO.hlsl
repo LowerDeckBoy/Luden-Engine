@@ -31,21 +31,9 @@ ConstantBuffer<SSAOParameters> Constants : register(b0);
 SamplerState LinearBorderSampler : register(s0);
 SamplerState PointWrapSampler : register(s1);
 
-float3 GetViewPosition(float2 UV, float Depth)
-{
-	float2 ndc = UV * 2.0f - 1.0f;
-	ndc.y *= -1.0f;
-	float4 clipPos = float4(ndc, Depth, 1.0f);
-
-	float4 viewPosH = mul(clipPos, Constants.InvProjection);
-
-	return viewPosH.xyz / viewPosH.w;
-}
-
-float LinearDepthToNDC(float z, float4x4 projection)
-{
-	return (z * projection[2][2] + projection[3][2]) / z;
-}
+// https://stackoverflow.com/questions/55530121/why-is-ssao-only-working-from-certain-angles-distances
+// https://github.com/SaschaWillems/Vulkan/blob/master/shaders/hlsl/ssao/ssao.frag
+// https://github.com/SaschaWillems/Vulkan/blob/master/examples/ssao/ssao.cpp
 
 [RootSignature(SSAO_ROOT_SIG)]
 [numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]
@@ -65,37 +53,36 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	float3 N 		= normal.rgb;
 
 	float depth = 1.0f - texWorldPosition.Sample(LinearBorderSampler, texCoord).w;
-	depth = LinearDepthToNDC(depth, Constants.Projection);
-	float3 viewPosition = GetViewPosition(texCoord, depth);
-
+	float3 viewPosition = GetViewPosition(texCoord, depth, transpose(Constants.InvProjection));
+	
 	float2 noiseDimensions = GetTextureSize(texNoise);
 	float2 noiseScale = textureSize / noiseDimensions;
-	float3 randomVector = normalize(texNoise.Sample(PointWrapSampler, texCoord * noiseScale).xyz * 2.0f - 1.0f);
+	float3 randomVector = texNoise.Sample(PointWrapSampler, texCoord * noiseScale).xyz * 2.0f - 1.0f;
 
 	float3 tangent 		= normalize(randomVector - N * dot(randomVector, N));
-	float3 bitangent 	= cross(N, tangent);
-	float3x3 TBN 		= transpose(float3x3(tangent, bitangent, N));
+	float3 bitangent    = cross(tangent, N);
+	float3x3 TBN 		= (float3x3(tangent, bitangent, N));
 	
 	float occlusion = 0.0f;
 	for (int i = 0; i < KernelSize; ++i)
 	{
-		float3 sampleDir = mul(TBN, Constants.Samples[i].xyz);
+		float3 sampleDir = mul(Constants.Samples[i].xyz, TBN);
 		float3 samplePos = viewPosition + sampleDir * Constants.Radius;
 		
 		float4 offset = float4(samplePos, 1.0f);
-		offset = mul(offset, Constants.Projection);
-		offset.xy /= offset.w;
-		offset.xy = offset.xy * float2(1.0f, -1.0f) * 0.5f + 0.5f;
+		offset = mul(offset, transpose(Constants.Projection));
+		offset.xy = offset.xy * float2(1.0f, -1.0f);
+		offset.xyz /= offset.w;
+		offset.xyz = offset.xyz * 0.5f + 0.5f;
 
 		float sampledDepth = 1.0f - texWorldPosition.Sample(LinearBorderSampler, offset.xy).w;
-		sampledDepth = LinearDepthToNDC(sampledDepth, Constants.Projection);
-		sampledDepth = GetViewPosition(offset.xy, sampledDepth).z;
-	
+		sampledDepth = -GetViewPosition(offset.xy, sampledDepth, transpose(Constants.InvProjection)).z;
+
 		float rangeCheck = smoothstep(0.0f, 1.0f, Constants.Radius / abs(viewPosition.z - sampledDepth));
-		occlusion += (sampledDepth >= samplePos.z ? 0.0f : 1.0f) * rangeCheck;
+		occlusion += (sampledDepth >= samplePos.z ? 1.0f : 0.0f) * rangeCheck;
 	}
 	
-	occlusion = 1.0f - (occlusion / KernelSize);
+	occlusion = 1.0f - (occlusion / (float)KernelSize);
 	//occlusion = pow(abs(occlusion), Constants.Power);
 	output[DispatchThreadID.xy] = float4(occlusion, occlusion, occlusion, 1.0f);
 
