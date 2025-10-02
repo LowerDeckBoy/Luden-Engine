@@ -10,12 +10,11 @@ struct GBuffers
 {
 	float4 BaseColor			: SV_TARGET0;
 	float4 Normal				: SV_TARGET1;
-	float4 NormalWS				: SV_TARGET2;
-	float4 MotionVectors		: SV_TARGET3;
-	float4 MetallicRoughness	: SV_TARGET4;
-	float4 Emissive				: SV_TARGET5;
-	float4 WorldPosition		: SV_TARGET6;
-	float4 Depth				: SV_TARGET7;
+	float4 NormalVS				: SV_TARGET2;
+	float4 MetallicRoughness	: SV_TARGET3;
+	float4 Emissive				: SV_TARGET4;
+	float4 WorldPosition		: SV_TARGET5;
+	float4 Depth				: SV_TARGET6;
 };
 
 static int IsIndexValid(uint Index)
@@ -35,11 +34,6 @@ GBuffers PSMain(VertexOut pin)
 	const float z = (pin.Position.z / pin.Position.w);
 	output.Depth = float4(z, z, z, 1.0f);
 	
-	float2 a = (pin.CurrPosition.xy / pin.CurrPosition.w);
-	float2 b = (pin.PrevPosition.xy / pin.PrevPosition.w);
-	float2 motion = (a - b);
-	output.MotionVectors = float4(motion.xy , 0.0f, 1.0f);
-
 	StructuredBuffer<FMaterial> materialBuffer = GetBuffer<FMaterial>(Constants.MaterialBuffer);
 	FMaterial material = materialBuffer[Constants.MaterialID];
 	
@@ -82,7 +76,8 @@ GBuffers PSMain(VertexOut pin)
 	}
 	
 	output.Normal = float4(0.0f, 1.0f, 0.0f, 0.0f);
-	output.NormalWS = float4(normalize(pin.NormalsWS.rgb), 1.0f);
+	//output.NormalWS = float4(normalize(pin.NormalsWS.rgb * 0.5f + 0.5f), 1.0f);
+	output.NormalVS = float4(normalize(pin.NormalsVS.rgb), 1.0f);
 	if (IsIndexValid(material.NormalIndex))
 	{
 		Texture2D normalTexture = GetTexture(material.NormalIndex);

@@ -16,8 +16,9 @@ struct Payload
 
 struct Transform
 {
-	float4x4 WVP;
 	float4x4 World;
+	float4x4 WorldView;
+	float4x4 WorldViewProjection;
 	float4x4 PreviousWorld;
 };
 
@@ -64,7 +65,7 @@ struct VertexOut
 	float4		PrevPosition	: PREV_POSITION;
 	float2		TexCoord		: TEXCOORD;
 	float3x3	TBN				: TBN;
-	float4		NormalsWS		: NORMAL_VS;
+	float4		NormalsVS		: NORMAL_VS;
 	uint		MeshletIndex	: COLOR0;
 };
 
@@ -79,8 +80,8 @@ VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 	Transform transform = transformBuffer[Constants.TransformID];
 	
 	float4x4 world = transform.World;
-	vout.Position		= mul(float4(InVertex.Position, 1.0f), transpose(transform.WVP));
-	vout.CurrPosition	= mul(float4(InVertex.Position, 1.0f), transpose(transform.WVP));
+	vout.Position		= mul(float4(InVertex.Position, 1.0f), transpose(transform.WorldViewProjection));
+	vout.CurrPosition	= mul(float4(InVertex.Position, 1.0f), transpose(transform.WorldViewProjection));
 	vout.PrevPosition   = mul(float4(InVertex.Position, 1.0f), transpose(transform.PreviousWorld));
 	vout.WorldPosition	= mul(float4(InVertex.Position, 1.0f), world);
 
@@ -91,7 +92,7 @@ VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 	float3 B = normalize(mul(InVertex.Bitangent, (float3x3)world));
 	
 	vout.TBN = mul((float3x3)world, transpose(float3x3(T, B, N)));
-	vout.NormalsWS = float4(N, 1.0f);
+	vout.NormalsVS = mul(float4(InVertex.Normal, 0.0f), (transform.WorldView));
 	
 	vout.MeshletIndex = MeshletIndex;
 	

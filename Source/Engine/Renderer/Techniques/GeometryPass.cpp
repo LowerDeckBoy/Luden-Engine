@@ -22,18 +22,16 @@ namespace Luden
 		Release();
 
 		BaseColor.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,	RenderTargetClearColor, "GBuffer BaseColor");
-		Normal.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Normal WorldSpace");
-		NormalWS.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Normal ViewSpace");
-		MotionVectors.Create(pRHI->Device, Width, Height,		DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Motion Vectors");
+		Normal.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer NormalTBN");
+		NormalVS.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer NormalVS");
 		MetallicRoughness.Create(pRHI->Device, Width, Height,	DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,	RenderTargetClearColor, "GBuffer MetallicRoughness");
 		Emissive.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Emissive");
 		WorldPosition.Create(pRHI->Device, Width, Height,		DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer WorldPosition");
-		Depth.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Depth");
+		Depth.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R32G32B32A32_FLOAT,		RenderTargetClearColor, "GBuffer Depth");
 
 		m_RenderTargetHandles.push_back(&BaseColor.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&Normal.RenderTargetHandle);
-		m_RenderTargetHandles.push_back(&NormalWS.RenderTargetHandle);
-		m_RenderTargetHandles.push_back(&MotionVectors.RenderTargetHandle);
+		m_RenderTargetHandles.push_back(&NormalVS.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&MetallicRoughness.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&Emissive.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&WorldPosition.RenderTargetHandle);
@@ -65,12 +63,10 @@ namespace Luden
 			builder.SetAlphaModeOpaque(4);
 			builder.SetAlphaModeOpaque(5);
 			builder.SetAlphaModeOpaque(6);
-			builder.SetAlphaModeOpaque(7);
 			builder.SetRenderTargetFormats({
 				BaseColor.GetFormat(),
 				Normal.GetFormat(),
-				NormalWS.GetFormat(),
-				MotionVectors.GetFormat(),
+				NormalVS.GetFormat(),
 				MetallicRoughness.GetFormat(),
 				Emissive.GetFormat(),
 				WorldPosition.GetFormat(),
@@ -98,19 +94,17 @@ namespace Luden
 			builder.SetPixelShader(&BlendPipelineState.Pixel);
 			builder.SetCullMode(D3D12_CULL_MODE_NONE);
 			builder.SetAlphaModeBlend(0);
-			builder.SetAlphaModeBlend(1);
-			builder.SetAlphaModeBlend(2);
-			builder.SetAlphaModeBlend(3);
-			builder.SetAlphaModeBlend(4);
-			builder.SetAlphaModeBlend(5);
-			builder.SetAlphaModeBlend(6);
-			builder.SetAlphaModeBlend(7);
+			builder.SetAlphaModeOpaque(1);
+			builder.SetAlphaModeOpaque(2);
+			builder.SetAlphaModeOpaque(3);
+			builder.SetAlphaModeOpaque(4);
+			builder.SetAlphaModeOpaque(5);
+			builder.SetAlphaModeOpaque(6);
 			builder.SetAlphaBlendDepthDesc();
 			builder.SetRenderTargetFormats({
 				BaseColor.GetFormat(),
 				Normal.GetFormat(),
-				NormalWS.GetFormat(),
-				MotionVectors.GetFormat(),
+				NormalVS.GetFormat(),
 				MetallicRoughness.GetFormat(),
 				Emissive.GetFormat(),
 				WorldPosition.GetFormat(),
@@ -139,8 +133,7 @@ namespace Luden
 
 		BaseColor.Release();
 		Normal.Release();
-		NormalWS.Release();
-		MotionVectors.Release();
+		NormalVS.Release();
 		MetallicRoughness.Release();
 		Emissive.Release();
 		WorldPosition.Release();
@@ -155,8 +148,7 @@ namespace Luden
 	{
 		BaseColor.Resize(Width, Height);
 		Normal.Resize(Width, Height);
-		NormalWS.Resize(Width, Height);
-		MotionVectors.Resize(Width, Height);
+		NormalVS.Resize(Width, Height);
 		MetallicRoughness.Resize(Width, Height);
 		Emissive.Resize(Width, Height);
 		WorldPosition.Resize(Width, Height);
@@ -172,8 +164,7 @@ namespace Luden
 		commandList->ResourceTransition({
 			{ &BaseColor,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &Normal,				D3D12_RESOURCE_STATE_RENDER_TARGET },
-			{ &NormalWS,			D3D12_RESOURCE_STATE_RENDER_TARGET },
-			{ &MotionVectors,		D3D12_RESOURCE_STATE_RENDER_TARGET },
+			{ &NormalVS,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET }, 
 			{ &WorldPosition,		D3D12_RESOURCE_STATE_RENDER_TARGET },
@@ -251,8 +242,7 @@ namespace Luden
 		//commandList->ResourceTransition({
 		//	{ &BaseColor,			D3D12_RESOURCE_STATE_GENERIC_READ },
 		//	{ &Normal,				D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &NormalWS,			D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &MotionVectors,		D3D12_RESOURCE_STATE_GENERIC_READ },
+		//	{ &NormalVS,			D3D12_RESOURCE_STATE_GENERIC_READ },
 		//	{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
 		//	{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
 		//	{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ },
@@ -272,8 +262,7 @@ namespace Luden
 		//commandList->ResourceTransition({
 		//	{ &BaseColor,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 		//	{ &Normal,				D3D12_RESOURCE_STATE_RENDER_TARGET },
-		//	{ &NormalWS,			D3D12_RESOURCE_STATE_RENDER_TARGET },
-		//	{ &MotionVectors,		D3D12_RESOURCE_STATE_RENDER_TARGET },
+		//	{ &NormalVS,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 		//	{ &MetallicRoughness,	D3D12_RESOURCE_STATE_RENDER_TARGET },
 		//	{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 		//	{ &WorldPosition,		D3D12_RESOURCE_STATE_RENDER_TARGET },
@@ -351,8 +340,7 @@ namespace Luden
 		commandList->ResourceTransition({
 			{ &BaseColor,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &Normal,				D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &NormalWS,			D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &MotionVectors,		D3D12_RESOURCE_STATE_GENERIC_READ },
+			{ &NormalVS,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ },
@@ -369,7 +357,6 @@ namespace Luden
 		commandList->ResourceTransition({
 			{ &BaseColor,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &Normal,				D3D12_RESOURCE_STATE_RENDER_TARGET },
-			{ &MotionVectors,		D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &WorldPosition,		D3D12_RESOURCE_STATE_RENDER_TARGET },
@@ -393,7 +380,6 @@ namespace Luden
 		commandList->ResourceTransition({
 			{ &BaseColor,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &Normal,				D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &MotionVectors,		D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ },

@@ -160,11 +160,10 @@ struct GBuffers
 	float4 BaseColor : SV_TARGET0;
 	float4 Normal : SV_TARGET1;
 	float4 NormalVS : SV_TARGET2;
-	float4 MotionVectors : SV_TARGET3;
-	float4 MetallicRoughness : SV_TARGET4;
-	float4 Emissive : SV_TARGET5;
-	float4 WorldPosition : SV_TARGET6;
-	float4 Depth : SV_TARGET7;
+	float4 MetallicRoughness : SV_TARGET3;
+	float4 Emissive : SV_TARGET4;
+	float4 WorldPosition : SV_TARGET5;
+	float4 Depth : SV_TARGET6;
 };
 
 int IsIndexValid(uint Index)

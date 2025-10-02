@@ -31,8 +31,7 @@ namespace Luden
 
 		D3D12RenderTexture BaseColor;
 		D3D12RenderTexture Normal;
-		D3D12RenderTexture NormalWS;
-		D3D12RenderTexture MotionVectors;
+		D3D12RenderTexture NormalVS;
 		D3D12RenderTexture MetallicRoughness;
 		D3D12RenderTexture Emissive;
 		D3D12RenderTexture WorldPosition;
