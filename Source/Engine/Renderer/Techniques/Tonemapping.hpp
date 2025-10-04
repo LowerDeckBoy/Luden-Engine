@@ -12,6 +12,7 @@ namespace Luden
 		ACES,
 		AgX,
 		AgX_Punchy,
+		AgX_Golden,
 		Reinhard,
 		GammaCorrection,
 		Uncharted2,
@@ -27,7 +28,7 @@ namespace Luden
 		void Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 Width, uint32 Height);
 
 		float Exposure = 1.45f;
-		int32 Mode = TonemapMode::ACES;
+		int32 Mode = TonemapMode::AgX;
 
 		double RenderTime = 0.0;
 
