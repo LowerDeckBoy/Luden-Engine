@@ -8,13 +8,13 @@ namespace Luden
 	class ShaderCompiler;
 	class SceneCamera;
 
-	class Skybox : public Entity
+	class Skybox
 	{
 	public:
-		Skybox(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, Scene* pScene);
+		Skybox(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler);
 		~Skybox();
 
-		void Render(Frame& CurrentFrame, SceneCamera* pCamera, uint32 RenderTarget);
+		void Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition);
 
 		struct
 		{
@@ -25,8 +25,12 @@ namespace Luden
 
 		struct
 		{
-			DirectX::XMFLOAT4 SkyColor = DirectX::XMFLOAT4(0.33f, 0.98f, 1.0f, 1.0f);
-			DirectX::XMFLOAT4 SunColor;
+			DirectX::XMFLOAT4 SkyColor = DirectX::XMFLOAT4(0.0f, 0.2f, 1.0f, 1.0f);
+			DirectX::XMFLOAT4 SunColor = DirectX::XMFLOAT4(1.0f, 0.757f, 0.616f, 1.0f);
+			DirectX::XMFLOAT3 CameraPosition;
+			float padding;
+			DirectX::XMFLOAT3 SunPosition;
+			float padding2;
 		} SkyParameters{};
 
 		double RenderTime = 0.0;

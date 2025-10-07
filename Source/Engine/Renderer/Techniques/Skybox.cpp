@@ -7,11 +7,11 @@
 
 namespace Luden
 {
-	Skybox::Skybox(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, Scene* pScene)
+	Skybox::Skybox(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler)
 		: m_D3D12RHI(pD3D12RHI)
 	{
 		m_PSO.Vertex = pShaderCompiler->CompileVS("../../Shaders/Sky/Skybox.hlsl", true);
-		m_PSO.Pixel  = pShaderCompiler->CompilePS("../../Shaders/Sky/Skybox.hlsl", true);
+		m_PSO.Pixel  = pShaderCompiler->CompilePS("../../Shaders/Sky/Skybox.hlsl", false);
 
 		VERIFY_D3D12_RESULT(m_PSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &m_PSO.Vertex, PipelineType::Graphics));
 
@@ -19,11 +19,13 @@ namespace Luden
 		builder.SetRootSignature(&m_PSO.RootSignature);
 		builder.SetVertexShader(&m_PSO.Vertex);
 		builder.SetPixelShader(&m_PSO.Pixel);
+		builder.SetCullMode(D3D12_CULL_MODE_NONE);
 		builder.EnableDepth(false);
+		//builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
 		builder.SetRenderTargetFormats({ DXGI_FORMAT_R32G32B32A32_FLOAT });
 		VERIFY_D3D12_RESULT(builder.Build(m_PSO.PipelineState));
 
-		DebugRenderTarget.Create(pD3D12RHI->Device, 1920, 1080, DXGI_FORMAT_R32G32B32A32_FLOAT, RenderTargetClearColor);
+		DebugRenderTarget.Create(pD3D12RHI->Device, 1920, 1080, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor);
 
 		std::array<uint32, 36> indices =
 		{
@@ -39,11 +41,15 @@ namespace Luden
 			BufferDesc{
 				.BufferUsage = BufferUsageFlag::Index,
 				.Data = indices.data(),
-				.NumElements= static_cast<uint32>(indices.size()),
+				.NumElements= 36,
 				.Stride = sizeof(uint32),
-				.Size = indices.size() * sizeof(indices.at(0)),
+				.Size = 36 * sizeof(uint32),
 			}
 		);
+
+		auto indexBuffer = m_D3D12RHI->Device->Buffers.at(m_IndexBuffer);
+		D3D12UploadContext::UploadBuffer(indexBuffer, indexBuffer->GetBufferDesc().Size);
+		D3D12UploadContext::Upload();
 
 	}
 
@@ -51,7 +57,7 @@ namespace Luden
 	{
 	}
 
-	void Skybox::Render(Frame& CurrentFrame, SceneCamera* pCamera, uint32 RenderTarget)
+	void Skybox::Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition)
 	{
 		const auto renderBeginTime = Time::GetTimestamp();
 
@@ -59,23 +65,27 @@ namespace Luden
 
 		commandList->SetPipelineState(&m_PSO.PipelineState);
 		commandList->SetRootSignature(&m_PSO.RootSignature);
-		
-		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		commandList->SetRenderTargets(DebugRenderTarget.RenderTargetHandle);
-		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, RenderTargetClearColor);
-
-		m_Transform.Scale = DirectX::XMFLOAT3(50.0f, 50.0f, 50.0f);
-		SkyConstants.World		= World * DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
-			DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
-			DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
-		SkyConstants.View		= pCamera->GetView();
-		SkyConstants.Projection = pCamera->GetProjection();
-
-		commandList->PushConstants(1, 48, &SkyConstants);
-		commandList->PushConstants(0, 8, &SkyParameters);
 
 		auto indexBuffer = m_D3D12RHI->Device->Buffers.at(m_IndexBuffer);
 		commandList->SetIndexBuffer(indexBuffer);
+
+		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		commandList->SetRenderTargets(DebugRenderTarget.RenderTargetHandle);
+		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
+
+		m_Transform.Translation = pCamera->Position;
+		m_Transform.Scale = DirectX::XMFLOAT3(50.0f, 50.0f, 50.0f);
+		SkyConstants.World = World * DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
+			DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
+			DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
+		SkyConstants.View		= pCamera->GetView();
+		SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
+
+		SkyParameters.CameraPosition = pCamera->Position;
+		SkyParameters.SunPosition = SunPosition;
+
+		commandList->PushConstants(0, 16, &SkyParameters);
+		commandList->PushConstants(1, 48, &SkyConstants);
 
 		commandList->DrawIndexed(36, 0, 0);
 		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
