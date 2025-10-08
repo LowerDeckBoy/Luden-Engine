@@ -5,7 +5,7 @@
 #include "../Common/Bindless.hlsli"
 #include "SSAO_RS.hlsli"
 
-#define DISPATCH_BLOCK 16
+#define DISPATCH_BLOCK 8
 
 const static uint KernelSize = 64;
 
@@ -13,6 +13,8 @@ struct SSAOParameters
 {
 	float4x4 Projection;
 	float4x4 InvProjection;
+	float4x4 View;
+	float4x4 InvView;
 
 	uint OutputImageIndex;
 	uint BaseColorIndex;
@@ -21,7 +23,7 @@ struct SSAOParameters
 	
 	float Radius;
 	float Power;
-	uint pad;
+	float Bias;
 	uint pad2;
 	
 	float4 Samples[64];
@@ -30,6 +32,7 @@ struct SSAOParameters
 ConstantBuffer<SSAOParameters> Constants : register(b0);
 SamplerState LinearBorderSampler : register(s0);
 SamplerState PointWrapSampler : register(s1);
+SamplerState TexSampler : register(s2);
 
 // https://stackoverflow.com/questions/55530121/why-is-ssao-only-working-from-certain-angles-distances
 // https://github.com/SaschaWillems/Vulkan/blob/master/shaders/hlsl/ssao/ssao.frag
@@ -45,23 +48,29 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	float2 texelSize 	= GetTexelSize(textureSize);
 	float2 texCoord 	= (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
 
+	if (DispatchThreadID.x >= textureSize.x || DispatchThreadID.y >= textureSize.y)
+	{
+		return;
+	}
+	
 	Texture2D<float4> texNormal			= GetTexture(Constants.NormalIndex);
 	Texture2D<float4> texWorldPosition	= GetTexture(Constants.WorldPositionIndex);
 	Texture2D<float4> texNoise			= GetTexture(Constants.BaseColorIndex);
 
-	float4 normal 	= normalize(texNormal.Sample(LinearBorderSampler, texCoord) * 2.0f - 1.0f);
-	float3 N 		= normal.rgb;
+	float3 N = (texNormal.Sample(TexSampler, texCoord).rgb);
 
-	float depth = 1.0f - texWorldPosition.Sample(LinearBorderSampler, texCoord).w;
-	float3 viewPosition = GetViewPosition(texCoord, depth, transpose(Constants.InvProjection));
-	
+	float depth = texWorldPosition.Sample(TexSampler, texCoord).w;
+	float3 viewPosition = GetViewPosition(texCoord, depth, Constants.InvProjection);
+	//output[DispatchThreadID.xy] = float4(viewPosition, 1.0f);
+	//return;
 	float2 noiseDimensions = GetTextureSize(texNoise);
 	float2 noiseScale = textureSize / noiseDimensions;
-	float3 randomVector = texNoise.Sample(PointWrapSampler, texCoord * noiseScale).xyz * 2.0f - 1.0f;
-
+	float3 randomVector = normalize(float3(texNoise.Sample(LinearBorderSampler, texCoord * noiseScale).xyz * 2.0f - 1.0f));
+	output[DispatchThreadID.xy] = float4(randomVector, 1.0f);
+	return;
 	float3 tangent 		= normalize(randomVector - N * dot(randomVector, N));
-	float3 bitangent    = cross(tangent, N);
-	float3x3 TBN 		= (float3x3(tangent, bitangent, N));
+	float3 bitangent	= cross(N, tangent);
+	float3x3 TBN		= float3x3(tangent, bitangent, N);
 	
 	float occlusion = 0.0f;
 	for (int i = 0; i < KernelSize; ++i)
@@ -70,20 +79,20 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 		float3 samplePos = viewPosition + sampleDir * Constants.Radius;
 		
 		float4 offset = float4(samplePos, 1.0f);
-		offset = mul(offset, transpose(Constants.Projection));
-		offset.xy = offset.xy * float2(1.0f, -1.0f);
-		offset.xyz /= offset.w;
-		offset.xyz = offset.xyz * 0.5f + 0.5f;
-
-		float sampledDepth = 1.0f - texWorldPosition.Sample(LinearBorderSampler, offset.xy).w;
-		sampledDepth = -GetViewPosition(offset.xy, sampledDepth, transpose(Constants.InvProjection)).z;
+		offset = mul(offset, Constants.Projection);
+		offset.xy /= offset.w;
+		offset.xy = float2(offset.xy * float2(0.5f, 0.5f) + float2(0.5f, 0.5f));
+		offset.y *= -1.0f;
+		
+		float sampledDepth = texWorldPosition.Sample(TexSampler, offset.xy).w;
+		sampledDepth = GetViewPosition(offset.xy, sampledDepth, Constants.InvProjection).z;
 
 		float rangeCheck = smoothstep(0.0f, 1.0f, Constants.Radius / abs(viewPosition.z - sampledDepth));
-		occlusion += (sampledDepth >= samplePos.z ? 1.0f : 0.0f) * rangeCheck;
+		occlusion += step(sampledDepth, samplePos.z - Constants.Bias) * rangeCheck;
 	}
 	
 	occlusion = 1.0f - (occlusion / (float)KernelSize);
-	//occlusion = pow(abs(occlusion), Constants.Power);
+	occlusion = pow(abs(occlusion), Constants.Power);
 	output[DispatchThreadID.xy] = float4(occlusion, occlusion, occlusion, 1.0f);
 
 }
