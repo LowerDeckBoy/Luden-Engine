@@ -1,5 +1,7 @@
 #include "Asset/ShaderCompiler.hpp"
+#include "Asset/AssetImporter.hpp"
 #include "D3D12/D3D12Utility.hpp"
+#include "D3D12/D3D12Memory.hpp"
 #include "SSAO.hpp"
 #include <random>
 #include "GeometryPass.hpp"
@@ -10,14 +12,21 @@ namespace Luden
 	SSAO::SSAO(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height)
 		: RenderPass(pD3D12RHI)
 	{
-		RenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R32G32B32A32_FLOAT);
+		Pipeline.Compute = pShaderCompiler->CompileCS("../../Shaders/AO/SSAO.hlsl", true);
 
-		CreatePipelines(pShaderCompiler);
+		VERIFY_D3D12_RESULT(Pipeline.RootSignature.BuildFromShader(m_RHI->Device, &Pipeline.Compute, PipelineType::Compute));
 
-		std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f); // random floats between [0.0, 1.0]
+		D3D12ComputePipelineStateBuilder builder;
+		builder.SetComputeShader(&Pipeline.Compute);
+		builder.SetRootSignature(&Pipeline.RootSignature);
+		VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, Pipeline));
+
+		RenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM);
+
+		std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 		std::default_random_engine generator;
 		
-		for (uint32 i = 0; i < 64u; ++i)
+		for (uint32 i = 0; i < KernelSize; ++i)
 		{
 			DirectX::XMVECTOR sample = DirectX::XMVectorSet(
 				randomFloats(generator) * 2.0f - 1.0f,
@@ -27,12 +36,12 @@ namespace Luden
 			);
 			
 			sample = DirectX::XMVector4Normalize(sample);
-			const auto random = randomFloats(generator);
+			const float random = randomFloats(generator);
 			sample.m128_f32[0] *= random;
 			sample.m128_f32[1] *= random;
 			sample.m128_f32[2] *= random;
 
-			float scale = static_cast<float>(i) / 64.0f;
+			float scale = static_cast<float>(i) / static_cast<float>(KernelSize);
 			scale = Math::Lerp(0.1f, 1.0f, scale * scale);
 			sample.m128_f32[0] *= scale;
 			sample.m128_f32[1] *= scale;
@@ -41,84 +50,44 @@ namespace Luden
 			DirectX::XMStoreFloat4(&Parameters.Samples[i], sample);
 		}
 
-		for (uint32 i = 0; i < 16; ++i)
-		{
-			Parameters.Noise[i].x = randomFloats(generator) * 2.0f - 1.0f;
-			Parameters.Noise[i].y = randomFloats(generator) * 2.0f - 1.0f;
-			Parameters.Noise[i].z = 0.0f;
-		}
-
 		ConstantBuffer = new D3D12ConstantBuffer(m_RHI->Device, &Parameters, sizeof(Parameters));
 
 	}
 
 	SSAO::~SSAO()
 	{
-		RenderTarget.Release();
-		ConstantBuffer->Release();
-		
+		Release();
 	}
 
-	void SSAO::Render(Frame& CurrentFrame, GeometryPass* pGBuffer, SceneCamera* pCamera)
+	void SSAO::Render(Frame& CurrentFrame, GeometryPass* pGBuffer, uint32 NoiseImageIndex, SceneCamera* pCamera)
 	{
-		if (Config::Get().bSSAOCompute)
-		{
-			auto commandList = CurrentFrame.GraphicsCommandList;
+		const auto renderBeginTime = Time::GetTimestamp();
 
-			commandList->SetPipelineState(&Pipeline.PipelineState);
-			commandList->SetRootSignature(&Pipeline.RootSignature);
+		auto commandList = CurrentFrame.ComputeCommandList;
 
-			commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		commandList->SetPipelineState(&Pipeline.PipelineState);
+		commandList->SetRootSignature(&Pipeline.RootSignature);
 
-			Parameters.Projection			= pCamera->GetProjection();
-			Parameters.InvView	= DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection());
+		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
+		Parameters.Projection			= DirectX::XMMatrixTranspose(pCamera->GetProjection());
+		Parameters.InvProjection		= DirectX::XMMatrixTranspose(pCamera->GetInversedProjection());
 
-			Parameters.OutputImageIndex = RenderTarget.ShaderResourceHandle.Index;
-			//Parameters.BaseColorIndex		= pGBuffer->BaseColor.ShaderResourceHandle.Index;
-			//Parameters.BaseColorIndex = NoiseImage;
-			Parameters.NormalIndex = pGBuffer->Normal.ShaderResourceHandle.Index;
-			Parameters.WorldPositionIndex = pGBuffer->WorldPosition.ShaderResourceHandle.Index;
+		Parameters.OutputImageIndex		= RenderTarget.ShaderResourceHandle.Index;
+		Parameters.NoiseIndex			= NoiseImageIndex;
+		Parameters.NormalIndex			= pGBuffer->NormalVS.ShaderResourceHandle.Index;
+		Parameters.ViewPositionIndex    = pGBuffer->ViewPosition.ShaderResourceHandle.Index;
 
-			ConstantBuffer->Update(&Parameters);
-			commandList->GetHandle()->SetComputeRootConstantBufferView(0, ConstantBuffer->GetBuffer()->GetGPUVirtualAddress());
+		ConstantBuffer->Update(&Parameters);
+		commandList->GetHandle()->SetComputeRootConstantBufferView(0, ConstantBuffer->GetBuffer()->GetGPUVirtualAddress());
 
-			const uint32 dispatchX = Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Width / 16);
-			const uint32 dispatchY = Math::RoundUp<uint32>(RenderTarget.GetDesc().Height / 16);
-			commandList->Dispatch(dispatchX, dispatchY, 1);
-			commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
-		}
-		else
-		{
-			auto commandList = CurrentFrame.GraphicsCommandList;
+		const uint32 dispatchX = Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Width  / 8u);
+		const uint32 dispatchY = Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Height / 8u);
+		commandList->Dispatch(dispatchX, dispatchY, 1);
+		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
 
-			commandList->SetPipelineState(&VertexPSO.PipelineState);
-			commandList->SetRootSignature(&VertexPSO.RootSignature);
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 
-			commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-			commandList->SetRenderTargets({ RenderTarget.RenderTargetHandle });
-
-			Parameters.Projection			= pCamera->GetProjection();
-			Parameters.InvProjection		= pCamera->GetInversedProjection();
-			Parameters.InvView				= pCamera->GetInversedView();
-			//Parameters.InvView				= pCamera->GetView();
-			Parameters.InvViewProjection	= DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection());
-			Parameters.InvViewProjection	= pCamera->GetViewProjection();
-
-			Parameters.OutputImageIndex = RenderTarget.ShaderResourceHandle.Index;
-			//Parameters.BaseColorIndex		= pGBuffer->BaseColor.ShaderResourceHandle.Index;
-			//Parameters.BaseColorIndex = NoiseImage;
-			Parameters.NormalIndex = pGBuffer->Normal.ShaderResourceHandle.Index;
-			Parameters.WorldPositionIndex = pGBuffer->WorldPosition.ShaderResourceHandle.Index;
-
-			ConstantBuffer->Update(&Parameters);
-			commandList->SetConstantBuffer(0, ConstantBuffer);
-
-			commandList->Draw(4);
-
-			commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
-		}	
 	}
 
 	void SSAO::Resize(uint32 Width, uint32 Height)
@@ -128,37 +97,8 @@ namespace Luden
 
 	void SSAO::Release()
 	{
+		RenderTarget.Release();
+		ConstantBuffer->Release();
 	}
 
-	void SSAO::CreatePipelines(ShaderCompiler* pShaderCompiler)
-	{
-		{
-			Pipeline.Compute = pShaderCompiler->CompileCS("../../Shaders/Compute/SSAO.hlsl", true);
-
-			VERIFY_D3D12_RESULT(Pipeline.RootSignature.BuildFromShader(m_RHI->Device, &Pipeline.Compute, PipelineType::Compute));
-
-			D3D12ComputePipelineStateBuilder builder;
-			builder.SetComputeShader(&Pipeline.Compute);
-			builder.SetRootSignature(&Pipeline.RootSignature);
-			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, Pipeline));
-		}
-		
-		{
-			VertexPSO.Vertex = pShaderCompiler->CompileVS("../../Shaders/Compute/SSAO_Test.hlsl", true);
-			VertexPSO.Pixel = pShaderCompiler->CompilePS("../../Shaders/Compute/SSAO_Test.hlsl", false);
-
-			VERIFY_D3D12_RESULT(VertexPSO.RootSignature.BuildFromShader(m_RHI->Device, &VertexPSO.Vertex, PipelineType::Graphics));
-
-			D3D12PipelineStateBuilder builder(m_RHI->Device);
-			builder.EnableDepth(false);
-			builder.SetVertexShader(&VertexPSO.Vertex);
-			builder.SetPixelShader(&VertexPSO.Pixel);
-			builder.SetRootSignature(&VertexPSO.RootSignature);
-			builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
-			builder.SetFillMode(D3D12_FILL_MODE_SOLID);
-			builder.SetRenderTargetFormats({ RenderTarget.GetFormat() });
-			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, VertexPSO));
-		}
-
-	}
 } // namespace Luden

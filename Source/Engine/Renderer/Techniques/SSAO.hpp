@@ -7,28 +7,8 @@ namespace Luden
 {
 	class GeometryPass;
 	class ShaderCompiler;
+	class AssetImporter;
 	class SceneCamera;
-
-	struct SSAOParameters
-	{
-		DirectX::XMMATRIX Projection;
-		DirectX::XMMATRIX InvProjection;
-		DirectX::XMMATRIX InvView;
-		DirectX::XMMATRIX InvViewProjection;
-
-		uint32 OutputImageIndex;
-		uint32 BaseColorIndex;
-		uint32 NormalIndex;
-		uint32 WorldPositionIndex;
-
-		float Radius = 0.5f;
-		float Bias = 0.025f;
-		uint32 pad = 0;
-		uint32 pad2 = 0;
-
-		DirectX::XMFLOAT4 Samples[64];
-		DirectX::XMFLOAT4 Noise[16];
-	};
 
 	class SSAO : public RenderPass
 	{
@@ -36,25 +16,37 @@ namespace Luden
 		SSAO(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height);
 		~SSAO();
 
-		void Render(Frame& CurrentFrame, GeometryPass* pGBuffer, SceneCamera* pCamera);
+		void Render(Frame& CurrentFrame, GeometryPass* pGBuffer, uint32 NoiseImageIndex, SceneCamera* pCamera);
 		void Resize(uint32 Width, uint32 Height) override;
 
 		void Release() override;
 
 		D3D12RenderTexture RenderTarget;
 
-		SSAOParameters Parameters{};
+		constexpr static uint32 KernelSize = 32;
+
+		struct 
+		{
+			DirectX::XMMATRIX Projection;
+			DirectX::XMMATRIX InvProjection;
+
+			uint32 OutputImageIndex;
+			uint32 NoiseIndex;
+			uint32 NormalIndex;
+			uint32 ViewPositionIndex;
+
+			float Radius	= 0.2f;
+			float Power		= 5.0f;
+			float Bias		= 0.1f;
+			uint32 padding	= 0;
+
+			DirectX::XMFLOAT4 Samples[KernelSize];
+		} Parameters{};
 
 		D3D12ConstantBuffer* ConstantBuffer;
 
-		D3D12Pipeline VertexPSO;
-
-		D3D12Texture* NoiseTexture;
-
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;
-
-		void CreatePipelines(ShaderCompiler* pShaderCompiler);
 
 	};
 
