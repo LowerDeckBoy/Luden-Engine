@@ -21,7 +21,8 @@ namespace Luden::Panel
 		DrawSceneConfig();
 		DrawSceneCameraConfig();
 		DrawPostProcessConfig();
-	
+		DrawSkyConfig();
+
 		ImGui::End();
 	}
 
@@ -54,6 +55,14 @@ namespace Luden::Panel
 			ImGui::SetNextItemWidth(-1.0f);
 			ImGui::Text("%.3f ms", m_Renderer->LightingPass->RenderTime);
 
+			if (Config::Get().bEnableSky)
+			{
+				TableNextRowBegin("Sky");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Text("%.3f ms", m_Renderer->SkyboxPass->RenderTime);
+			}
+
 			if (Config::Get().bEnableBloom)
 			{
 				TableNextRowBegin("Bloom");
@@ -76,14 +85,6 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->FXAAPass->RenderTime);
-			}
-
-			if (Config::Get().bEnableFilmEffects)
-			{
-				TableNextRowBegin("FilmEffects");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Text("%.3f ms", m_Renderer->FilmEffectsPass->RenderTime);
 			}
 
 			if (Config::Get().bEnableSSR)
@@ -206,7 +207,7 @@ namespace Luden::Panel
 				TableNextRowBegin("Field of View");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				if (ImGui::DragFloat("##fov", &m_Renderer->Camera->FieldOfView, 1.0f, 1.0f, 90.0f))
+				if (ImGui::DragFloat("##fov", &m_Renderer->Camera->FieldOfView, 1.0f, 1.0f, 90.0f, "%.0f"))
 				{
 					m_Renderer->Camera->Resize();
 				}
@@ -235,13 +236,12 @@ namespace Luden::Panel
 	{
 		if (ImGui::CollapsingHeader("Post-Process"))
 		{
-			DrawBloomConfig();
 			DrawTonemappingConfig();
+			DrawBloomConfig();
 			DrawAntiAliasingConfig();
 			DrawAmbientOcclusionConfig();
 			DrawSpaceScreenReflectionsConfig();
 			DrawScatteringConfig();
-			DrawFilmEffectsConfig();
 			DrawAtmosphereConfig();
 		}
 	}
@@ -267,17 +267,17 @@ namespace Luden::Panel
 				TableNextRowBegin("Threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Threshold:", &m_Renderer->BloomPass->Parameters.Threshold, 0.0f, 5.0f);
+				ImGui::SliderFloat("##Threshold:", &m_Renderer->BloomPass->Parameters.Threshold, 0.0f, 5.0f, "%.1f");
 
 				TableNextRowBegin("Threshold Knee");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Threshold Knee:", &m_Renderer->BloomPass->Parameters.ThresholdKnee, 0.0f, 3.0f);
+				ImGui::SliderFloat("##Threshold Knee:", &m_Renderer->BloomPass->Parameters.ThresholdKnee, 0.0f, 3.0f, "%.1f");
 
 				TableNextRowBegin("Intensity");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Intensity:", &m_Renderer->BloomPass->Parameters.Intensity, 0.0f, 50.0f, "%.1f");
+				ImGui::SliderFloat("##Intensity:", &m_Renderer->BloomPass->Parameters.Intensity, 0.0f, 10.0f, "%.1f");
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -296,7 +296,7 @@ namespace Luden::Panel
 
 	void ConfigPanel::DrawAmbientOcclusionConfig()
 	{
-		if (ImGui::TreeNodeEx("SSAO", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
+		if (ImGui::TreeNodeEx("Screen Space Ambient Occlusion", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_SizingFixedSame))
 			{
@@ -316,12 +316,17 @@ namespace Luden::Panel
 				TableNextRowBegin("Radius");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Radius", &m_Renderer->SSAOPass->Parameters.Radius, 0.5f, 10.0f, "%.1f");
+				ImGui::SliderFloat("##Radius", &m_Renderer->SSAOPass->Parameters.Radius, 0.1f, 10.0f, "%.1f");
 
 				TableNextRowBegin("Power");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Power", &m_Renderer->SSAOPass->Parameters.Power, 0.1f, 10.0f, "%.1f");
+
+				TableNextRowBegin("Bias");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Bias", &m_Renderer->SSAOPass->Parameters.Bias, 0.01f, 1.0f, "%.2f");
 
 				if (!Config::Get().bEnableSSAO)
 				{
@@ -377,6 +382,37 @@ namespace Luden::Panel
 		}
 	}
 
+	void ConfigPanel::DrawSkyConfig()
+	{
+		if (ImGui::CollapsingHeader("Sky"))
+		{
+			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+				TableNextRowBegin("Draw");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Draw", &Config::Get().bEnableSky);
+
+				TableNextRowBegin("Sky Color");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::ColorEdit3("##Sky Color", (float*)&(DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SkyColor);
+				//gui::Math::EditColor3("##Sky Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SkyColor);
+
+				TableNextRowBegin("Sun Color");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::ColorEdit3("##Sun Color", (float*)&(DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SunColor);
+				//gui::Math::EditColor3("##Sun Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SunColor);
+
+				ImGui::EndTable();
+			}
+		}
+	}
+
 	void ConfigPanel::DrawSpaceScreenReflectionsConfig()
 	{
 		if (ImGui::TreeNodeEx("Screen Space Reflections", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
@@ -400,57 +436,6 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, 0.0f, 10.0f);
-
-				ImGui::EndTable();
-			}
-
-			ImGui::TreePop();
-		}
-	}
-
-	void ConfigPanel::DrawFilmEffectsConfig()
-	{
-		if (ImGui::TreeNodeEx("Film Effects", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
-		{
-			if (ImGui::BeginTable("##parameters", 2, ImGuiTableFlags_SizingFixedSame))
-			{
-				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
-
-				TableNextRowBegin("Enable");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Checkbox("##Enable", &Config::Get().bEnableFilmEffects);
-
-				if (!Config::Get().bEnableFilmEffects)
-				{
-					ImGui::BeginDisabled();
-				}
-
-				TableNextRowBegin("Enable Chromatic Aberration");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Checkbox("##Enable Chromatic Aberration", &Config::Get().bEnableChromaticAberration);
-
-				TableNextRowBegin("Enable Film Grain");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Checkbox("##Enable Film Grain", &Config::Get().bEnableFilmGrain);
-
-				TableNextRowBegin("Enable Lens Distortion");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Checkbox("##Enable Lens Distortion", &Config::Get().bEnableLensDistortion);
-
-				TableNextRowBegin("Lens Distortion Intensity");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Lens Distortion Intensity", &m_Renderer->FilmEffectsPass->Parameters.LensDistortionIntensity, 0.0f, 1.0f);
-
-				if (!Config::Get().bEnableFilmEffects)
-				{
-					ImGui::EndDisabled();
-				}
 
 				ImGui::EndTable();
 			}
@@ -528,7 +513,7 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[8] = { "None", "ACES", "AgX", "AgX Punchy", "Reinhard", "Gamma Correction", "Uncharted2", "Hable" };
+				static const char* types[9] = { "None", "ACES", "AgX", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
 				TableNextRowBegin("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);

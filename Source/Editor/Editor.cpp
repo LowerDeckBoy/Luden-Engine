@@ -295,17 +295,13 @@ namespace Luden
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->BaseColor.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Normal TBN"))
+				else if (ImGui::MenuItem("NormalTBN"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Normal.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Normal WorldSpace"))
+				else if (ImGui::MenuItem("NormalVS"))
 				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->NormalWS.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("Motion Vectors"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->MotionVectors.ShaderResourceHandle.GpuHandle.ptr;
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->NormalVS.ShaderResourceHandle.GpuHandle.ptr;
 				}
 				else if (ImGui::MenuItem("Metallic-Roughness"))
 				{
@@ -319,6 +315,10 @@ namespace Luden
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->WorldPosition.ShaderResourceHandle.GpuHandle.ptr;
 				}
+				else if (ImGui::MenuItem("View Position"))
+				{
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->ViewPosition.ShaderResourceHandle.GpuHandle.ptr;
+				}
 				else if (ImGui::MenuItem("Depth"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Depth.ShaderResourceHandle.GpuHandle.ptr;
@@ -331,29 +331,25 @@ namespace Luden
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->RaytracingOutput->ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Bloom - Test"))
+				else if (ImGui::MenuItem("Bloom"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->BloomPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("SSAO - Test"))
+				else if (ImGui::MenuItem("Screen Space Ambient Occlusion"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("FilmEffects - Test"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->FilmEffectsPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("ScreenSpaceReflections - Test"))
+				else if (ImGui::MenuItem("Screen Space Reflections - Test"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->SSRPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Scattering - Test"))
+				else if (ImGui::MenuItem("Depth Buffer - Test"))
 				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->ScatteringPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->GetRHI()->SceneDepthBuffer->ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Atmosphere - Test"))
+				else if (ImGui::MenuItem("Sky - Test"))
 				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->AtmospherePass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->SkyboxPass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 				}
 
 				ImGui::EndMenu();

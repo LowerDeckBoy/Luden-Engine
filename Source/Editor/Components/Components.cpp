@@ -19,7 +19,7 @@ namespace Luden::gui
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
 
 		ImGui::PushStyleColor(ImGuiCol_Button, Color::Red);
-		if (ImGui::Button("##x")) 
+		if (ImGui::Button("X")) 
 		{ 
 			Float3.x = 0.0f; 
 			bActive = true;
@@ -34,7 +34,7 @@ namespace Luden::gui
 		ImGui::SameLine();
 		
 		ImGui::PushStyleColor(ImGuiCol_Button, Color::Green);
-		if (ImGui::Button("##y")) 
+		if (ImGui::Button("Y")) 
 		{ 
 			Float3.y = 0.0f;
 			bActive = true;
@@ -49,7 +49,7 @@ namespace Luden::gui
 		ImGui::SameLine();
 
 		ImGui::PushStyleColor(ImGuiCol_Button, Color::Blue);
-		if (ImGui::Button("##z"))
+		if (ImGui::Button("Z"))
 		{
 			Float3.z = 0.0f;
 			bActive = true;
@@ -68,10 +68,10 @@ namespace Luden::gui
 		return bActive;
 	}
 	
-	void Math::EditColor3(std::string_view /* Label */, DirectX::XMFLOAT3& Float3)
+	void Math::EditColor3(std::string_view Label, DirectX::XMFLOAT3& Float3)
 	{
 		ImGui::SetNextItemWidth(-1.0f);
-		ImGui::ColorEdit3("##editColor", (float*)&Float3);
+		ImGui::ColorEdit3("##Label", (float*)&Float3);
 	}
 
 	void DrawTransformComponent(ecs::TransformComponent& Component)

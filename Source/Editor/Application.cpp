@@ -45,19 +45,17 @@ namespace Luden
 
 		MainScene = new Scene(&Importer);
 
-		SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_sponza.json");
-		//SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_alpha_test.json");
-		//SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_bistro.json");
-		//SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_test.json");
+		//SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_sponza.json");
+		SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_test.json");
 
 		m_Renderer->BuildScene(MainScene);
 		m_Renderer->ActiveScene = MainScene;
-
+		
 		m_Editor = std::make_unique<Editor>(&Window, m_Renderer, &m_Timer);
 		m_Editor->SetActiveScene(MainScene);
 
 		MainScene->GetAssetImporter()->LoadTexture2D("../../Assets/Textures/noise.png", m_Renderer->NoiseTexture);
-		//MainScene->SortMeshes();
+			
 		bIsResizing = false;
 		
 	}

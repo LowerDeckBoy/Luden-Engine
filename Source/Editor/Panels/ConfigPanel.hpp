@@ -40,10 +40,10 @@ namespace Luden::Panel
 		void DrawAmbientOcclusionConfig();
 		void DrawScatteringConfig();
 		void DrawAtmosphereConfig();
+		void DrawSkyConfig();
 
 		void DrawSpaceScreenReflectionsConfig();
 
-		void DrawFilmEffectsConfig();
 
 	};
 } // namespace Luden::Panel
