@@ -23,10 +23,9 @@ namespace Luden
 
 		void Resize(uint32 Width, uint32 Height) override;
 
-		//void Render(Frame& CurrentFrame, std::function<void()> const& DrawFunction);
 		void Render(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
 		void RenderTransparent(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
-		// Test. TODO now.
+		// TODO:
 		void RenderIndirect(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame);
 
 		D3D12RenderTexture BaseColor;
@@ -34,8 +33,6 @@ namespace Luden
 		D3D12RenderTexture NormalVS;
 		D3D12RenderTexture MetallicRoughness;
 		D3D12RenderTexture Emissive;
-		D3D12RenderTexture WorldPosition;
-		D3D12RenderTexture Depth;
 
 		D3D12CommandSignature* IndirectSignature = nullptr;
 

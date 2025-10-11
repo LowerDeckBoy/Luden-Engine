@@ -12,14 +12,29 @@ namespace Luden
 	SSAO::SSAO(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height)
 		: RenderPass(pD3D12RHI)
 	{
-		Pipeline.Compute = pShaderCompiler->CompileCS("../../Shaders/AO/SSAO.hlsl", true);
+		// SSAO PSO
+		{
+			Pipeline.Compute = pShaderCompiler->CompileCS("../../Shaders/AO/SSAO.hlsl", true);
 
-		VERIFY_D3D12_RESULT(Pipeline.RootSignature.BuildFromShader(m_RHI->Device, &Pipeline.Compute, PipelineType::Compute));
+			VERIFY_D3D12_RESULT(Pipeline.RootSignature.BuildFromShader(m_RHI->Device, &Pipeline.Compute, PipelineType::Compute));
 
-		D3D12ComputePipelineStateBuilder builder;
-		builder.SetComputeShader(&Pipeline.Compute);
-		builder.SetRootSignature(&Pipeline.RootSignature);
-		VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, Pipeline));
+			D3D12ComputePipelineStateBuilder builder;
+			builder.SetComputeShader(&Pipeline.Compute);
+			builder.SetRootSignature(&Pipeline.RootSignature);
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, Pipeline));
+		}
+		
+		// Blur PSO
+		{
+			m_BlurPSO.Compute = pShaderCompiler->CompileCS("../../Shaders/AO/Blur.hlsl", true);
+
+			VERIFY_D3D12_RESULT(m_BlurPSO.RootSignature.BuildFromShader(m_RHI->Device, &m_BlurPSO.Compute, PipelineType::Compute));
+
+			D3D12ComputePipelineStateBuilder builder;
+			builder.SetComputeShader(&m_BlurPSO.Compute);
+			builder.SetRootSignature(&m_BlurPSO.RootSignature);
+			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, m_BlurPSO));
+		}
 
 		RenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM);
 
@@ -76,7 +91,7 @@ namespace Luden
 		Parameters.OutputImageIndex		= RenderTarget.ShaderResourceHandle.Index;
 		Parameters.NoiseIndex			= NoiseImageIndex;
 		Parameters.NormalIndex			= pGBuffer->NormalVS.ShaderResourceHandle.Index;
-		Parameters.ViewPositionIndex    = pGBuffer->ViewPosition.ShaderResourceHandle.Index;
+		Parameters.DepthIndex			= m_RHI->SceneDepthBuffer->ShaderResourceHandle.Index;
 
 		ConstantBuffer->Update(&Parameters);
 		commandList->GetHandle()->SetComputeRootConstantBufferView(0, ConstantBuffer->GetBuffer()->GetGPUVirtualAddress());
@@ -84,6 +99,25 @@ namespace Luden
 		const uint32 dispatchX = Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Width  / 8u);
 		const uint32 dispatchY = Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Height / 8u);
 		commandList->Dispatch(dispatchX, dispatchY, 1);
+		
+
+		if (bBlurSSAO)
+		{
+			commandList->SetPipelineState(&m_BlurPSO.PipelineState);
+			commandList->SetRootSignature(&m_BlurPSO.RootSignature);
+
+			struct
+			{
+				uint32 TargetImageIndex;
+			} constants
+			{
+				.TargetImageIndex = RenderTarget.ShaderResourceHandle.Index
+			};
+
+			commandList->PushComputeConstants(0, 1, &constants);
+			commandList->Dispatch(dispatchX, dispatchY, 1);
+		}
+		
 		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);

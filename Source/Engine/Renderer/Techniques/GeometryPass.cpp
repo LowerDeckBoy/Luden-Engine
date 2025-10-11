@@ -23,19 +23,15 @@ namespace Luden
 
 		BaseColor.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,	RenderTargetClearColor, "GBuffer BaseColor");
 		Normal.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer NormalTBN");
-		NormalVS.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer NormalVS");
-		MetallicRoughness.Create(pRHI->Device, Width, Height,	DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,	RenderTargetClearColor, "GBuffer MetallicRoughness");
+		NormalVS.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R8G8B8A8_UNORM,			RenderTargetClearColor, "GBuffer NormalVS");
+		MetallicRoughness.Create(pRHI->Device, Width, Height,	DXGI_FORMAT_R8G8B8A8_UNORM,			RenderTargetClearColor, "GBuffer MetallicRoughness");
 		Emissive.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Emissive");
-		WorldPosition.Create(pRHI->Device, Width, Height,		DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer WorldPosition");
-		Depth.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R32G32B32A32_FLOAT,		RenderTargetClearColor, "GBuffer Depth");
 
 		m_RenderTargetHandles.push_back(&BaseColor.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&Normal.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&NormalVS.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&MetallicRoughness.RenderTargetHandle);
 		m_RenderTargetHandles.push_back(&Emissive.RenderTargetHandle);
-		m_RenderTargetHandles.push_back(&WorldPosition.RenderTargetHandle);
-		m_RenderTargetHandles.push_back(&Depth.RenderTargetHandle);
 
 	}
 
@@ -61,16 +57,12 @@ namespace Luden
 			builder.SetAlphaModeOpaque(2);
 			builder.SetAlphaModeOpaque(3);
 			builder.SetAlphaModeOpaque(4);
-			builder.SetAlphaModeOpaque(5);
-			builder.SetAlphaModeOpaque(6);
 			builder.SetRenderTargetFormats({
 				BaseColor.GetFormat(),
 				Normal.GetFormat(),
 				NormalVS.GetFormat(),
 				MetallicRoughness.GetFormat(),
 				Emissive.GetFormat(),
-				WorldPosition.GetFormat(),
-				Depth.GetFormat()
 				});
 
 			VERIFY_D3D12_RESULT(builder.Build(Pipeline.PipelineState));
@@ -98,8 +90,6 @@ namespace Luden
 			builder.SetAlphaModeOpaque(2);
 			builder.SetAlphaModeOpaque(3);
 			builder.SetAlphaModeOpaque(4);
-			builder.SetAlphaModeOpaque(5);
-			builder.SetAlphaModeOpaque(6);
 			builder.SetAlphaBlendDepthDesc();
 			builder.SetRenderTargetFormats({
 				BaseColor.GetFormat(),
@@ -107,24 +97,23 @@ namespace Luden
 				NormalVS.GetFormat(),
 				MetallicRoughness.GetFormat(),
 				Emissive.GetFormat(),
-				WorldPosition.GetFormat(),
-				Depth.GetFormat()
 				});
 
 			VERIFY_D3D12_RESULT(builder.Build(BlendPipelineState.PipelineState));
 		}
 		
+		// TODO:
 		// Indirect Draw PSO
-		{
-			IndirectPipelineState.Compute = pShaderCompiler->CompileCS("../../Shaders/Indirect/Indirect.hlsl", true);
-
-			VERIFY_D3D12_RESULT(IndirectPipelineState.RootSignature.BuildFromShader(m_RHI->Device, &IndirectPipelineState.Compute, PipelineType::Compute));
-
-			D3D12ComputePipelineStateBuilder builder;
-			builder.SetComputeShader(&IndirectPipelineState.Compute);
-			builder.SetRootSignature(&IndirectPipelineState.RootSignature);
-			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, IndirectPipelineState));
-		}
+		//{
+		//	IndirectPipelineState.Compute = pShaderCompiler->CompileCS("../../Shaders/Indirect/Indirect.hlsl", true);
+		//
+		//	VERIFY_D3D12_RESULT(IndirectPipelineState.RootSignature.BuildFromShader(m_RHI->Device, &IndirectPipelineState.Compute, PipelineType::Compute));
+		//
+		//	D3D12ComputePipelineStateBuilder builder;
+		//	builder.SetComputeShader(&IndirectPipelineState.Compute);
+		//	builder.SetRootSignature(&IndirectPipelineState.RootSignature);
+		//	VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, IndirectPipelineState));
+		//}
 	}
 
 	void GeometryPass::Release()
@@ -136,8 +125,6 @@ namespace Luden
 		NormalVS.Release();
 		MetallicRoughness.Release();
 		Emissive.Release();
-		WorldPosition.Release();
-		Depth.Release();
 
 		m_RenderTargetHandles.clear();
 		m_RenderTargetHandles.shrink_to_fit();
@@ -151,8 +138,6 @@ namespace Luden
 		NormalVS.Resize(Width, Height);
 		MetallicRoughness.Resize(Width, Height);
 		Emissive.Resize(Width, Height);
-		WorldPosition.Resize(Width, Height);
-		Depth.Resize(Width, Height);
 	}
 
 	void GeometryPass::Render(Scene* pScene, SceneCamera* pCamera, Frame& CurrentFrame)
@@ -167,8 +152,6 @@ namespace Luden
 			{ &NormalVS,			D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET }, 
-			{ &WorldPosition,		D3D12_RESOURCE_STATE_RENDER_TARGET },
-			{ &Depth,				D3D12_RESOURCE_STATE_RENDER_TARGET },
 		});
 
 		commandList->SetRenderTargets(m_RenderTargetHandles, m_RHI->SceneDepthBuffer->DepthStencilHandle);
@@ -245,8 +228,6 @@ namespace Luden
 		//	{ &NormalVS,			D3D12_RESOURCE_STATE_GENERIC_READ },
 		//	{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
 		//	{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &Depth,				D3D12_RESOURCE_STATE_GENERIC_READ }
 		//});
 
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
@@ -343,8 +324,6 @@ namespace Luden
 			{ &NormalVS,			D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &Depth,				D3D12_RESOURCE_STATE_GENERIC_READ }
 			});
 
 		//RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
@@ -359,8 +338,6 @@ namespace Luden
 			{ &Normal,				D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_RENDER_TARGET },
 			{ &Emissive,			D3D12_RESOURCE_STATE_RENDER_TARGET },
-			{ &WorldPosition,		D3D12_RESOURCE_STATE_RENDER_TARGET },
-			{ &Depth,				D3D12_RESOURCE_STATE_RENDER_TARGET },
 			});
 
 		commandList->SetRenderTargets(m_RenderTargetHandles, m_RHI->SceneDepthBuffer->DepthStencilHandle);
@@ -382,8 +359,6 @@ namespace Luden
 			{ &Normal,				D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &WorldPosition,		D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &Depth,				D3D12_RESOURCE_STATE_GENERIC_READ },
 			});
 	}
 

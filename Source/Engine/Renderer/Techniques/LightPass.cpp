@@ -33,7 +33,7 @@ namespace Luden
 		VERIFY_D3D12_RESULT(csBuilder.Build(m_RHI->Device, Pipeline));
 	}
 
-	void LightPass::Render(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera)
+	void LightPass::Render(Scene* pScene, Frame& CurrentFrame, SceneCamera* pCamera, uint32 AmbientOcclusionIndex)
 	{
 		const auto renderBeginTime = Time::GetTimestamp();
 
@@ -56,8 +56,10 @@ namespace Luden
 			uint32 NormalIndex;
 			uint32 MRIndex;
 			uint32 EmissiveIndex;
-			uint32 WorldPositionIndex;
+			uint32 DepthIndex;
+			uint32 AmbientOcclusionIndex;
 			uint32 OutputImage;
+			uint32 bSSAO;
 		} constants{
 			.PointLightBufferIndex	= pScene->LightBuffer->ShaderResourceView.Index,
 			.NumPointLights			= static_cast<uint32>(pScene->PointLights.size()),
@@ -67,12 +69,14 @@ namespace Luden
 			.NormalIndex			= m_GeometryPass->Normal.ShaderResourceHandle.Index,
 			.MRIndex				= m_GeometryPass->MetallicRoughness.ShaderResourceHandle.Index,
 			.EmissiveIndex			= m_GeometryPass->Emissive.ShaderResourceHandle.Index,
-			.WorldPositionIndex		= m_GeometryPass->WorldPosition.ShaderResourceHandle.Index,
+			.DepthIndex				= m_RHI->SceneDepthBuffer->ShaderResourceHandle.Index,
+			.AmbientOcclusionIndex  = AmbientOcclusionIndex,
 			.OutputImage			= RenderTexture.ShaderResourceHandle.Index,
+			.bSSAO					= Config::Get().bEnableSSAO
 		};
-
+		
 		commandList->SetComputeConstantBuffer(1, pScene->SceneDataBuffer);
-		commandList->PushComputeConstants(2, 10, &constants);
+		commandList->PushComputeConstants(2, 12, &constants);
 
 		commandList->Dispatch(Math::RoundUp<uint32>((uint32)RenderTexture.GetDesc().Width / 8), Math::RoundUp<uint32>(RenderTexture.GetDesc().Height / 8), 1);
 

@@ -33,7 +33,7 @@ namespace Luden
 			uint32 OutputImageIndex;
 			uint32 NoiseIndex;
 			uint32 NormalIndex;
-			uint32 ViewPositionIndex;
+			uint32 DepthIndex;
 
 			float Radius	= 0.2f;
 			float Power		= 5.0f;
@@ -45,8 +45,12 @@ namespace Luden
 
 		D3D12ConstantBuffer* ConstantBuffer;
 
+		bool bBlurSSAO = false;
+
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;
+
+		D3D12Pipeline m_BlurPSO;
 
 	};
 

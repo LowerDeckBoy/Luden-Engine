@@ -6,83 +6,56 @@ static const float TwoPI	= 6.28318530718f;
 static const float HalfPI	= 1.57079632679f;
 static const float InvPI	= 0.31830988618379067154f;
 
-static const float3 Fdielectric = 0.04f;
+static const float3 Fdielectric = 0.16f; // 0.04f
 
 static const float Epsilon	= 0.0001f;
+
+static const float FLOAT_MIN = 1.175494351e-38f;
+static const float FLOAT_MAX = 3.402823466e+38f;
+
+static const uint  UINT32_MAX = 0xFFFFFFFF;
 
 float DegreesToRadians(float Degrees)
 {
 	return Degrees * PI / 180.0f;
 }
 
-float2 TexelToUV(uint2 DispatchThreadID, float2 Texel)
+float2 TexelToUV(uint2 DispatchThreadID, float2 TexelSize)
 {
-	return (float2(DispatchThreadID.xy) + 0.5f) * Texel;
-}
-
-float4 GetWorldFromDepth(float2 UV, float Depth, float4x4 InvViewProjection)
-{
-	float4 clipSpace = float4(UV * 2.0f - 1.0f, Depth, 1.0f);
-	
-	float4 worldPosition = mul(InvViewProjection, clipSpace);
-	worldPosition /= worldPosition.w;
-
-	return worldPosition;
-}
-
-float4 GetWorldPositionFromDepth(float2 UV, float Depth, float4x4 InViewProjection)
-{
-	float4 H = float4(UV.x * 2.0f - 1.0f, (1.0f - UV.y) * 2.0f - 1.0f, Depth, 1.0f); // Transform by the view-projection inverse.
-	float4 D = mul(H, InViewProjection); // Divide by w to get the world position.
-	float4 worldPos = D / D.w;
-
-	return worldPos;
-}
-
-float3 GetWorldPosition(float4 ClipPosition, float4x4 InvViewProjection)
-{
-	float4 world = mul(InvViewProjection, ClipPosition);
-	world /= world.w;
-
-	return world.xyz;
+	return (float2(DispatchThreadID.xy) + 0.5f) * TexelSize;
 }
 
 float GetLinearDepth(float Depth, float Near, float Far)
 {
-	float depth = 2.0f * Depth - 1.0f;
-	return (Near * Far) / (Far + depth * (Far - Near));
+	return Near / (Near + Depth * (Far - Near));
 }
 
-float GetLinearizedDepth(float Depth, float Near, float Far)
+float3 GetViewPosition(float2 UV, float Depth, float4x4 InversedProjection)
 {
-	//return Far / (Far + Depth * (Near - Far));
-	return Near * (Far / (Far + Depth * (Near - Far)));
-}
-
-float GetLinearDepthPerspective(float Depth, float Near, float Far)
-{
-	//float depth = 2.0f * Depth - 1.0f;
-	float depth =  Depth ;
-	//return (Near * Far) / (Far + depth * (Far - Near));
-	return ((Far + Near) / (Far - Near)) + (1 / depth * (-2.0f * Far * Near) / (Far - Near));
-
-}
-
-float4 ClipToViewSpace(float4 ClipSpace, float4x4 InvProjection)
-{
-	float4 viewSpace = mul(ClipSpace, InvProjection);
+	float x = UV.x * 2.0f - 1.0f;
+	float y = (1.0f - UV.y) * 2.0f - 1.0f;
+	float z = Depth;
 	
-	return viewSpace / viewSpace.w;
+	float4 clipPosition = float4(x, y, z, 1.0f);
+
+	float4 viewPosition = mul(clipPosition, InversedProjection);
+	viewPosition.xyz /= viewPosition.w;
+
+	return viewPosition.xyz;
 }
 
-float3 Unproject(float2 UV, float Depth, row_major float4x4 InversedMatrix)
+float3 GetWorldPosition(float2 UV, float Depth, float4x4 InversedViewProjection)
 {
-	float4 NDC = float4(UV * 2.0f - 1.0f, Depth, 1.0f);
-	NDC.y *= -1.0f;
-	//float4 world = mul(InversedMatrix, NDC);
-	float4 world = mul(NDC, InversedMatrix);
+	float x = UV.x * 2.0f - 1.0f;
+	float y = (1.0f - UV.y) * 2.0f - 1.0f;
+	float z = Depth;
 	
-	return world.xyz / world.w;
+	float4 clipPosition = float4(x, y, z, 1.0f);
+
+	float4 worldPosition = mul(clipPosition, InversedViewProjection);
+	worldPosition.xyz /= worldPosition.w;
+
+	return worldPosition.xyz;
 }
 
 #endif // COMMON_HLSLI
