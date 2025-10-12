@@ -87,20 +87,20 @@ namespace Luden::Panel
 				ImGui::Text("%.3f ms", m_Renderer->FXAAPass->RenderTime);
 			}
 
-			if (Config::Get().bEnableSSR)
-			{
-				TableNextRowBegin("SSR");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Text("%.3f ms", m_Renderer->SSRPass->RenderTime);
-			}
-
 			if (Config::Get().bEnableSSAO)
 			{
 				TableNextRowBegin("SSAO");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->SSAOPass->RenderTime);
+			}
+
+			if (Config::Get().bEnableSSR)
+			{
+				TableNextRowBegin("SSR");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Text("%.3f ms", m_Renderer->SSRPass->RenderTime);
 			}
 
 			ImGui::EndTable();
@@ -241,8 +241,6 @@ namespace Luden::Panel
 			DrawAntiAliasingConfig();
 			DrawAmbientOcclusionConfig();
 			DrawSpaceScreenReflectionsConfig();
-			DrawScatteringConfig();
-			DrawAtmosphereConfig();
 		}
 	}
 
@@ -327,6 +325,16 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Bias", &m_Renderer->SSAOPass->Parameters.Bias, 0.01f, 1.0f, "%.2f");
+
+				TableNextRowBegin("Blur");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Blur", &m_Renderer->SSAOPass->bBlurSSAO);
+
+				TableNextRowBegin("Blur Sharpness");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 128.0f, "%.0f");
 
 				if (!Config::Get().bEnableSSAO)
 				{
@@ -430,12 +438,12 @@ namespace Luden::Panel
 				TableNextRowBegin("Ray steps");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##steps", &m_Renderer->SSRPass->Parameters.RaySteps, 0.0f, 10.0f);
+				ImGui::SliderFloat("##steps", &m_Renderer->SSRPass->Parameters.RaySteps, 0.0f, 10.0f, "%.1f");
 
 				TableNextRowBegin("Ray threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, 0.0f, 10.0f);
+				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, 0.0f, 10.0f, "%.1f");
 
 				ImGui::EndTable();
 			}

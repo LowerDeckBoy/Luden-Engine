@@ -222,6 +222,7 @@ namespace Luden
 	void Editor::DrawMainMenuBar()
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+
 		if (!ImGui::BeginMainMenuBar())
 		{
 			ImGui::EndMainMenuBar();
@@ -291,88 +292,95 @@ namespace Luden
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->SceneTextures.Scene.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Base Color"))
+				if (ImGui::MenuItem("Base Color"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->BaseColor.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("NormalTBN"))
+				if (ImGui::MenuItem("NormalTBN"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Normal.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("NormalVS"))
+				if (ImGui::MenuItem("NormalVS"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->NormalVS.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Metallic-Roughness"))
+				if (ImGui::MenuItem("Metallic-Roughness"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Emissive"))
+				if (ImGui::MenuItem("Emissive"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Emissive.ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("World Position"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->WorldPosition.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("View Position"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->ViewPosition.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("Depth"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->GBuffer->Depth.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("LightPass"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("Raytracing"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->RaytracingOutput->ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("Bloom"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->BloomPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("Screen Space Ambient Occlusion"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("Screen Space Reflections - Test"))
-				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->SSRPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
-				}
-				else if (ImGui::MenuItem("Depth Buffer - Test"))
+				if (ImGui::MenuItem("Depth Buffer"))
 				{
 					m_ConfigPanel.DisplayImageAddress = m_Renderer->GetRHI()->SceneDepthBuffer->ShaderResourceHandle.GpuHandle.ptr;
 				}
-				else if (ImGui::MenuItem("Sky - Test"))
+				if (ImGui::MenuItem("LightPass"))
 				{
-					m_ConfigPanel.DisplayImageAddress = m_Renderer->SkyboxPass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					m_ConfigPanel.DisplayImageAddress = m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle.GpuHandle.ptr;
 				}
 
+				if (Config::Get().bRaytracing)
+				{
+					if (ImGui::MenuItem("Raytracing"))
+					{
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->RaytracingOutput->ShaderResourceHandle.GpuHandle.ptr;
+					}
+				}
+				
+				if (Config::Get().bEnableBloom)
+				{
+					if (ImGui::MenuItem("Bloom"))
+					{
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->BloomPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					}
+				}
+				
+				if (Config::Get().bEnableSSAO)
+				{
+					if (ImGui::MenuItem("Screen Space Ambient Occlusion"))
+					{
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					}
+				}
+				
+
+				if (Config::Get().bEnableSSR)
+				{
+					if (ImGui::MenuItem("Screen Space Reflections - Test"))
+					{
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->SSRPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					}
+				}
+				
+				if (Config::Get().bEnableSky)
+				{
+					if (ImGui::MenuItem("Sky - Test"))
+					{
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->SkyboxPass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					}
+				}
+				
 				ImGui::EndMenu();
 			}
 
-			// Temp
+			// Scene lights
+
 			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Directional Light"))
 			{
 				m_Renderer->ActiveScene->AddDirectionalLight();
 			}
 
-			// Temp
 			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Point Light"))
 			{
 				m_Renderer->ActiveScene->AddPointLight();
 			}
 
-			// Temp
 			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Spot Light"))
 			{
 				m_Renderer->ActiveScene->AddSpotLight();
 			}
-
 
 			ImGui::EndMenu();
 		}
@@ -430,7 +438,6 @@ namespace Luden
 		ImGui::Begin("Logs");
 
 		ImGui::End();
-
 	}
 
 	void Editor::DisplayDebugInfo()
