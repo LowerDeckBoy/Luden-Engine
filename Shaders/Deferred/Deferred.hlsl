@@ -1,5 +1,5 @@
-#ifndef DEFERRED_CS_HLSL
-#define DEFERRED_CS_HLSL
+#ifndef DEFERRED_HLSL
+#define DEFERRED_HLSL
 
 #include "Deferred_RS.hlsli"
 #include "../PBR.hlsli"
@@ -17,9 +17,10 @@ struct PushConstants
 	uint NormalIndex;
 	uint MRIndex;
 	uint EmissiveIndex;
-	uint WorldPositionIndex;
+	uint DepthIndex;
+	uint AmbientOcclusionIndex;
 	uint TextureOutputIndex;
-	uint padding;
+	uint bSSAO;
 };
 
 ConstantBuffer<SceneConstants>	Scene		: register(b1);
@@ -33,43 +34,45 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	RWTexture2D<float4> outputTexture = GetRWTexture<float4>(Constants.TextureOutputIndex);
 
 	float2 textureSize = GetTextureSize(outputTexture);
-	if (textureSize.x < DispatchThreadID.x || textureSize.y < DispatchThreadID.y)
+	if (textureSize.x <= DispatchThreadID.x || textureSize.y <= DispatchThreadID.y)
 	{
 		return;
 	}
-
+	
 	Texture2D texBaseColor		= GetTexture(Constants.BaseColorIndex);
 	Texture2D texNormal			= GetTexture(Constants.NormalIndex);
 	Texture2D texMR				= GetTexture(Constants.MRIndex);
 	Texture2D texEmissive		= GetTexture(Constants.EmissiveIndex);
-	Texture2D texWorldPositon	= GetTexture(Constants.WorldPositionIndex);
+	Texture2D texDepth			= GetTexture(Constants.DepthIndex);
+	Texture2D texAO				= GetTexture(Constants.AmbientOcclusionIndex);
 
 	const float3 uv = int3(DispatchThreadID.xy, 0.0f);
 	
-	const float4 baseColor			= texBaseColor.Load(uv);
 	const float4 normal				= texNormal.Load(uv);
 	const float3 metallicRoughness	= texMR.Load(uv).rgb;
 	const float3 emissive			= texEmissive.Load(uv).rgb;
-	const float3 worldPosition		= texWorldPositon.Load(uv).rgb;
+	const float  metalness			= metallicRoughness.b;
+	const float  roughness			= metallicRoughness.g;
+	float4		 baseColor			= texBaseColor.Load(uv);
 	
-	const float metalness = metallicRoughness.b;
-	const float roughness = metallicRoughness.g;
+	float  depth		 = texDepth.Load(uv).r;
+	float2 texCoord		 = (float2(DispatchThreadID.xy) + 0.5f) * (1.0f / textureSize);
+	float3 worldPosition = GetWorldPosition(texCoord, depth, transpose(Scene.InversedViewProjection));
+	
+	if (Constants.bSSAO)
+	{
+		float ao = texAO.Load(uv).r;
+		baseColor.rgb *= ao;
+	}
 	
 	const float3 N = normalize(normal.rgb);
-	const float depth = normal.w;
 	
 	const float3 V = normalize(Scene.CameraPosition - worldPosition);
 	const float NdotV = max(dot(N, V), Epsilon);
 
-	const float3 F0 = lerp(Fdielectric, baseColor.rgb, float3(metalness, metalness, metalness));
-	
 	float3 output = float3(0.0f, 0.0f, 0.0f);
-
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
-	
-	// Test
-	float3 scattering = float3(0.0f, 0.0f, 0.0f);
-	
+
 	// Point lights
 	StructuredBuffer<PointLight> PointLights = GetBuffer<PointLight>(Constants.PointLightBufferIndex);
 	for (uint pointLightIdx = 0; pointLightIdx < Constants.NumPointLights; pointLightIdx++)
@@ -93,9 +96,9 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 	output += Lo;
 	output += emissive;
-	
-	outputTexture[DispatchThreadID.xy] = float4(output.rgb, 1.0f);
+
+	outputTexture[DispatchThreadID.xy] = float4(saturate(output.rgb), 1.0f);
 	
 }
 
-#endif // DEFERRED_CS_HLSL
+#endif // DEFERRED_HLSL
