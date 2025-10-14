@@ -15,9 +15,7 @@
 #include "Techniques/SSAO.hpp"
 #include "Techniques/SSR.hpp"
 #include "Techniques/Tonemapping.hpp"
-#include "Techniques/FilmEffects.hpp"
-#include "Techniques/Scattering.hpp"
-#include "Techniques/Atmosphere.hpp"
+#include "Techniques/Skybox.hpp"
 
 // Test
 #include "D3D12/D3D12StateObject.hpp"
@@ -79,11 +77,9 @@ namespace Luden
 		Bloom*			BloomPass;
 		FXAA*			FXAAPass;
 		Tonemapping*	TonemappingPass;
-		FilmEffects*	FilmEffectsPass;
 		SSR*			SSRPass;
 		SSAO*			SSAOPass;
-		Scattering*		ScatteringPass;
-		Atmosphere*		AtmospherePass;
+		Skybox*			SkyboxPass;
 
 		double PresentRenderTime = 0.0;
 		double UpdateRenderTime = 0.0;

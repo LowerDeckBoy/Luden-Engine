@@ -36,11 +36,9 @@ namespace Luden
 		BloomPass		= new Bloom(pD3D12RHI, m_ShaderCompiler, width, height);
 		FXAAPass		= new FXAA(pD3D12RHI, m_ShaderCompiler, width, height);
 		TonemappingPass = new Tonemapping(pD3D12RHI, m_ShaderCompiler);
-		FilmEffectsPass = new FilmEffects(pD3D12RHI, m_ShaderCompiler, width, height);
-		SSAOPass		= new SSAO(pD3D12RHI, m_ShaderCompiler, m_AssetImporter, width, height);
+		SSAOPass		= new SSAO(pD3D12RHI, m_ShaderCompiler, width, height);
 		SSRPass			= new SSR(pD3D12RHI, m_ShaderCompiler, width, height);
-		ScatteringPass	= new Scattering(pD3D12RHI, m_ShaderCompiler, width, height);
-		AtmospherePass	= new Atmosphere(pD3D12RHI, m_ShaderCompiler, width, height);
+		SkyboxPass		= new Skybox(pD3D12RHI, m_ShaderCompiler);
 
 	}
 
@@ -62,11 +60,9 @@ namespace Luden
 
 		delete NoiseTexture;
 
-		delete AtmospherePass;
-		delete ScatteringPass;
+		delete SkyboxPass;
 		delete SSRPass;
 		delete FXAAPass;
-		delete FilmEffectsPass;
 		delete TonemappingPass;
 		delete SSAOPass;
 		delete BloomPass;
@@ -122,9 +118,10 @@ namespace Luden
 
 			const auto viewProjection = Camera->GetViewProjection();
 			auto& transform	= ActiveScene->Transforms.at(model->TransformID);
-			transform.WVP			= transformComponent.WorldMatrix * viewProjection;
-			transform.World			= transformComponent.WorldMatrix;
-			transform.PreviousWorld = transformComponent.PreviousPosition * viewProjection;
+			transform.World					= transformComponent.WorldMatrix;
+			transform.WorldView				= transformComponent.WorldMatrix * Camera->GetView();
+			transform.WorldViewProjection	= transformComponent.WorldMatrix * viewProjection;
+			transform.PreviousWorld			= transformComponent.PreviousPosition * viewProjection;
 		}
 
 		std::memcpy(ActiveScene->TransformsBuffer->GetBufferDesc().Data, ActiveScene->Transforms.data(), (ActiveScene->Transforms.size() * sizeof(ecs::ObjectTransforms)));
@@ -177,7 +174,13 @@ namespace Luden
 			}
 
 			// Light Pass
-			LightingPass->Render(ActiveScene, *frame, Camera);
+			LightingPass->Render(ActiveScene, *frame, Camera, SSAOPass->RenderTarget.ShaderResourceHandle.Index);
+			
+			if (Config::Get().bEnableSky)
+			{
+				auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
+				SkyboxPass->Render(*frame, Camera, directional.Direction);
+			}
 
 			// Post-Processes
 			if (Config::Get().bEnablePostProcess)
@@ -192,31 +195,14 @@ namespace Luden
 					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_UNORDERED_ACCESS }
 					});
 
-				if (Config::Get().bEnableAtmosphere)
-				{
-					auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
-
-					AtmospherePass->Render(*frame, Camera, 
-						SceneTextures.Scene.ShaderResourceHandle.Index,
-						GBuffer->WorldPosition.ShaderResourceHandle.Index,
-						GBuffer->Depth.ShaderResourceHandle.Index,
-						directional.Direction);
-				}
-
 				if (Config::Get().bEnableSSR)
 				{
 					SSRPass->Render(frame, 
 						SceneTextures.Scene.ShaderResourceHandle.Index, 
-						GBuffer->Normal.ShaderResourceHandle.Index, 
-						//GBuffer->NormalWS.ShaderResourceHandle.Index, 
+						GBuffer->NormalVS.ShaderResourceHandle.Index, 
 						GBuffer->MetallicRoughness.ShaderResourceHandle.Index,
-						GBuffer->WorldPosition.ShaderResourceHandle.Index,
-						GBuffer->Depth.ShaderResourceHandle.Index, 
 						Camera);
-
 				}
-
-				
 
 				if (Config::Get().bEnableFXAA)
 				{
@@ -229,17 +215,6 @@ namespace Luden
 					BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->Emissive.ShaderResourceHandle.Index);
 				}
 
-				if (Config::Get().bEnableScattering)
-				{
-					auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
-					ScatteringPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, directional.Direction);
-				}
-
-				if (Config::Get().bEnableFilmEffects)
-				{
-					FilmEffectsPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
-				}
-
 				if (Config::Get().bEnableTonemapping)
 				{
 					TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
@@ -250,16 +225,14 @@ namespace Luden
 		}
 		else
 		{
-			if (!frame->ComputeCommandList->IsOpen())
+			if (!commandList->IsOpen())
 			{
-				frame->ComputeCommandList->Open();
+				commandList->Open();
 			}
 
-			frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
+			commandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
 
-			//commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			DispatchRayTracing(*frame);
-			//commandList->ResourceTransition(RaytracingOutput, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 			commandList->ResourceTransition({
 				{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_COPY_DEST },
@@ -506,7 +479,7 @@ namespace Luden
 		//InitializeRaytracingResources();
 
 		m_D3D12RHI->Wait();
-		m_D3D12RHI->Flush();
+		//m_D3D12RHI->Flush();
 	}
 
 	void Renderer::ReleaseActiveScene()
@@ -577,7 +550,6 @@ namespace Luden
 
 		RaytracingRS = new D3D12RootSignature();
 		RaytracingRS->AddConstants(54, 0, 0);
-		RaytracingRS->AddSRV(0, 0);
 		RaytracingRS->AddStaticSampler(0, 0, D3D12_FILTER_COMPARISON_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_COMPARISON_FUNC_ALWAYS);
 		VERIFY_D3D12_RESULT(RaytracingRS->Build(m_D3D12RHI->Device, PipelineType::Compute));
 
@@ -603,21 +575,13 @@ namespace Luden
 		
 		RaytracingShaderTable = new D3D12ShaderBindingTable();
 		
-		struct globalArgs
-		{
-			void* pDescriptorHeap;
-		} args {
-			.pDescriptorHeap = reinterpret_cast<uint64*>(m_D3D12RHI->Device->ShaderResourceHeap->GetGpuStartHandlePtr())
-		};
-
-		//FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")), &args, sizeof(globalArgs));
 		FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")));
 		RaytracingShaderTable->RayGenTable.AddRecord(raygenRecord);
 
 		FShaderTableRecord missRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"Miss")));
 		RaytracingShaderTable->MissTable.AddRecord(missRecord);
 
-		FShaderTableRecord hitRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"HitGroup")), &hitGroup, sizeof(hitGroup));
+		FShaderTableRecord hitRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"HitGroup")));
 		RaytracingShaderTable->HitTable.AddRecord(hitRecord);
 
 		RaytracingShaderTable->Create(m_D3D12RHI->Device);
@@ -627,10 +591,10 @@ namespace Luden
 
 	void Renderer::DispatchRayTracing(Frame& CurrentFrame)
 	{
-		auto commandList = CurrentFrame.ComputeCommandList;
+		auto commandList = CurrentFrame.GraphicsCommandList;
 
-		commandList->SetComputeRootSignature(RaytracingRS);
 		commandList->SetPipelineState1(RaytracingPSO);
+		commandList->SetComputeRootSignature(RaytracingRS);
 
 		struct constData
 		{
@@ -646,6 +610,7 @@ namespace Luden
 			.Projection			= Camera->GetProjection(),
 			.ViewProjection		= DirectX::XMMatrixTranspose(Camera->GetViewProjection()),
 			.CameraPosition		= Camera->Position,
+			//.RaytracingImage	= RaytracingOutput->ShaderResourceHandle.Index,
 			.RaytracingImage	= RaytracingOutput->UnorderedAccessHandle.Index,
 			.RaytracingTopLevel = RaytracingBVH->TLAS->AccelerationStructure->ShaderResourceView.Index
 		};
@@ -656,9 +621,9 @@ namespace Luden
 		desc.Width  = static_cast<uint32>(RaytracingOutput->GetDesc().Width);
 		desc.Height = static_cast<uint32>(RaytracingOutput->GetDesc().Height);
 
-		const auto& raygenTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->RayGenTable.StorageBuffer);
-		const auto& missTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->MissTable.StorageBuffer);
-		const auto& hitTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->HitTable.StorageBuffer);
+		const auto raygenTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->RayGenTable.StorageBuffer);
+		const auto missTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->MissTable.StorageBuffer);
+		const auto hitTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->HitTable.StorageBuffer);
 
 		desc.RayGenerationShaderRecord.StartAddress = raygenTable->GetGpuAddress();
 		desc.RayGenerationShaderRecord.SizeInBytes  = RaytracingShaderTable->RayGenTable.GetTotalSizeInBytes();
