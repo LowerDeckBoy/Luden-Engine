@@ -106,7 +106,7 @@ namespace Luden
 	bool Scene::AddModel(Filepath Path)
 	{
 		Model model{};
-
+		model.m_ParentScene = this;
 		auto startTime = std::chrono::high_resolution_clock::now();
 
 		if (!m_AssetImporter->ImportStaticMesh(this, Path, model))
@@ -161,14 +161,14 @@ namespace Luden
 		DirectionalLights.push_back(entity);
 	}
 
-	void Scene::AddPointLight()
+	void Scene::AddPointLight(DirectX::XMFLOAT3 Position)
 	{
 		Entity entity;
 		CreateEntity(entity);
 
 		entity.AddComponent<ecs::NameComponent>(std::format("Point Light {}", PointLights.size()));
 		
-		entity.AddComponent<ecs::PointLightComponent>();
+		entity.AddComponent<ecs::PointLightComponent>(Position);
 
 		PointLights.push_back(entity);
 
@@ -197,11 +197,11 @@ namespace Luden
 		Consts.Planes[5]				= pCamera->Frustum.Planes[5]; // Near
 		Consts.Position					= pCamera->Position;
 
-		SceneData.View					= DirectX::XMMatrixTranspose(pCamera->GetView());
-		SceneData.Projection			= DirectX::XMMatrixTranspose(pCamera->GetProjection());
-		SceneData.InversedView			= DirectX::XMMatrixTranspose(pCamera->GetInversedView());
-		SceneData.InversedProjection	= DirectX::XMMatrixTranspose(pCamera->GetInversedProjection());
-		SceneData.InversedViewProjection = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection()));
+		SceneData.View					= pCamera->GetView();
+		SceneData.Projection			= pCamera->GetProjection();
+		SceneData.InversedView			= pCamera->GetInversedView();
+		SceneData.InversedProjection	= pCamera->GetInversedProjection();
+		SceneData.InversedViewProjection = DirectX::XMMatrixInverse(nullptr, pCamera->GetViewProjection());
 		SceneData.CameraPosition		= pCamera->Position;
 
 		SceneData.Planes[0]				= pCamera->Frustum.Planes[0];
@@ -240,6 +240,24 @@ namespace Luden
 		mapSize = spotLights.size() * sizeof(ecs::SpotLightComponent);
 		std::memcpy(SpotLightBuffer->GetBufferDesc().Data, spotLights.data(), mapSize);
 
+	}
+
+	void Scene::SortMeshes()
+	{
+		for (auto& model : Models)
+		{
+			for (auto& mesh : model->Meshes)
+			{
+				if (!Materials.at(mesh.MaterialID).IsTransparent())
+				{
+					model->OpaqueMeshes.push_back(std::move(mesh));
+				}
+				else
+				{
+					model->BlendMeshes.push_back(std::move(mesh));
+				}
+			}
+		}
 	}
 
 } // namespace Luden

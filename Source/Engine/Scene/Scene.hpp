@@ -76,7 +76,7 @@ namespace Luden
 		bool IsEmpty() const;
 		
 		void AddDirectionalLight();
-		void AddPointLight();
+		void AddPointLight(DirectX::XMFLOAT3 Position = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
 		void AddSpotLight();
 
 		std::vector<Entity> DirectionalLights;
@@ -101,6 +101,9 @@ namespace Luden
 		Entity SkyLight;
 
 		AssetImporter* GetAssetImporter() { return m_AssetImporter; }
+
+		// Temp
+		void SortMeshes();
 
 	private:
 		Filepath m_Filepath;

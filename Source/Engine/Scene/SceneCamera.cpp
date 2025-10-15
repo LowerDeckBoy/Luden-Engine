@@ -17,9 +17,8 @@ namespace Luden
 		Up			= m_DefaultUp;
 
 		XMStoreFloat4x4(&View, XMMatrixLookAtLH(XMLoadFloat3(&Position), XMLoadFloat4(&Target), XMLoadFloat3(&Up)));
-		AspectRatio = (f32)pWindow->Width / (f32)pWindow->Height;
+		AspectRatio = (f32)pWindow->HostImageWidth / (f32)pWindow->HostImageHeight;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
-		//XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zFar, zNear));
 
 		DirectInput8Create(pWindow->Instance, DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(&DxInput), NULL);
 		DxInput->CreateDevice(GUID_SysKeyboard, &DxKeyboard, NULL);
@@ -29,7 +28,6 @@ namespace Luden
 		DxMouse->SetDataFormat(&c_dfDIMouse);
 		DxMouse->SetCooperativeLevel(pWindow->Handle, DISCL_NONEXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
 
-		//Frustum.Construct(GetViewProjection());
 	}
 
 	SceneCamera::~SceneCamera()
@@ -39,11 +37,8 @@ namespace Luden
 
 	void SceneCamera::Resize()
 	{
-		AspectRatio = (f32)m_ParentWindow->Width / (f32)m_ParentWindow->Height;
+		AspectRatio = (f32)m_ParentWindow->HostImageWidth / (f32)m_ParentWindow->HostImageHeight;
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
-		//XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zFar, zNear));
-	
-		//Update();
 	}
 
 	void SceneCamera::Tick(f64 DeltaTime)
@@ -151,8 +146,7 @@ namespace Luden
 
 		XMStoreFloat4x4(&View, XMMatrixLookAtLH(position, target, up));
 		XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zNear, zFar));
-		//XMStoreFloat4x4(&Projection, XMMatrixPerspectiveFovLH(XMConvertToRadians(FieldOfView), AspectRatio, zFar, zNear));
-
+	
 		// Store vector and matrices.
 		XMStoreFloat3(&m_Forward, forward);
 		XMStoreFloat3(&m_Right, right);

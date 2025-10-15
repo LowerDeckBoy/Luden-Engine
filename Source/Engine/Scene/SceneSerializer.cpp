@@ -44,7 +44,7 @@ namespace Luden
 			Model model{};
 			// Initialize Enitity with a name, as every model in JSON scene file must have a name anyway.
 			pScene->GetWorld()->CreateEntity(&model, name);
-
+			model.m_ParentScene = pScene;
 			model.AddComponent<ecs::TransformComponent>(
 				DirectX::XMFLOAT3(position[0], position[1], position[2]),
 				DirectX::XMFLOAT4(rotation[0], rotation[1], rotation[2], rotation[3]),
