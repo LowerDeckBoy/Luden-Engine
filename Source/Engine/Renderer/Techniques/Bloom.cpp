@@ -32,17 +32,13 @@ namespace Luden
 		commandList->SetComputeRootSignature(&BloomPSO.RootSignature);
 
 
-		// Blur
+		// Filter
 		{
 			commandList->SetPipelineState(&BloomPSO.PipelineState);
-
-			//auto& texture = DownsampleTextures.at(static_cast<usize>(NumDownsamples - 1));
-			//auto& texture = DownsampleTextures.at(static_cast<usize>(0));
 			auto& texture = RenderTarget;
 			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 			Parameters.MipIndex			= texture.ShaderResourceHandle.Index;
-			//Parameters.MipIndex		= LightPassImageIndex;
 			Parameters.LightImage		= LightPassImageIndex;
 			Parameters.EmissiveImage	= EmissiveImageIndex;
 
@@ -90,28 +86,6 @@ namespace Luden
 			}
 		}
 
-		/*
-		// Blur
-		{
-			commandList->SetPipelineState(&BloomPSO.PipelineState);
-			auto& texture = DownsampleTextures.at(static_cast<usize>(NumDownsamples - 1));
-			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-			Parameters.MipIndex			= texture.ShaderResourceHandle.Index;
-			Parameters.LightImage		= LightPassImageIndex;
-			Parameters.EmissiveImage	= EmissiveImageIndex;
-			//Parameters.LightImage		= texture.ShaderResourceHandle.Index;
-			//Parameters.EmissiveImage	= texture.ShaderResourceHandle.Index;
-
-			commandList->GetHandle()->SetComputeRoot32BitConstants(0, 8, &Parameters, 0);
-		
-			const uint32 dispatchX = Math::RoundUp<uint32>((uint32)texture.GetDesc().Width / DispatchGroup);
-			const uint32 dispatchY = Math::RoundUp<uint32>(texture.GetDesc().Height / DispatchGroup);
-			commandList->Dispatch(dispatchX, dispatchY, 1);
-			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_GENERIC_READ);
-		}
-		*/
-
 		// Upsample
 		{
 			commandList->SetPipelineState(&UpsamplePSO.PipelineState);
@@ -130,10 +104,9 @@ namespace Luden
 				auto& upsample = UpsampleTextures.at(static_cast<usize>(mip));
 				commandList->ResourceTransition(&upsample, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 				// Current Upsample texture
-				Parameters.MipIndex = upsample.ShaderResourceHandle.Index;
-				// 
-				Parameters.LightImage = UpsampleTextures.at(static_cast<usize>(mip - 1)).ShaderResourceHandle.Index;
-
+				Parameters.MipIndex		= upsample.ShaderResourceHandle.Index;
+				Parameters.LightImage	= UpsampleTextures.at(static_cast<usize>(mip - 1)).ShaderResourceHandle.Index;
+	
 				commandList->GetHandle()->SetComputeRoot32BitConstants(0, 8, &Parameters, 0);
 
 				const uint32 dispatchX = Math::RoundUp<uint32>((uint32)upsample.GetDesc().Width / DispatchGroup);
@@ -149,7 +122,6 @@ namespace Luden
 			{ &UpsampleTextures.at(5), D3D12_RESOURCE_STATE_COPY_SOURCE},
 			});
 		commandList->CopyResource(&UpsampleTextures.at(5), &RenderTarget);
-		//commandList->CopyResource(&DownsampleTextures.at(0), &RenderTarget);
 		commandList->ResourceTransition({
 			{ &RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ },
 			{ &UpsampleTextures.at(5), D3D12_RESOURCE_STATE_GENERIC_READ },

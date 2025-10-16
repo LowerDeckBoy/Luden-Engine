@@ -49,15 +49,13 @@ namespace Luden
 			uint32	EmissiveImage;
 			uint32	LightImage;
 			uint32	SceneImage;
-			float	Threshold		= 1.25f;
+			float	Threshold		= 1.0f;
 			float	ThresholdKnee	= 0.5f;
 			float	Intensity		= 1.0f;
 			float	Gamma			= 1.0f;
 			// For Down and Up sampling textures.
 			uint32	MipIndex;
 		} Parameters;
-
-		//BloomParameters Parameters{};
 
 		std::vector<D3D12RenderTexture> DownsampleTextures;
 		std::vector<D3D12RenderTexture> UpsampleTextures;
