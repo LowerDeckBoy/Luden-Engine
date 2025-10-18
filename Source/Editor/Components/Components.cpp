@@ -26,7 +26,7 @@ namespace Luden::gui
 		}
 		ImGui::PopStyleColor();
 		ImGui::SameLine();
-		if (ImGui::DragFloat("##X", &Float3.x, 1.0f, 0.0f, 0.0f, "%.1f"))
+		if (ImGui::DragFloat("##X", &Float3.x, 1.0f, 0.0f, 0.0f, "%.2f"))
 		{ 
 			bActive = true;
 		}
@@ -41,7 +41,7 @@ namespace Luden::gui
 		}
 		ImGui::PopStyleColor();
 		ImGui::SameLine();
-		if (ImGui::DragFloat("##Y", &Float3.y, 1.0f, 0.0f, 0.0f, "%.1f"))
+		if (ImGui::DragFloat("##Y", &Float3.y, 1.0f, 0.0f, 0.0f, "%.2f"))
 		{ 
 			bActive = true;
 		}
@@ -56,7 +56,7 @@ namespace Luden::gui
 		}
 		ImGui::PopStyleColor();
 		ImGui::SameLine();
-		if (ImGui::DragFloat("##Z", &Float3.z, 1.0f, 0.0f, 0.0f, "%.1f"))
+		if (ImGui::DragFloat("##Z", &Float3.z, 1.0f, 0.0f, 0.0f, "%.2f"))
 		{
 			bActive = true;
 		}
@@ -67,8 +67,70 @@ namespace Luden::gui
 
 		return bActive;
 	}
+
+	bool Math::DrawFloat3InAngles(std::string_view Label, DirectX::XMFLOAT3& Float3, float MinAngle, float MaxAngle)
+	{
+		// Either when slider has been dragged or it's correnspoding button has been clicked.
+		bool bActive = false;
+
+		const char* format = "%.0f";
+		const auto flags = ImGuiSliderFlags_AlwaysClamp;
+
+		ImGui::PushID(Label.data());
+		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+
+		ImGui::PushStyleColor(ImGuiCol_Button, Color::Red);
+		if (ImGui::Button("X"))
+		{
+			Float3.x = 0.0f;
+			bActive = true;
+		}
+		ImGui::PopStyleColor();
+		ImGui::SameLine();
+		if (ImGui::SliderAngle("##X", &Float3.x, MinAngle, MaxAngle, format, flags))
+		{
+			bActive = true;
+		}
+		ImGui::PopItemWidth();
+		ImGui::SameLine();
+
+		ImGui::PushStyleColor(ImGuiCol_Button, Color::Green);
+		if (ImGui::Button("Y"))
+		{
+			Float3.y = 0.0f;
+			bActive = true;
+		}
+		ImGui::PopStyleColor();
+		ImGui::SameLine();
+		if (ImGui::SliderAngle("##Y", &Float3.y, MinAngle, MaxAngle, format, flags))
+		{
+			bActive = true;
+		}
+		ImGui::PopItemWidth();
+		ImGui::SameLine();
+
+		ImGui::PushStyleColor(ImGuiCol_Button, Color::Blue);
+		if (ImGui::Button("Z"))
+		{
+			Float3.z = 0.0f;
+			bActive = true;
+		}
+		ImGui::PopStyleColor();
+		ImGui::SameLine();
+		if (ImGui::SliderAngle("##Z", &Float3.z, MinAngle, MaxAngle, format, flags))
+		{
+			bActive = true;
+		}
+		ImGui::PopItemWidth();
+
+		ImGui::PopID();
+		ImGui::PopStyleVar();
+
+		return false;
+	}
 	
-	void Math::EditColor3(std::string_view Label, DirectX::XMFLOAT3& Float3)
+	void Math::EditColor3(std::string_view /* Label */, DirectX::XMFLOAT3& Float3)
 	{
 		ImGui::SetNextItemWidth(-1.0f);
 		ImGui::ColorEdit3("##Label", (float*)&Float3);
@@ -207,8 +269,7 @@ namespace Luden::gui
 
 			TableNextRowBegin("Direction");
 			ImGui::TableNextColumn();
-			ImGui::SetNextItemWidth(-1.0f);
-			Math::DrawFloat3("Direction", Component.Direction);
+			Math::DrawFloat3InAngles("Direction", Component.Direction, -90.0f, 90.0f);
 
 			TableNextRowBegin("Ambient");
 			ImGui::TableNextColumn();

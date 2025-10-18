@@ -18,6 +18,8 @@ namespace Luden::gui
 	{
 		extern bool DrawFloat3(std::string_view Label, DirectX::XMFLOAT3& Float3);
 
+		extern bool DrawFloat3InAngles(std::string_view Label, DirectX::XMFLOAT3& Float3, float MinAngle = -360.0f, float MaxAngle = 360.0f);
+
 		extern void EditColor3(std::string_view Label, DirectX::XMFLOAT3& Float3);
 
 	} // namespace Math
