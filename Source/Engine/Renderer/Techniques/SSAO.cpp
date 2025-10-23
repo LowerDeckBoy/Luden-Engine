@@ -109,12 +109,18 @@ namespace Luden
 			struct
 			{
 				uint32 TargetImageIndex;
+				uint32 DepthIndex;
+				uint32 NormalIndex;
+				float  Sharpness;
 			} constants
 			{
-				.TargetImageIndex = RenderTarget.ShaderResourceHandle.Index
+				.TargetImageIndex = RenderTarget.ShaderResourceHandle.Index,
+				.DepthIndex = m_RHI->SceneDepthBuffer->ShaderResourceHandle.Index,
+				.NormalIndex = pGBuffer->NormalVS.ShaderResourceHandle.Index,
+				.Sharpness = BlurSharpness
 			};
 
-			commandList->PushComputeConstants(0, 1, &constants);
+			commandList->PushComputeConstants(0, 4, &constants);
 			commandList->Dispatch(dispatchX, dispatchY, 1);
 		}
 		

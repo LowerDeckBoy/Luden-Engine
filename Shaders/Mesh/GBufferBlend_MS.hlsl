@@ -69,9 +69,6 @@ struct Vertex
 struct VertexOut
 {
 	float4 Position : SV_POSITION;
-	float4 WorldPosition : WORLD_POSITION;
-	float4 CurrPosition : CURR_POSITION;
-	float4 PrevPosition : PREV_POSITION;
 	float2 TexCoord : TEXCOORD;
 	float3x3 TBN : TBN;
 	float4 NormalsVS : NORMAL_VS;
@@ -90,9 +87,6 @@ VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 	
 	const float4x4 world = transform.World;
 	vout.Position		= mul(transform.WVP, float4(InVertex.Position, 1.0f));
-	vout.CurrPosition	= mul(transform.WVP, float4(InVertex.Position, 1.0f));
-	vout.PrevPosition	= mul(transform.PreviousWorld, float4(InVertex.Position, 1.0f));
-	vout.WorldPosition	= mul(world, float4(InVertex.Position, 1.0f));
 
 	vout.TexCoord = InVertex.TexCoord;
 
@@ -162,8 +156,6 @@ struct GBuffers
 	float4 NormalVS : SV_TARGET2;
 	float4 MetallicRoughness : SV_TARGET3;
 	float4 Emissive : SV_TARGET4;
-	float4 WorldPosition : SV_TARGET5;
-	float4 Depth : SV_TARGET6;
 };
 
 int IsIndexValid(uint Index)
@@ -185,8 +177,6 @@ GBuffers PSMain(VertexOut pin)
 	StructuredBuffer<FMaterial> materialBuffer = GetBuffer<FMaterial>(Constants.MaterialBuffer);
 	FMaterial material = materialBuffer[Constants.MaterialID];
 	
-	output.WorldPosition = float4(pin.WorldPosition.xyz, 1.0f);
-
 	output.Emissive = float4(material.EmissiveFactor.rgb, material.EmissiveFactor.a);
 	output.Emissive *= material.EmissiveStrength;
 	if (IsIndexValid(material.EmissiveIndex))

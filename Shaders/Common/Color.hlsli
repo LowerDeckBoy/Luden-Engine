@@ -5,8 +5,7 @@ const static float Gamma = 2.2f;
 
 float GetLuminance(float3 Color)
 {
-	return dot(Color, float3(0.2126729f, 0.7151522f, 0.0721750f));
-	//return dot(Color, float3(0.299f, 0.587f, 0.114f));
+	return max(dot(Color, float3(0.2126729f, 0.7151522f, 0.0721750f)), 0.0001f);
 }
 
 float3 LinearToSRGB(float3 Color)

@@ -8,7 +8,6 @@ namespace Luden
 
 	enum TonemapMode : int32
 	{
-		None,
 		ACES,
 		AgX,
 		AgX_Punchy,
@@ -28,7 +27,7 @@ namespace Luden
 		void Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 Width, uint32 Height);
 
 		float Exposure = 1.45f;
-		int32 Mode = TonemapMode::AgX;
+		int32 Mode = TonemapMode::AgX_Punchy;
 
 		double RenderTime = 0.0;
 

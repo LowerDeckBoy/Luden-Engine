@@ -35,8 +35,8 @@ namespace Luden
 			uint32 NormalIndex;
 			uint32 DepthIndex;
 
-			float Radius	= 0.2f;
-			float Power		= 5.0f;
+			float Radius	= 0.1f;
+			float Power		= 10.0f;
 			float Bias		= 0.1f;
 			uint32 padding	= 0;
 
@@ -44,8 +44,9 @@ namespace Luden
 		} Parameters{};
 
 		D3D12ConstantBuffer* ConstantBuffer;
-
-		bool bBlurSSAO = false;
+		
+		float BlurSharpness = 40.0f;
+		bool bBlurSSAO = true;
 
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;

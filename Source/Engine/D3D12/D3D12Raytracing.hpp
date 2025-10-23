@@ -1,15 +1,16 @@
 #pragma once
 
-#include "D3D12Device.hpp"
-#include "D3D12Resource.hpp"
-//#include "D3D12StateObject.hpp"
-#include "D3D12RootSignature.hpp"
+//#include "D3D12RHI.hpp"
+//#include "D3D12RootSignature.hpp"
 #include "Graphics/Model.hpp"
 
 namespace Luden
 {
 	struct StaticMesh;
 	class Model;
+	class D3D12Device;
+	class D3D12CommandList;
+	class D3D12RootSignature;
 
 	class D3D12AccelerationStructure
 	{
@@ -32,10 +33,10 @@ namespace Luden
 	{
 	public:
 		D3D12BLAS() = default;
-		D3D12BLAS(D3D12Device* pDevice, StaticMesh& Mesh);
+		D3D12BLAS(D3D12Device* pDevice, D3D12CommandList* pCommandList, StaticMesh& Mesh);
 		~D3D12BLAS();
 
-		void Create(D3D12Device* pDevice);
+		void Create(D3D12Device* pDevice, D3D12CommandList* pCommandList);
 
 		void AddGeometryDesc(D3D12Device* pDevice, StaticMesh& Mesh);
 		
@@ -69,7 +70,6 @@ namespace Luden
 	private:
 		D3D12Device* m_ParentDevice = nullptr;
 
-
 	}; // class D3D12TLAS
 
 	// Temporal naming
@@ -80,9 +80,10 @@ namespace Luden
 		D3D12BVH(D3D12RHI* pD3D12RHI);
 		~D3D12BVH();
 
+		// https://github.com/ArtemVetik/Raytracing-DX12/blob/main/RaytracingDemo/RenderEngine/AccelerationStructure.cpp
 		void CreateTLAS();
 
-		void AddBLAS(Model* pModel);
+		void AddBLAS(Model* pModel, D3D12CommandList* pCommandList);
 
 		// Release all resources in this BVH.
 		void Release();
@@ -95,7 +96,7 @@ namespace Luden
 
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;
-
+		void* pData;
 	}; // class D3D12BVH
 
 	struct FRaytracingPipelineSpecs

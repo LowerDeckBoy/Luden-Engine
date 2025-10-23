@@ -38,6 +38,8 @@ namespace Luden
 		void LoadTexture2D(Filepath Path, D3D12Texture* pTexture);
 		void LoadTextureDDS(Filepath Path, D3D12Texture* pTexture);
 
+		void CreateTextureFromData(D3D12Texture* pTexture, TextureDesc Desc);
+
 		D3D12Device* Device;
 
 	private:

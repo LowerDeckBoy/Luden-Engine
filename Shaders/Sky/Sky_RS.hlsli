@@ -7,8 +7,8 @@
 	"DENY_GEOMETRY_SHADER_ROOT_ACCESS |"\
 	"DENY_AMPLIFICATION_SHADER_ROOT_ACCESS |"\
 	"DENY_MESH_SHADER_ROOT_ACCESS),"\
+	"RootConstants(num32BitConstants=16, b0), "\
 	"RootConstants(num32BitConstants=48, b1), "\
-	"RootConstants(num32BitConstants=8, b0), "\
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_WRAP, "\
 		"addressV = TEXTURE_ADDRESS_WRAP, "\

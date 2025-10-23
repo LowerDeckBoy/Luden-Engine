@@ -4,10 +4,16 @@
 #include "Common/Common.hlsli"
 
 //
-// N - surface's normal
-// V - view vector (camera's eye)
-// H - halfway vector
+// N  - surface's normal
+// V  - view vector (camera's eye)
+// H  - halfway vector
 // Kd - (roughness + 1)^2 / 8
+//
+// D - The microfacet distribution.
+// F - The fresnel coefficient.
+// G - The geometric attenuation between microfacets.
+//
+
 
 // Trowbridge-Reitz GGX normal distribution function.
 // Halfway vector (H) aligned microfacets approximation. 

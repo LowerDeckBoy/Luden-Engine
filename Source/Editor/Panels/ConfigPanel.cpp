@@ -176,6 +176,10 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##Post-Process", &config.bEnablePostProcess);
 
+				TableNextRowBegin("Draw Sky");
+				ImGui::TableNextColumn();
+				ImGui::Checkbox("##Draw Sky", &config.bEnableSky);
+
 				ImGui::EndTable();
 			}
 		}
@@ -192,7 +196,7 @@ namespace Luden::Panel
 
 				TableNextRowBegin("Position");
 				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
+				//ImGui::SetNextItemWidth(-1.0f);
 				if (gui::Math::DrawFloat3("Position", m_Renderer->Camera->Position))
 				{
 					m_Renderer->Camera->Update();
@@ -334,7 +338,8 @@ namespace Luden::Panel
 				TableNextRowBegin("Blur Sharpness");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 128.0f, "%.0f");
+				ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 0.5f, "%.2f");
+				//ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 128.0f, "%.0f");
 
 				if (!Config::Get().bEnableSSAO)
 				{
@@ -521,7 +526,7 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[9] = { "None", "ACES", "AgX", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
+				static const char* types[8] = { "ACES", "AgX", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
 				TableNextRowBegin("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);

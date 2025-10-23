@@ -23,7 +23,7 @@ namespace Luden
 
 		BaseColor.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,	RenderTargetClearColor, "GBuffer BaseColor");
 		Normal.Create(pRHI->Device, Width, Height,				DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer NormalTBN");
-		NormalVS.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R8G8B8A8_UNORM,			RenderTargetClearColor, "GBuffer NormalVS");
+		NormalVS.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer NormalVS");
 		MetallicRoughness.Create(pRHI->Device, Width, Height,	DXGI_FORMAT_R8G8B8A8_UNORM,			RenderTargetClearColor, "GBuffer MetallicRoughness");
 		Emissive.Create(pRHI->Device, Width, Height,			DXGI_FORMAT_R16G16B16A16_FLOAT,		RenderTargetClearColor, "GBuffer Emissive");
 

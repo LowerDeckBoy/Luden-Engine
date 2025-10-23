@@ -179,7 +179,8 @@ namespace Luden
 			if (Config::Get().bEnableSky)
 			{
 				auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
-				SkyboxPass->Render(*frame, Camera, directional.Direction);
+				//SkyboxPass->Render(*frame, Camera, directional.Direction);
+				SkyboxPass->RenderSkydome(*frame, Camera, directional.Direction);
 			}
 
 			// Post-Processes
@@ -476,7 +477,7 @@ namespace Luden
 		//GBuffer->IndirectSignature->CreateCommandsBuffer(desc);
 		*/
 
-		//InitializeRaytracingResources();
+		InitializeRaytracingResources();
 
 		m_D3D12RHI->Wait();
 		//m_D3D12RHI->Flush();
@@ -526,11 +527,16 @@ namespace Luden
 
 	void Renderer::InitializeRaytracingResources()
 	{
+
+		if (!m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->IsOpen())
+		{
+			m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->Open();
+		}
 		RaytracingBVH = new D3D12BVH(m_D3D12RHI);
 
 		for (auto& model : ActiveScene->Models)
 		{
-			RaytracingBVH->AddBLAS(model.get());
+			RaytracingBVH->AddBLAS(model.get(), m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList);
 		}
 
 		RaytracingBVH->CreateTLAS();
@@ -544,9 +550,13 @@ namespace Luden
 		RaytracingOutput = new D3D12Texture(m_D3D12RHI->Device, textureDesc);
 		RaytracingOutput->SetDebugName("D3D12 Raytracing Output Texture");
 
-		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl",		false, "RayGen"));
-		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl",		false, "Miss"));
-		ClosestHitShader	= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/ClosestHit.hlsl", false, "ClosestHit"));
+		std::string_view rayGenShaderName		= "RayGen";
+		std::string_view missShaderName			= "Miss";
+		std::string_view closestHitShaderName	= "ClosestHit";
+
+		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl",		false, rayGenShaderName.data()));
+		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl",		false, missShaderName.data()));
+		ClosestHitShader	= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/ClosestHit.hlsl", false, closestHitShaderName.data()));
 
 		RaytracingRS = new D3D12RootSignature();
 		RaytracingRS->AddConstants(54, 0, 0);
@@ -610,8 +620,9 @@ namespace Luden
 			.Projection			= Camera->GetProjection(),
 			.ViewProjection		= DirectX::XMMatrixTranspose(Camera->GetViewProjection()),
 			.CameraPosition		= Camera->Position,
-			//.RaytracingImage	= RaytracingOutput->ShaderResourceHandle.Index,
-			.RaytracingImage	= RaytracingOutput->UnorderedAccessHandle.Index,
+			.padding			= 0,
+			.RaytracingImage	= RaytracingOutput->ShaderResourceHandle.Index,
+			//.RaytracingImage	= RaytracingOutput->UnorderedAccessHandle.Index,
 			.RaytracingTopLevel = RaytracingBVH->TLAS->AccelerationStructure->ShaderResourceView.Index
 		};
 

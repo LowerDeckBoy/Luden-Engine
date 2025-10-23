@@ -7,8 +7,9 @@ namespace Luden::ecs
 {
 	struct ObjectTransforms
 	{
-		DirectX::XMMATRIX WVP;
 		DirectX::XMMATRIX World;
+		DirectX::XMMATRIX WorldView;
+		DirectX::XMMATRIX WorldViewProjection;
 		DirectX::XMMATRIX PreviousWorld;
 	};
 

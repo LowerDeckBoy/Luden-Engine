@@ -48,7 +48,7 @@ namespace Luden
 		D3D12UploadContext::UploadBuffer(hitBuffer, HitTable.GetTotalSize());
 		D3D12UploadContext::Upload();
 
-		void* mapped = nullptr;
+		void* mapped;
 		VERIFY_D3D12_RESULT(m_StorageBuffer->GetHandle()->Map(0, nullptr, &mapped));
 		//std::memcpy(mapped, &m_CpuData, TotalSizeInBytes);
 		//m_StorageBuffer->GetHandle()->Unmap(0, nullptr);
@@ -69,7 +69,7 @@ namespace Luden
 	{
 		BufferDesc desc{};
 		desc.Data			= m_Records.data();
-		desc.Stride			= GetStrideInBytes();
+		desc.Stride			= static_cast<uint32>(GetStrideInBytes());
 		desc.NumElements	= static_cast<uint32>(m_Records.size());
 		desc.BufferUsage	= BufferUsageFlag::Structured;
 		desc.bBindless		= true;

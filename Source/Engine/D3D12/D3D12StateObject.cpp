@@ -1,4 +1,5 @@
 #include "D3D12Device.hpp"
+#include "D3D12RootSignature.hpp"
 #include "D3D12StateObject.hpp"
 #include "D3D12Utility.hpp"
 
@@ -58,6 +59,10 @@ namespace Luden
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateStateObject(m_Desc, IID_PPV_ARGS(&Output.GetHandle())));
 		VERIFY_D3D12_RESULT(Output.GetHandle()->QueryInterface(IID_PPV_ARGS(&Output.m_StateObjectProperties)));
 
+		Output.RayGen		= m_RayGenShader;
+		Output.Miss			= m_MissShader;
+		Output.ClosestHit	= m_ClosestHitShader;
+		Output.PayloadSize  = m_PayloadSize;
 	}
 
 	void D3D12StateObjectBuilder::AddRayGen(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
@@ -68,6 +73,9 @@ namespace Luden
 		rayGenLib->SetDXILLibrary(&bytecode);
 
 		rayGenLib->DefineExports(Exports.data(), static_cast<uint32>(Exports.size()));
+
+		m_RayGenShader = pShader;
+
 	}
 
 	void D3D12StateObjectBuilder::AddMiss(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
@@ -78,6 +86,8 @@ namespace Luden
 		missLib->SetDXILLibrary(&bytecode);
 
 		missLib->DefineExports(Exports.data(), static_cast<uint32>(Exports.size()));
+
+		m_MissShader = pShader;
 	}
 
 	void D3D12StateObjectBuilder::AddClosestHit(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
@@ -86,14 +96,15 @@ namespace Luden
 
 		const auto bytecode = CD3DX12_SHADER_BYTECODE(pShader->Data, pShader->Size);
 		closestHitLib->SetDXILLibrary(&bytecode);
-
 		closestHitLib->DefineExports(Exports.data(), static_cast<uint32>(Exports.size()));
+
+		m_ClosestHitShader = pShader;
 
 	}
 
 	void D3D12StateObjectBuilder::AddHitGroup(FHitGroup HitGroup)
 	{
-		m_HitGroups.push_back(HitGroup);
+		m_HitGroups.push_back(std::move(HitGroup));
 	}
 
 	void D3D12StateObjectBuilder::SetMaxRayRecursion(uint32 MaxRecursion)

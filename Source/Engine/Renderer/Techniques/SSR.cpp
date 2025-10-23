@@ -24,9 +24,11 @@ namespace Luden
 	{
 	}
 
-	void SSR::Render(Frame* CurrentFrame, uint32 SceneImageIndex, uint32 NormalsIndex, uint32 RoughnessIndex, uint32 WorldPositionIndex, uint32 DepthIndex, SceneCamera* pCamera)
+	void SSR::Render(Frame* CurrentFrame, uint32 SceneImageIndex, uint32 NormalsIndex, uint32 RoughnessIndex, SceneCamera* pCamera)
 	{
 		const auto renderBeginTime = Time::GetTimestamp();
+
+		const uint32 dispatchBlock = 16;
 
 		auto commandList = CurrentFrame->ComputeCommandList;
 
@@ -35,21 +37,18 @@ namespace Luden
 
 		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		//Parameters.View					= (pCamera->GetView());
-		Parameters.Projection			= (pCamera->GetProjection());
-		Parameters.InversedView			= DirectX::XMMatrixTranspose(pCamera->GetInversedView());
-		Parameters.InversedProjection   = DirectX::XMMatrixTranspose(pCamera->GetInversedProjection());
+		Parameters.Projection			= DirectX::XMMatrixTranspose(pCamera->GetProjection());
+		Parameters.InversedProjection   = pCamera->GetInversedProjection();
 		Parameters.NormalIndex			= NormalsIndex;
 		Parameters.RoughnessIndex		= RoughnessIndex;
-		Parameters.WorldPositionIndex	= WorldPositionIndex;
-		Parameters.DepthIndex			= DepthIndex;
+		Parameters.DepthIndex			= m_RHI->SceneDepthBuffer->ShaderResourceHandle.Index;
 		Parameters.InputImageIndex		= SceneImageIndex;
 		Parameters.OutputImageIndex		= RenderTarget.ShaderResourceHandle.Index;
 
-		commandList->PushComputeConstants(0, 54, &Parameters);
+		commandList->PushComputeConstants(0, 40, &Parameters);
 
-		const uint32 dispatchX = Math::RoundUp((uint32)RenderTarget.GetDesc().Width  / 8u);
-		const uint32 dispatchY = Math::RoundUp((uint32)RenderTarget.GetDesc().Height / 8u);
+		const uint32 dispatchX = Math::RoundUp((uint32)RenderTarget.GetDesc().Width  / dispatchBlock);
+		const uint32 dispatchY = Math::RoundUp((uint32)RenderTarget.GetDesc().Height / dispatchBlock);
 		commandList->Dispatch(dispatchX, dispatchY, 1);
 
 		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);

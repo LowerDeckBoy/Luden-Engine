@@ -13,7 +13,7 @@ struct SceneData
 	uint RaytracingTopLevel;
 };
 
-ConstantBuffer<SceneData>		Scene			: register(b0, space0);
+ConstantBuffer<SceneData> Scene	: register(b0, space0);
 
 struct HitInfo
 {

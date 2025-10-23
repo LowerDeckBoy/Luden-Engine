@@ -13,17 +13,25 @@ namespace Luden
 		m_PSO.Vertex = pShaderCompiler->CompileVS("../../Shaders/Sky/Skybox.hlsl", true);
 		m_PSO.Pixel  = pShaderCompiler->CompilePS("../../Shaders/Sky/Skybox.hlsl", false);
 
-		VERIFY_D3D12_RESULT(m_PSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &m_PSO.Vertex, PipelineType::Graphics));
-
 		D3D12PipelineStateBuilder builder(pD3D12RHI->Device);
 		builder.SetRootSignature(&m_PSO.RootSignature);
 		builder.SetVertexShader(&m_PSO.Vertex);
 		builder.SetPixelShader(&m_PSO.Pixel);
 		builder.SetCullMode(D3D12_CULL_MODE_NONE);
+		//builder.SetFillMode(D3D12_FILL_MODE_WIREFRAME);
 		builder.EnableDepth(false);
 		//builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
 		builder.SetRenderTargetFormats({ DXGI_FORMAT_R32G32B32A32_FLOAT });
 		VERIFY_D3D12_RESULT(builder.Build(m_PSO.PipelineState));
+
+		m_SkydomePSO.Vertex = pShaderCompiler->CompileVS("../../Shaders/Sky/Skydome.hlsl", true);
+		m_SkydomePSO.Pixel = pShaderCompiler->CompilePS("../../Shaders/Sky/Skydome.hlsl", false);
+		builder.SetVertexShader(&m_SkydomePSO.Vertex);
+		builder.SetPixelShader(&m_SkydomePSO.Pixel);
+		VERIFY_D3D12_RESULT(builder.Build(m_SkydomePSO.PipelineState));
+
+		// Shared RS
+		VERIFY_D3D12_RESULT(m_PSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &m_PSO.Vertex, PipelineType::Graphics));
 
 		DebugRenderTarget.Create(pD3D12RHI->Device, 1920, 1080, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor);
 
@@ -51,10 +59,13 @@ namespace Luden
 		D3D12UploadContext::UploadBuffer(indexBuffer, indexBuffer->GetBufferDesc().Size);
 		D3D12UploadContext::Upload();
 
+		BuildSkydome();
+
 	}
 
 	Skybox::~Skybox()
 	{
+		//m_SkydomePSO.
 	}
 
 	void Skybox::Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition)
@@ -93,5 +104,124 @@ namespace Luden
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 	}
 
+	void Skybox::RenderSkydome(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition)
+	{
+		const auto renderBeginTime = Time::GetTimestamp();
+
+		auto commandList = CurrentFrame.GraphicsCommandList;
+
+		commandList->SetPipelineState(&m_SkydomePSO.PipelineState);
+		commandList->SetRootSignature(&m_PSO.RootSignature);
+
+		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		commandList->SetRenderTargets(DebugRenderTarget.RenderTargetHandle);
+		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
+
+		m_Transform.Translation = pCamera->Position;
+		m_Transform.Rotation = DirectX::XMFLOAT4(90.0f, 0.0f, 0.0f, 1.0f);
+		m_Transform.Scale = DirectX::XMFLOAT3(50.0f, 50.0f, 50.0f);
+		SkyConstants.World = World * DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
+			DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
+			DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
+		SkyConstants.View = pCamera->GetView();
+		SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
+
+		SkyParameters.CameraPosition = pCamera->Position;
+		SkyParameters.SunPosition = SunPosition;
+		SkyParameters.VertexBufferIndx = SkydomeVertexBuffer.ShaderResourceView.Index;
+
+		commandList->PushConstants(0, 16, &SkyParameters);
+		commandList->PushConstants(1, 48, &SkyConstants);
+
+		commandList->SetVertexBuffer(&SkydomeVertexBuffer);
+		commandList->SetIndexBuffer(&SkydomeIndexBuffer);
+		commandList->DrawIndexed(static_cast<uint32>(m_SkydomeIndices.size()), 0, 0);
+		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
+	}
+
+	void Skybox::BuildSkydome()
+	{
+		const uint32 radius = 2;
+		const uint32 latitude = 32;
+		const uint32 longitude = 32;
+
+		const float deltaLatitude = Math::PI / latitude;
+		const float deltaLongitude = 2.0f * Math::PI / longitude;
+		const float lengthInv = 1.0f / radius;
+
+		for (uint32 i = 0; i <= latitude; ++i)
+		{
+			float angle = Math::PI / 2.0f - i * deltaLatitude;
+			float x = radius * std::cosf(angle);
+			float y = x;
+			float z = radius * std::sinf(angle);
+
+			for (uint32 j = 0; j <= longitude; ++j)
+			{
+				float longitudeAngle = j * deltaLongitude;
+
+				SphereVertex vertex{};
+				vertex.Position.x = x * std::cosf(longitudeAngle);
+				vertex.Position.y = y * std::sinf(longitudeAngle);
+				vertex.Position.z = z;
+
+				vertex.TexCoord.x = (float)j / (float)longitude;
+				vertex.TexCoord.y = (float)i / (float)latitude;
+
+				vertex.Normal.x = vertex.Position.x * lengthInv;
+				vertex.Normal.y = vertex.Position.y * lengthInv;
+				vertex.Normal.z = vertex.Position.z * lengthInv;
+
+				m_SkydomeVertices.push_back(vertex);
+			}
+		}
+
+		uint32 k1, k2;
+		for (int i = 0; i < latitude; ++i)
+		{
+			k1 = i * (longitude + 1);
+			k2 = k1 + longitude + 1;
+			
+			for (int j = 0; j < longitude; ++j, ++k1, ++k2)
+			{
+				if (i != 0)
+				{
+					m_SkydomeIndices.push_back(k1);
+					m_SkydomeIndices.push_back(k2);
+					m_SkydomeIndices.push_back(k1 + 1);
+				}
+
+				if (i != (latitude - 1))
+				{
+					m_SkydomeIndices.push_back(k1 + 1);
+					m_SkydomeIndices.push_back(k2);
+					m_SkydomeIndices.push_back(k2 + 1);
+				}
+			}
+		}
+		
+		SkydomeVertexBuffer.Create(m_D3D12RHI->Device, BufferDesc{
+			.BufferUsage = BufferUsageFlag::Vertex,
+			.Data = m_SkydomeVertices.data(),
+			.NumElements = static_cast<uint32>(m_SkydomeVertices.size()),
+			.Stride = sizeof(SphereVertex),
+			.bBindless = true
+			});
+
+		SkydomeIndexBuffer.Create(m_D3D12RHI->Device, BufferDesc{
+			.BufferUsage = BufferUsageFlag::Index,
+			.Data = m_SkydomeIndices.data(),
+			.NumElements = static_cast<uint32>(m_SkydomeIndices.size()),
+			.Stride = sizeof(uint32),
+			.bBindless = true
+			});
+
+		D3D12UploadContext::UploadBuffer(&SkydomeVertexBuffer, SkydomeVertexBuffer.GetBufferDesc().Size);
+		D3D12UploadContext::UploadBuffer(&SkydomeIndexBuffer, SkydomeIndexBuffer.GetBufferDesc().Size);
+		D3D12UploadContext::Upload();
+
+	}
 
 } // namespace Luden

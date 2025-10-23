@@ -14,7 +14,15 @@
     <ProjectCapability Include="SourceItemsFromImports" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="$(MSBuildThisFileDirectory)Base.hlsl">
+    <FxCompile Include="$(MSBuildThisFileDirectory)AO\Blur.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)AO\Blur_RS.hlsli">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)AO\GTAO.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
@@ -23,15 +31,11 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\SSAO.hlsl">
+    <FxCompile Include="$(MSBuildThisFileDirectory)AO\SSAO.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\SSAO_Test.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred_CS.hlsl">
+    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
@@ -65,7 +69,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\ChromaticAberration\ChromaticAberration.hlsl">
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\FilmEffects\FilmEffects.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
@@ -81,11 +85,29 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Volumetric\Fog.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Volumetric\Scattering.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\ClosestHit.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\Miss.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\RayGen.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Sky\Atmosphere.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Sky\Sky.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)Sky\Skybox.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)Sky\Skydome.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="$(MSBuildThisFileDirectory)SSR\SSR.hlsl" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)AO\HBAO.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)AO\HBAO_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)BRDF.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Bindless.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Camera.hlsli" />
@@ -93,7 +115,8 @@
     <None Include="$(MSBuildThisFileDirectory)Common\Meshlet.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Samplers.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Scene.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)Compute\SSAO_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)AO\SSAO_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)DDGI\DDGI_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Deferred\Deferred_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Indirect\Indirect_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
@@ -104,13 +127,19 @@
     <None Include="$(MSBuildThisFileDirectory)PBR.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Bloom_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Common.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)PostProcess\ChromaticAberration\ChromaticAberration_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\DOF\DepthOfField_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\FilmEffects\FilmEffects_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\FilmGrain\FilmGrain_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\FXAA\FXAA_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\Volumetric\Scattering_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Raytracing\Base\Common.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Sky\Atmosphere.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Sky\Atmosphere_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Sky\ProceduralSky.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Sky\Sky_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)SSR\SSR_RS.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)Common\Light.hlsli" />

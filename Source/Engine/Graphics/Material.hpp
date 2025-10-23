@@ -14,8 +14,8 @@ namespace Luden
 
 	struct Material
 	{
-		DirectX::XMFLOAT4 BaseColorFactor{};
-		DirectX::XMFLOAT4 EmissiveFactor{};
+		DirectX::XMFLOAT4 BaseColorFactor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		DirectX::XMFLOAT4 EmissiveFactor  = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 		float AlphaCutoff		= 0.5f;
 		float Metallic			= 0.0f;
@@ -23,7 +23,7 @@ namespace Luden
 		float IndexOfRefraction	= 1.0f;
 		
 		float Anisotropy		= 0.0f;
-		float EmissiveStrength	= 0.0f;
+		float EmissiveStrength	= 1.0f;
 		float Reflectivity		= 0.0f;
 		EAlphaMode AlphaMode	= Opaque;
 

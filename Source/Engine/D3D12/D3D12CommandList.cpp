@@ -311,6 +311,15 @@ namespace Luden
 		m_GraphicsCommandList->IASetIndexBuffer(&view);
 	}
 
+	void D3D12CommandList::SetVertexBuffer(D3D12Buffer* pVerteBuffer)
+	{
+		auto view = D3D12_VERTEX_BUFFER_VIEW(
+			pVerteBuffer->GetHandleRaw()->GetGPUVirtualAddress(),
+			static_cast<uint32>(pVerteBuffer->GetBufferDesc().Size),
+			pVerteBuffer->GetBufferDesc().Stride);
+		m_GraphicsCommandList->IASetVertexBuffers(0, 1, &view);
+	}
+
 	void D3D12CommandList::SetConstantBuffer(uint32 RegisterSlot, D3D12ConstantBuffer* pConstantBuffer)
 	{
 		const auto address = pConstantBuffer->GetBuffer()->GetGPUVirtualAddress();
@@ -329,6 +338,14 @@ namespace Luden
 	{
 		const auto address = pConstantBuffer->GetBuffer()->GetGPUVirtualAddress();
 		m_GraphicsCommandList->SetComputeRootConstantBufferView(RegisterSlot, address);
+	}
+
+	void D3D12CommandList::BuildRaytracingAccelerationStructure(
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC& BuildDesc, 
+		uint32 NumPostBuildDescs, 
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC* PostBuildDescs)
+	{
+		m_GraphicsCommandList->BuildRaytracingAccelerationStructure(&BuildDesc, NumPostBuildDescs, PostBuildDescs);
 	}
 
 } // namespace Luden

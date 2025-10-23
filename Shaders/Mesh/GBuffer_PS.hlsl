@@ -13,8 +13,6 @@ struct GBuffers
 	float4 NormalVS				: SV_TARGET2;
 	float4 MetallicRoughness	: SV_TARGET3;
 	float4 Emissive				: SV_TARGET4;
-	float4 WorldPosition		: SV_TARGET5;
-	float4 Depth				: SV_TARGET6;
 };
 
 static int IsIndexValid(uint Index)
@@ -30,14 +28,9 @@ static int IsIndexValid(uint Index)
 GBuffers PSMain(VertexOut pin) 
 {
 	GBuffers output = (GBuffers) 0;
-	
-	const float z = (pin.Position.z / pin.Position.w);
-	output.Depth = float4(z, z, z, 1.0f);
-	
+
 	StructuredBuffer<FMaterial> materialBuffer = GetBuffer<FMaterial>(Constants.MaterialBuffer);
 	FMaterial material = materialBuffer[Constants.MaterialID];
-	
-	output.WorldPosition = float4(pin.WorldPosition.xyz, z);
 
 	output.Emissive = float4(material.EmissiveFactor.rgb, material.EmissiveFactor.a);
 	output.Emissive *= material.EmissiveStrength;
@@ -58,7 +51,6 @@ GBuffers PSMain(VertexOut pin)
 		
 		if (Constants.bAlphaMask)
 		{
-			//if (baseColor.a < material.AlphaCutoff)
 			if (material.AlphaMode == ALPHA_MODE_MASK && baseColor.a < material.AlphaCutoff)
 			{
 				discard;
@@ -76,12 +68,11 @@ GBuffers PSMain(VertexOut pin)
 	}
 	
 	output.Normal = float4(0.0f, 1.0f, 0.0f, 0.0f);
-	//output.NormalWS = float4(normalize(pin.NormalsWS.rgb * 0.5f + 0.5f), 1.0f);
-	output.NormalVS = float4(normalize(pin.NormalsVS.rgb), 1.0f);
+	output.NormalVS = float4(normalize(pin.NormalsVS.rgb) * 0.5f + 0.5f, 1.0f);
 	if (IsIndexValid(material.NormalIndex))
 	{
 		Texture2D normalTexture = GetTexture(material.NormalIndex);
-		float4 normalMap = normalize(2.0f * normalTexture.Sample(AnisotropicSampler, pin.TexCoord) - 1.0f);
+		float4 normalMap = normalize(normalTexture.Sample(AnisotropicSampler, pin.TexCoord) * 2.0f - 1.0f);
 		float4 n = float4(normalize(mul(pin.TBN, normalMap.xyz)), normalMap.w);
 		output.Normal = float4(n);
 	}

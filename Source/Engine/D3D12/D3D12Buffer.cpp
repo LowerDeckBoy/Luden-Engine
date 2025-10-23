@@ -46,7 +46,7 @@ namespace Luden
 		switch (Desc.BufferUsage)
 		{
 		case BufferUsageFlag::AccelerationStructure:
-			desc.Flags		= D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+			desc.Flags		= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; // D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | 
 			//desc.Flags		= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 			resourceState	= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 			break;
@@ -107,7 +107,7 @@ namespace Luden
 		// Note:
 		// Setting D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT cause issue 
 		// when building Acceleration Structures for Raytracing
-		desc.Alignment = 0;
+		desc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 		desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		desc.SampleDesc = { 1, 0 };
 		desc.Flags = Flags;
@@ -141,20 +141,20 @@ namespace Luden
 		m_Device = pDevice;
 
 		D3D12_CLEAR_VALUE clearValue{};
-		clearValue.Format = Format;
-		clearValue.DepthStencil.Depth = DepthValue;
+		clearValue.Format				= Format;
+		clearValue.DepthStencil.Depth	= DepthValue;
 		clearValue.DepthStencil.Stencil = 0;
 
 		D3D12_RESOURCE_DESC1 desc{};
 		desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		desc.Format             = Format;
 		desc.Width              = static_cast<uint64>(Width);
 		desc.Height             = Height;
-		desc.DepthOrArraySize   = 1;
 		desc.MipLevels          = 1;
-		desc.Format             = Format;
+		desc.DepthOrArraySize   = 1;
 		desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 		desc.SampleDesc         = { 1, 0 };
-		desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;// | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+		desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 		m_Desc = desc;
 

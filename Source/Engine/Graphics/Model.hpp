@@ -14,6 +14,8 @@
 
 namespace Luden
 {
+	class Scene;
+
 	class Model : public Entity
 	{
 	public:
@@ -47,6 +49,7 @@ namespace Luden
 			m_Filepath = Path;
 		}
 
+		Scene* m_ParentScene = nullptr;
 	private:
 		Filepath m_Filepath;
 
@@ -55,6 +58,7 @@ namespace Luden
 
 
 		D3D12Device* m_ParentDevice = nullptr;
+
 
 	};
 } // namespace Luden

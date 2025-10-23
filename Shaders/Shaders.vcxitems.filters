@@ -2,10 +2,8 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <FxCompile Include="$(MSBuildThisFileDirectory)Common\Common.hlsli" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)Base.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_MS.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBuffer_PS.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Indirect\Indirect.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Mesh\GBufferBlend_MS.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\VisibilityBuffer.hlsl" />
@@ -13,18 +11,27 @@
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\Miss.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\RayGen.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Raytracing\Base\ClosestHit.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred_CS.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Deferred\Deferred.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Bloom.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Downsample.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Upsample.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Combine.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)Compute\MipMap2D.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\SSAO.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)Compute\SSAO_Test.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)AO\SSAO.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping.hlsl" />
-    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\ChromaticAberration\ChromaticAberration.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\FXAA\FXAA.hlsl" />
     <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\FilmGrain\FilmGrain.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\FilmEffects\FilmEffects.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Volumetric\Scattering.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)PostProcess\Volumetric\Fog.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Sky\Atmosphere.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)AO\GTAO.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)SSR\SSR.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Sky\Skybox.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)AO\Blur_RS.hlsli" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)AO\Blur.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Sky\Sky.hlsl" />
+    <FxCompile Include="$(MSBuildThisFileDirectory)Sky\Skydome.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)Material.hlsli" />
@@ -39,19 +46,28 @@
     <None Include="$(MSBuildThisFileDirectory)Mesh\GBufferCommon.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Raytracing\Base\Common.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Samplers.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)BRDF.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Bloom_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Bloom\Common.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Bindless.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)Compute\SSAO_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)AO\SSAO_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Scene.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\FXAA\FXAA_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\Tonemapping\Tonemapping_RS.hlsli" />
-    <None Include="$(MSBuildThisFileDirectory)PostProcess\ChromaticAberration\ChromaticAberration_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\DOF\DepthOfField_RS.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)Common\Color.hlsli" />
     <None Include="$(MSBuildThisFileDirectory)PostProcess\FilmGrain\FilmGrain_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\FilmEffects\FilmEffects_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)PostProcess\Volumetric\Scattering_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Sky\Atmosphere_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)DDGI\DDGI_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)SSR\SSR_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Sky\ProceduralSky.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Sky\Sky_RS.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)Sky\Atmosphere.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)BRDF.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)AO\HBAO.hlsli" />
+    <None Include="$(MSBuildThisFileDirectory)AO\HBAO_RS.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="NewFilter1">

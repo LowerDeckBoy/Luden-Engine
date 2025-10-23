@@ -8,10 +8,10 @@
 	"DENY_HULL_SHADER_ROOT_ACCESS |"\
 	"DENY_DOMAIN_SHADER_ROOT_ACCESS |"\
 	"DENY_PIXEL_SHADER_ROOT_ACCESS),"\
-	"RootConstants(num32BitConstants = 56, b0),"\
+	"RootConstants(num32BitConstants = 40, b0),"\
 	"StaticSampler(s0, "\
-		"addressU = TEXTURE_ADDRESS_CLAMP,"\
-		"addressV = TEXTURE_ADDRESS_CLAMP,"\
+		"addressU = TEXTURE_ADDRESS_WRAP,"\
+		"addressV = TEXTURE_ADDRESS_WRAP,"\
 		"filter = FILTER_MIN_MAG_MIP_LINEAR),"\
 	"StaticSampler(s1, "\
 		"addressU = TEXTURE_ADDRESS_CLAMP,"\

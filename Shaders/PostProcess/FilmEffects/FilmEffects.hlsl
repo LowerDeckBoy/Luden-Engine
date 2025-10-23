@@ -38,9 +38,9 @@ SamplerState TexSampler : register(s0);
 [numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-	Texture2D<float4>	sceneTex = GetTexture(Constants.OutputImageIndex);
-	RWTexture2D<float4> sceneTexture = GetRWTexture<float4>(Constants.InputImageIndex);
-	
+	Texture2D<float4>	sceneTex = GetTexture(Constants.InputImageIndex);
+	RWTexture2D<float4> sceneTexture = GetRWTexture<float4>(Constants.OutputImageIndex);
+	// https://github.com/mateeeeeee/Adria/blob/master/Adria/Resources/Shaders/Postprocess/FilmEffects.hlsl
 	const float2 textureSize = GetTextureSize(sceneTexture);
 	const float2 texelSize = GetTexelSize(textureSize);
 	
@@ -55,7 +55,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 		uv = LensDistortion(uv.xy, texelSize);
 	}
 	
-	float3 color = sceneTex.Sample(TexSampler, texCoord).rgb;
+	float3 color = sceneTex.Sample(TexSampler, uv).rgb;
 	sceneTexture[DispatchThreadID.xy] = float4(color, 1.0f);
 	//sceneTexture[texCoord] = float4(scene, 1.0f);
 

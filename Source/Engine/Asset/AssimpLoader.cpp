@@ -331,19 +331,19 @@ namespace Luden
 			const std::string pathToTexture = (std::filesystem::exists("textures/") ? "textures/" : "");
 
 			
-			if (assimpMaterial->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &path) == aiReturn_SUCCESS)
+			if (assimpMaterial->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS || assimpMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &path) == aiReturn_SUCCESS)
 			{
 				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
 				SceneData.TexturesToLoad.push_back({ materialIdx, { texturePath, ETextureType::BaseColor } });
 			}
-
+			
 			if (assimpMaterial->GetTexture(aiTextureType_NORMALS, 0, &path) == aiReturn_SUCCESS)
 			{
 				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
 				SceneData.TexturesToLoad.push_back({ materialIdx, { texturePath, ETextureType::Normal } });
 			}
 
-			if (assimpMaterial->GetTexture(AI_MATKEY_METALLIC_TEXTURE, &path) == aiReturn_SUCCESS)
+			if (assimpMaterial->GetTexture(aiTextureType_METALNESS, 0, &path) == aiReturn_SUCCESS)
 			{
 				Filepath texturePath = std::format("{0}/{1}{2}", pathToParent, pathToTexture, path.C_Str());
 				SceneData.TexturesToLoad.push_back({ materialIdx, { texturePath, ETextureType::MetallicRoughness } });

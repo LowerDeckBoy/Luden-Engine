@@ -19,8 +19,8 @@ Repo does not provide model assets.
 	- Post-Process:
 		- [x] Bloom
 		- [x] FXAA
+		- [x] Screen Space Ambient Occlusion
 		- [ ] Screen Space Reflections - WIP
-		- [ ] Screen Space Ambient Occlusion - WIP
 		- [x] Tonemapping:
 			- [x] ACES
 			- [x] AgX

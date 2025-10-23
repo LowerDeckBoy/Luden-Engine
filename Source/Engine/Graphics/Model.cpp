@@ -1,4 +1,5 @@
 #include "Config.hpp"
+#include "Scene/Scene.hpp"
 #include "D3D12/D3D12UploadContext.hpp"
 #include "Model.hpp"
 #include <Core/Defines.hpp>
@@ -27,11 +28,6 @@ namespace Luden
 		{
 			delete texture;
 		}
-
-		//Entity::RemoveComponent<ecs::TransformComponent>();
-		//Entity::RemoveComponent<ecs::NameComponent>();
-
-		//Entity::Destroy();
 	}
 
 	void Model::CreateResources()
@@ -133,16 +129,16 @@ namespace Luden
 			D3D12UploadContext::UploadBuffer(m_ParentDevice->Buffers.at(mesh.MeshletTrianglesBuffer),	meshletTrianglesRepacked.size() * sizeof(uint32));
 			D3D12UploadContext::UploadBuffer(m_ParentDevice->Buffers.at(mesh.MeshletBoundsBuffer),		mesh.MeshletBounds.size()		* sizeof(mesh.MeshletBounds.at(0)));
 
-			OpaqueMeshes.push_back(std::move(mesh));
-			//if (!Materials.at(mesh.MaterialId).IsTransparent())
-			//{
-			//	OpaqueMeshes.push_back(std::move(mesh));
-			//}
-			//else
-			//{
-			//	OpaqueMeshes.push_back(std::move(mesh));
-			//	//BlendMeshes.push_back(std::move(mesh));
-			//}
+			//OpaqueMeshes.push_back(std::move(mesh));
+			if (!m_ParentScene->Materials.at(mesh.MaterialID).IsTransparent())
+			{
+				OpaqueMeshes.push_back(std::move(mesh));
+			}
+			else
+			{
+				OpaqueMeshes.push_back(std::move(mesh));
+				//BlendMeshes.push_back(std::move(mesh));
+			}
 		}
 
 	}

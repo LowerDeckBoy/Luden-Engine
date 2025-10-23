@@ -42,7 +42,7 @@ namespace Luden
 
 		// TODO:
 		// Clamp frame rate to desired [min;max] range.
-		//bool bAllowSmoothFrameRate = false;
+		bool bAllowSmoothFrameRate = false;
 
 		// If false - switch to vertex shading.
 		bool bMeshShading = true;
@@ -66,11 +66,11 @@ namespace Luden
 
 		bool bHideEditor = false;
 		
-		//bool bEnableAO = false;
-		bool bEnableSSAO = false;
-		//bool bEnableHBAO = false;
+		bool bEnableSSAO = true;
 
-		bool bEnableAtmosphere = true;
+		bool bEnableSky = false;
+		bool bEnableAtmosphere = false;
+
 		bool bEnableSSR = true;
 
 		/* =============== Post - Processing =============== */
@@ -80,7 +80,6 @@ namespace Luden
 		bool bEnableTonemapping = true;
 		bool bEnableFXAA		= true;
 		bool bEnableScattering	= true;
-
 
 		//
 		bool bEnableFilmEffects			= false;

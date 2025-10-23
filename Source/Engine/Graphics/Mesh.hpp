@@ -38,7 +38,7 @@ namespace Luden
 	struct FRaytracingInstanceDesc
 	{
 		DirectX::XMFLOAT3X4 Transform;
-		uint32 InstanceID : 24;
+		uint32 InstanceID: 24;
 		uint32 InstanceMask : 8;
 		uint32 InstanceContributionToHitGroupIndex : 24;
 		uint32 Flags : 8;

@@ -60,9 +60,8 @@ struct Vertex
 struct VertexOut
 {
 	float4		Position		: SV_POSITION;
-	float4		WorldPosition	: WORLD_POSITION;
-	float4		CurrPosition	: CURR_POSITION;
-	float4		PrevPosition	: PREV_POSITION;
+	//float4		CurrPosition	: CURR_POSITION;
+	//float4		PrevPosition	: PREV_POSITION;
 	float2		TexCoord		: TEXCOORD;
 	float3x3	TBN				: TBN;
 	float4		NormalsVS		: NORMAL_VS;
@@ -81,18 +80,17 @@ VertexOut GetVertexAttributes(Vertex InVertex, uint MeshletIndex)
 	
 	float4x4 world = transform.World;
 	vout.Position		= mul(float4(InVertex.Position, 1.0f), transpose(transform.WorldViewProjection));
-	vout.CurrPosition	= mul(float4(InVertex.Position, 1.0f), transpose(transform.WorldViewProjection));
-	vout.PrevPosition   = mul(float4(InVertex.Position, 1.0f), transpose(transform.PreviousWorld));
-	vout.WorldPosition	= mul(float4(InVertex.Position, 1.0f), world);
-
+	//vout.CurrPosition	= mul(float4(InVertex.Position, 1.0f), transpose(transform.WorldViewProjection));
+	//vout.PrevPosition   = mul(float4(InVertex.Position, 1.0f), transpose(transform.PreviousWorld));
+	
 	vout.TexCoord = InVertex.TexCoord;
 
-	float3 N = normalize(mul(InVertex.Normal,	 (float3x3)world));
-	float3 T = normalize(mul(InVertex.Tangent,	 (float3x3)world));
-	float3 B = normalize(mul(InVertex.Bitangent, (float3x3)world));
+	float3 N = mul(InVertex.Normal,		(float3x3)world);
+	float3 T = mul(InVertex.Tangent,	(float3x3)world);
+	float3 B = mul(InVertex.Bitangent,	(float3x3)world);
 	
 	vout.TBN = mul((float3x3)world, transpose(float3x3(T, B, N)));
-	vout.NormalsVS = mul(float4(InVertex.Normal, 0.0f), (transform.WorldView));
+	vout.NormalsVS = mul(float4(InVertex.Normal, 1.0f), transform.WorldView);
 	
 	vout.MeshletIndex = MeshletIndex;
 	

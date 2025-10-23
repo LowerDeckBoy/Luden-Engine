@@ -72,7 +72,8 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 	float3 output = float3(0.0f, 0.0f, 0.0f);
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
-
+	//float3 ambient = float3(0.03f, 0.03f, 0.03f) * baseColor.rgb * float3(1.0f, 1.0f, 1.0f);
+	
 	// Point lights
 	StructuredBuffer<PointLight> PointLights = GetBuffer<PointLight>(Constants.PointLightBufferIndex);
 	for (uint pointLightIdx = 0; pointLightIdx < Constants.NumPointLights; pointLightIdx++)
@@ -96,7 +97,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 	output += Lo;
 	output += emissive;
-
+	
 	outputTexture[DispatchThreadID.xy] = float4(saturate(output.rgb), 1.0f);
 	
 }

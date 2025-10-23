@@ -12,6 +12,7 @@ struct PointLight
 	float		Intensity;
 	float3		Ambient;
 	float		Radius;
+	uint        bIsVisible;
 };
 
 struct SpotLight
@@ -23,10 +24,16 @@ struct SpotLight
 	float		InnerCutoff;
 	float3		Ambient;
 	float		OuterCutoff;
+	uint		bIsVisible;
 };
 
 float3 CalculatePointLight(PointLight Light, float3 BaseColor, float3 N, float3 V, float NdotV, float3 WorldPosition, float Metalness, float Roughness)
 {
+	if (Light.bIsVisible == 0)
+	{
+		return float3(0.0f, 0.0f, 0.0f);
+	}
+
 	const float3 L = normalize(Light.Position - WorldPosition);
 	const float3 H = normalize(V + L);
 		
@@ -60,8 +67,8 @@ float3 CalculateDirectionalLight(float3 Direction, float3 Ambient, float Intensi
 	const float3 H = normalize(V + L);
 		
 	const float NdotL = max(dot(N, L), Epsilon);
-	const float NdotH = max(dot(N, H), Epsilon);
-	const float HdotV = max(dot(H, V), Epsilon);
+	const float NdotH = max(dot(N, H), 0.0f);
+	const float HdotV = max(dot(H, V), 0.0f);
 
 	const float D = DistributionGGX(N, H, Roughness);
 	const float G = GeometrySmith(NdotV, NdotL, Roughness);
@@ -118,5 +125,6 @@ float3 CalculateSpotLight(SpotLight Light, float3 BaseColor, float3 N, float3 V,
 
 	return (diffuse + specular) * radiance * NdotL;
 }
+
 
 #endif // LIGHT_HLSLI

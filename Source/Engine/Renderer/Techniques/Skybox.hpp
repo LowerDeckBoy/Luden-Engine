@@ -15,6 +15,7 @@ namespace Luden
 		~Skybox();
 
 		void Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition);
+		void RenderSkydome(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition);
 
 		struct
 		{
@@ -30,7 +31,7 @@ namespace Luden
 			DirectX::XMFLOAT3 CameraPosition;
 			float padding;
 			DirectX::XMFLOAT3 SunPosition;
-			float padding2;
+			uint32 VertexBufferIndx = 0;
 		} SkyParameters{};
 
 		double RenderTime = 0.0;
@@ -45,6 +46,23 @@ namespace Luden
 		DirectX::XMMATRIX World = DirectX::XMMatrixIdentity();
 
 		ecs::TransformComponent m_Transform{};
+
+		struct SphereVertex
+		{
+			DirectX::XMFLOAT3 Position;
+			DirectX::XMFLOAT2 TexCoord;
+			DirectX::XMFLOAT3 Normal;
+		};
+
+		D3D12Pipeline m_SkydomePSO;
+		std::vector<SphereVertex> m_SkydomeVertices;
+		std::vector<uint32> m_SkydomeIndices;
+
+		D3D12Buffer SkydomeVertexBuffer;
+		D3D12Buffer SkydomeIndexBuffer;
+
+		void BuildSkybox();
+		void BuildSkydome();
 
 	};
 }

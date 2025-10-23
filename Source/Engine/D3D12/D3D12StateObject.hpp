@@ -11,7 +11,6 @@ namespace Luden
 	class D3D12Device;
 	class D3D12RootSignature;
 
-	// Used in Raytracing pipelines.
 	class D3D12StateObject
 	{
 	public:
@@ -30,14 +29,13 @@ namespace Luden
 		D3D12Shader* ClosestHit;
 
 		uint32 MaxRecursion		= 1;
-		uint32 PayloadSize		= 12;
+		uint32 PayloadSize		= 16;
 		uint32 AttributeSize	= D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES;
 
 		Ref<ID3D12StateObject>				m_StateObject;
 		Ref<ID3D12StateObjectProperties>	m_StateObjectProperties;
 	private:
-		//CD3DX12_STATE_OBJECT_DESC			m_StateObjectDesc{};
-
+		
 	};
 
 	struct FHitGroup
@@ -80,6 +78,10 @@ namespace Luden
 		uint32 m_PayloadSize	= sizeof(DirectX::XMFLOAT3);
 		uint32 m_AttributeSize  = sizeof(DirectX::XMFLOAT2);
 		
+		D3D12Shader* m_RayGenShader = nullptr;
+		D3D12Shader* m_MissShader = nullptr;
+		D3D12Shader* m_ClosestHitShader = nullptr;
+
 		std::vector<FHitGroup> m_HitGroups;
 
 	};

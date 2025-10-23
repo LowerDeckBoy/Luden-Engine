@@ -8,14 +8,14 @@
 
 namespace Tonemapping
 {
-	static const uint TypeACESFilm			= 1;
-	static const uint TypeAgX				= 2;
-	static const uint TypeAgXPunchy			= 3;
-	static const uint TypeAgXGolden			= 4;
-	static const uint TypeReinhard			= 5;
-	static const uint TypeGammaCorrection	= 6;
-	static const uint TypeUncharted2		= 7;
-	static const uint TypeHable				= 8;
+	static const uint TypeACESFilm			= 0;
+	static const uint TypeAgX				= 1;
+	static const uint TypeAgXPunchy			= 2;
+	static const uint TypeAgXGolden			= 3;
+	static const uint TypeReinhard			= 4;
+	static const uint TypeGammaCorrection	= 5;
+	static const uint TypeUncharted2		= 6;
+	static const uint TypeHable				= 7;
 
 	float3 TonemapReinhard(float3 Color)
 	{
@@ -184,7 +184,6 @@ namespace Tonemapping
 		
 		switch (Type)
 		{
-			case 0:							return saturate(Color);
 			case TypeACESFilm:				return TonemapACES(output);
 			case TypeAgX:					return TonemapAgX(output);
 			case TypeAgXPunchy:				return TonemapAgXPunchy(output);
@@ -193,7 +192,7 @@ namespace Tonemapping
 			case TypeGammaCorrection:		return TonemapGammaCorrection(output);
 			case TypeUncharted2:			return TonemapUncharted2(output);
 			case TypeHable:					return TonemapHable(output);
-			default:						return saturate(Color);
+			default:						return TonemapACES(output);
 		}
 	}
 	

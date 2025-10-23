@@ -1,10 +1,10 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "AssetImporter.hpp"
 #include "D3D12/D3D12Memory.hpp"
 #include "D3D12/D3D12UploadContext.hpp"
 #include "D3D12/D3D12Utility.hpp"
 #include <DirectXTex.h>
 #include <meshoptimizer/meshoptimizer.h>
-
 
 namespace Luden
 {
@@ -41,7 +41,7 @@ namespace Luden
 		DirectX::ScratchImage scratchImage{};
 		DirectX::TexMetadata metadata{};
 		
-		HRESULT result = DirectX::LoadFromWICFile(Path.wstring().c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, &metadata, scratchImage);
+		HRESULT result = DirectX::LoadFromWICFile(Path.wstring().c_str(), DirectX::WIC_FLAGS_NONE, &metadata, scratchImage);
 		
 		if (FAILED(result))
 		{
@@ -92,32 +92,79 @@ namespace Luden
 	{	
 		DirectX::ScratchImage scratchImage{};
 		DirectX::TexMetadata metadata{};
-		HRESULT result = DirectX::LoadFromDDSFile(Path.c_str(), DirectX::DDS_FLAGS_NONE, &metadata, scratchImage);
+		HRESULT result = DirectX::LoadFromDDSFile(Path.c_str(), DirectX::DDS_FLAGS_ALLOW_LARGE_FILES, &metadata, scratchImage);
 		if (FAILED(result))
 		{
 			char hResultError[512]{};
 			::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, result, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), hResultError, (sizeof(hResultError) / sizeof(char)), nullptr);
 			LOG_WARNING("Failed to load texture: {}", hResultError);
+			throw std::runtime_error("");
 		}
 		
-
-		DirectX::Image decompressed{};
-		VERIFY_D3D12_RESULT(DirectX::Decompress(decompressed, metadata.format, scratchImage));
-
+		DirectX::ScratchImage decompressed{};
+		VERIFY_D3D12_RESULT(DirectX::Decompress(scratchImage.GetImages(), scratchImage.GetImageCount(), metadata, metadata.format, decompressed));
+		
 		TextureDesc desc{};
 		desc.Data			= (void*)scratchImage.GetImages()->pixels;
-		desc.Width			= static_cast<uint32>(metadata.width);
-		desc.Height			= static_cast<uint32>(metadata.height);
+		desc.Width			= static_cast<uint32>(scratchImage.GetImages()->width);
+		desc.Height			= static_cast<uint32>(scratchImage.GetImages()->height);
 		desc.DepthOrArray	= static_cast<uint16>(metadata.depth);
 		desc.NumMips		= static_cast<uint16>(metadata.mipLevels);
-		desc.Format			= metadata.format;
+		desc.Format			= scratchImage.GetImages()->format;
 		//desc.NumMips = 1;
 
 		pTexture->Create(Device, desc);
 
-		pTexture->Subresource.pData = scratchImage.GetImages()->pixels;
-		pTexture->Subresource.RowPitch = scratchImage.GetImages()->rowPitch;
-		pTexture->Subresource.SlicePitch = scratchImage.GetImages()->slicePitch;
+		pTexture->Subresource.pData			= scratchImage.GetImages()->pixels;
+		pTexture->Subresource.RowPitch		= scratchImage.GetImages()->rowPitch;
+		pTexture->Subresource.SlicePitch	= scratchImage.GetImages()->slicePitch;
+
+		const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(pTexture->Subresource.SlicePitch);
+
+		auto heapProperties = D3D::HeapPropertiesUpload();
+
+		D3D12Resource* uploadResource = new D3D12Resource();
+
+		VERIFY_D3D12_RESULT(Device->LogicalDevice->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&uploadBufferDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&uploadResource->GetHandle())));
+
+		uploadResource->SetResourceState(D3D12_RESOURCE_STATE_GENERIC_READ);
+		uploadResource->SetDebugName("D3D12 Upload Texture Resource");
+
+		D3D12UploadContext::UploadTexture(pTexture, uploadResource);
+	}
+
+	void AssetImporter::CreateTextureFromData(D3D12Texture* pTexture, TextureDesc Desc)
+	{
+		pTexture->Subresource.pData			= Desc.Data;
+		pTexture->Subresource.RowPitch		= static_cast<uint64>(Desc.Width) * 12u;
+		pTexture->Subresource.SlicePitch	= static_cast<uint64>(Desc.Width * Desc.Height) * 12u;
+
+		pTexture->Create(Device, Desc);
+
+		const auto uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(pTexture->Subresource.SlicePitch);
+
+		auto heapProperties = D3D::HeapPropertiesUpload();
+
+		D3D12Resource* uploadResource = new D3D12Resource();
+
+		VERIFY_D3D12_RESULT(Device->LogicalDevice->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&uploadBufferDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&uploadResource->GetHandle())));
+
+		uploadResource->SetResourceState(D3D12_RESOURCE_STATE_GENERIC_READ);
+		uploadResource->SetDebugName("D3D12 Upload Texture Resource");
+
+		D3D12UploadContext::UploadTexture(pTexture, uploadResource);
 
 	}
 

@@ -100,8 +100,14 @@ namespace Luden
 		//void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW* pIndexBufferView);
 		void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW IndexBufferView);
 		void SetIndexBuffer(D3D12Buffer* pIndexBuffer);
+		void SetVertexBuffer(D3D12Buffer* pVerteBuffer);
 		void SetConstantBuffer(uint32 RegisterSlot, D3D12ConstantBuffer* pConstantBuffer);
 		void SetComputeConstantBuffer(uint32 RegisterSlot, D3D12ConstantBuffer* pConstantBuffer);
+
+		void BuildRaytracingAccelerationStructure(
+			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC& BuildDesc, 
+			uint32 NumPostBuildDescs = 0, 
+			D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC* PostBuildDescs = nullptr);
 		
 	private:
 		Ref<ID3D12GraphicsCommandList10>	m_GraphicsCommandList;
