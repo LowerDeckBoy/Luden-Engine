@@ -90,20 +90,13 @@ namespace Luden
 		const auto& resourceDesc = pResource->GetHandle()->GetDesc1();
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
-		desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		desc.Format = resourceDesc.Format;
+		desc.Shader4ComponentMapping	= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		desc.Format						= resourceDesc.Format;
+		desc.ViewDimension				= D3D12_SRV_DIMENSION_TEXTURE2D;
+		desc.Texture2D.MipLevels		= NumMips;
+		desc.Texture2D.MostDetailedMip	= 0;
+		desc.Texture2D.PlaneSlice		= 0;
 
-		if (resourceDesc.SampleDesc.Count == 1)
-		{
-			desc.ViewDimension				= D3D12_SRV_DIMENSION_TEXTURE2D;
-			desc.Texture2D.MipLevels		= NumMips;
-			desc.Texture2D.MostDetailedMip	= 0;
-			desc.Texture2D.PlaneSlice		= 0;
-		}
-		else
-		{
-			desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
-		}
 
 		ShaderResourceHeap->Allocate(Descriptor, Count);
 
@@ -123,9 +116,7 @@ namespace Luden
 		srvDesc.Buffer.Flags				= D3D12_BUFFER_SRV_FLAG_NONE;
 
 		ShaderResourceHeap->Allocate(pBuffer->ShaderResourceView);
-
 		LogicalDevice->CreateShaderResourceView(pBuffer->GetHandleRaw(), &srvDesc, pBuffer->ShaderResourceView.CpuHandle);
-
 	}
 
 	void D3D12Device::CreateUnorderedAccessView(D3D12Texture* pTexture)
@@ -138,7 +129,6 @@ namespace Luden
 		uavDesc.Texture2D.MipSlice = 0;
 
 		ShaderResourceHeap->Allocate(pTexture->UnorderedAccessHandle);
-
 		LogicalDevice->CreateUnorderedAccessView(pTexture->GetHandleRaw(), nullptr, &uavDesc, pTexture->UnorderedAccessHandle.CpuHandle);
 	}
 
@@ -147,44 +137,23 @@ namespace Luden
 		const auto& resourceDesc = pResource->GetHandle()->GetDesc1();
 
 		D3D12_RENDER_TARGET_VIEW_DESC desc{};
-		desc.Format = resourceDesc.Format;
-
-		if (resourceDesc.SampleDesc.Count == 1)
-		{
-			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-			desc.Texture2D.MipSlice = 0;
-		}
-		else
-		{
-			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
-			//desc.Texture2DMS.MipSlice = 0;
-		}
-
+		desc.Format				= resourceDesc.Format;
+		desc.ViewDimension		= D3D12_RTV_DIMENSION_TEXTURE2D;
+		desc.Texture2D.MipSlice = 0;
 
 		RenderTargetHeap->Allocate(Descriptor, Count);
-
 		LogicalDevice->CreateRenderTargetView(pResource->GetHandleRaw(), &desc, Descriptor.CpuHandle);
-
 	}
 
 	void D3D12Device::CreateDepthStencilView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, DXGI_FORMAT Format)
 	{
 		D3D12_DEPTH_STENCIL_VIEW_DESC desc{};
-		desc.Format = Format;
-		desc.Flags = D3D12_DSV_FLAG_NONE;
-
-		if (pResource->GetDesc().SampleDesc.Count == 1)
-		{
-			desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-			desc.Texture2D.MipSlice = 0;
-		}
-		else
-		{
-			desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
-		}
+		desc.Format				= Format;
+		desc.Flags				= D3D12_DSV_FLAG_NONE;
+		desc.ViewDimension		= D3D12_DSV_DIMENSION_TEXTURE2D;
+		desc.Texture2D.MipSlice = 0;
 
 		DepthStencilHeap->Allocate(Descriptor);
-
 		LogicalDevice->CreateDepthStencilView(pResource->GetHandleRaw(), &desc, Descriptor.CpuHandle);
 	}
 
@@ -210,6 +179,9 @@ namespace Luden
 			break;
 		case D3D12_MESSAGE_SEVERITY_CORRUPTION:
 			LOG_FATAL("[D3D12] {}", pDescription);
+			break;
+		default:
+			LOG_INFO("[D3D12] {}", pDescription);
 			break;
 		}
 	}

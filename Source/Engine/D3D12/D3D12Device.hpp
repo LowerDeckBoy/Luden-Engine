@@ -3,14 +3,14 @@
 #include "Config.hpp"
 
 #include "D3D12Adapter.hpp"
-#include "D3D12DescriptorHeap.hpp"
 #include "D3D12Buffer.hpp"
-#include "D3D12Texture.hpp"
+#include "D3D12DescriptorHeap.hpp"
 #include "D3D12Raytracing.hpp"
+#include "D3D12Texture.hpp"
 
 namespace Luden
 {
-	class D3D12Device // : public D3D12Adapter
+	class D3D12Device
 	{
 	public:
 		explicit D3D12Device(D3D12Adapter* pParentAdapter);
@@ -22,19 +22,18 @@ namespace Luden
 
 		uint32 NodeMask = 0;
 
-		//Ref<ID3D12Device14> GetDevice();
-
 		void QueryDeviceFeatures();
 		
 		uint32 CreateBuffer(BufferDesc Desc);
 		uint32 CreateConstantBuffer(void* pData, usize Size);
 
-		uint32 CreateBLAS(uint32 VertexBuffer, uint32 IndexBuffer);
-
-		uint32 CreateTexture(TextureDesc Desc);
-
 		std::vector<D3D12Buffer*> Buffers;
 		std::vector<D3D12ConstantBuffer*> ConstantBuffers;
+
+		INLINE D3D12Buffer* GetBuffer(uint32 Index)
+		{
+			return Buffers.at(Index);
+		}
 
 		// Create SRV for Texture usage.
 		void CreateShaderResourceView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 NumMips = 1, uint32 Count = 1);
