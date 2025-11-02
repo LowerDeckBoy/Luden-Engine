@@ -7,7 +7,7 @@
 
 #define DISPATCH_BLOCK 8
 
-const static uint KernelSize = 32;
+const static uint KernelSize = 64;
 
 struct SSAOParameters
 {

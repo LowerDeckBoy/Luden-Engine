@@ -23,7 +23,7 @@ namespace Luden
 
 		D3D12RenderTexture RenderTarget;
 
-		constexpr static uint32 KernelSize = 32;
+		constexpr static uint32 KernelSize = 64;
 
 		struct 
 		{
