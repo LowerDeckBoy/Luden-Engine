@@ -8,6 +8,7 @@ namespace Luden
 	D3D12StateObject::D3D12StateObject()
 		: RayGen(nullptr), Miss(nullptr), ClosestHit(nullptr)
 	{
+		
 	}
 
 	D3D12StateObject::~D3D12StateObject()
@@ -22,7 +23,7 @@ namespace Luden
 
 	D3D12StateObjectBuilder::D3D12StateObjectBuilder()
 	{
-		m_Desc = {};
+		m_Desc = CD3DX12_STATE_OBJECT_DESC(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE);
 	}
 
 	void D3D12StateObjectBuilder::Build(D3D12Device* pDevice, D3D12StateObject& Output)
@@ -33,45 +34,44 @@ namespace Luden
 		auto pipelineConfig = m_Desc.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
 		pipelineConfig->Config(m_MaxRecursion);
 
-		for (const auto& record : m_HitGroups)
+		for (auto& record : m_HitGroups)
 		{
 			auto hitGroup = m_Desc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
 
 			hitGroup->SetHitGroupType(record.Type);
-			hitGroup->SetHitGroupExport(std::wstring(record.Name.begin(), record.Name.end()).c_str());
+			hitGroup->SetHitGroupExport(String::ToWide(record.Name).c_str());
 
 			if (!record.ClosestHitName.empty())
 			{
-				hitGroup->SetClosestHitShaderImport(std::wstring(record.ClosestHitName.begin(), record.ClosestHitName.end()).c_str());
+				hitGroup->SetClosestHitShaderImport(String::ToWide(record.ClosestHitName).c_str());
 			}
 
 			if (!record.AnyHitName.empty())
 			{
-				hitGroup->SetAnyHitShaderImport(std::wstring(record.AnyHitName.begin(), record.AnyHitName.end()).c_str());
+				hitGroup->SetAnyHitShaderImport(String::ToWide(record.AnyHitName).c_str());
 			}
 
 			if (!record.IntersectionName.empty())
 			{
-				hitGroup->SetIntersectionShaderImport(std::wstring(record.IntersectionName.begin(), record.IntersectionName.end()).c_str());
+				hitGroup->SetIntersectionShaderImport(String::ToWide(record.IntersectionName).c_str());
 			}
 		}	
 
+		Output.RayGen = m_RayGenShader;
+		Output.Miss = m_MissShader;
+		Output.ClosestHit = m_ClosestHitShader;
+		Output.PayloadSize = m_PayloadSize;
+
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateStateObject(m_Desc, IID_PPV_ARGS(&Output.GetHandle())));
 		VERIFY_D3D12_RESULT(Output.GetHandle()->QueryInterface(IID_PPV_ARGS(&Output.m_StateObjectProperties)));
-
-		Output.RayGen		= m_RayGenShader;
-		Output.Miss			= m_MissShader;
-		Output.ClosestHit	= m_ClosestHitShader;
-		Output.PayloadSize  = m_PayloadSize;
 	}
 
 	void D3D12StateObjectBuilder::AddRayGen(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
 	{
-		auto rayGenLib = m_Desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-
 		const auto bytecode = CD3DX12_SHADER_BYTECODE(pShader->Data, pShader->Size);
-		rayGenLib->SetDXILLibrary(&bytecode);
 
+		auto rayGenLib = m_Desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
+		rayGenLib->SetDXILLibrary(&bytecode);
 		rayGenLib->DefineExports(Exports.data(), static_cast<uint32>(Exports.size()));
 
 		m_RayGenShader = pShader;
@@ -80,11 +80,10 @@ namespace Luden
 
 	void D3D12StateObjectBuilder::AddMiss(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
 	{
-		auto missLib = m_Desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-
 		const auto bytecode = CD3DX12_SHADER_BYTECODE(pShader->Data, pShader->Size);
-		missLib->SetDXILLibrary(&bytecode);
 
+		auto missLib = m_Desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
+		missLib->SetDXILLibrary(&bytecode);
 		missLib->DefineExports(Exports.data(), static_cast<uint32>(Exports.size()));
 
 		m_MissShader = pShader;
@@ -92,9 +91,9 @@ namespace Luden
 
 	void D3D12StateObjectBuilder::AddClosestHit(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
 	{
-		auto closestHitLib = m_Desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
-
 		const auto bytecode = CD3DX12_SHADER_BYTECODE(pShader->Data, pShader->Size);
+
+		auto closestHitLib = m_Desc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
 		closestHitLib->SetDXILLibrary(&bytecode);
 		closestHitLib->DefineExports(Exports.data(), static_cast<uint32>(Exports.size()));
 
@@ -119,8 +118,7 @@ namespace Luden
 
 	void D3D12StateObjectBuilder::SetStateObjectType(D3D12_STATE_OBJECT_TYPE Type)
 	{
-		m_Desc = CD3DX12_STATE_OBJECT_DESC{ Type };
-		//m_Desc.SetStateObjectType(Type);
+		m_Desc.SetStateObjectType(Type);
 	}
 
 	void D3D12StateObjectBuilder::SetGlobalRootSignature(D3D12RootSignature* pRootSignature)

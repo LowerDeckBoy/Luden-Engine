@@ -30,7 +30,7 @@ namespace Luden
 
 		uint32 MaxRecursion		= 1;
 		uint32 PayloadSize		= 16;
-		uint32 AttributeSize	= D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES;
+		uint32 AttributeSize	= 8; // Defaults to size of barycentrics.
 
 		Ref<ID3D12StateObject>				m_StateObject;
 		Ref<ID3D12StateObjectProperties>	m_StateObjectProperties;

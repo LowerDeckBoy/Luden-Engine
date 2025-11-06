@@ -46,8 +46,7 @@ namespace Luden
 		switch (Desc.BufferUsage)
 		{
 		case BufferUsageFlag::AccelerationStructure:
-			desc.Flags		= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; // D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | 
-			//desc.Flags		= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+			desc.Flags		= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 			resourceState	= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 			break;
 		case BufferUsageFlag::UnorderedAccess:

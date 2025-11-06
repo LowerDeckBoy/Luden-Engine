@@ -34,15 +34,14 @@ namespace Luden
 	public:
 		D3D12BLAS() = default;
 		D3D12BLAS(D3D12Device* pDevice, D3D12CommandList* pCommandList, StaticMesh& Mesh);
+		D3D12BLAS(D3D12RHI* pD3D12RHI, Model* pModel);
 		~D3D12BLAS();
 
 		void Create(D3D12Device* pDevice, D3D12CommandList* pCommandList);
+		void Create(D3D12RHI* pD3D12RHI);
 
 		void AddGeometryDesc(D3D12Device* pDevice, StaticMesh& Mesh);
 		
-		D3D12_RAYTRACING_GEOMETRY_DESC GeometryDesc{};
-		// TODO:
-		// Put model's meshes into single BLAS
 		std::vector<D3D12_RAYTRACING_GEOMETRY_DESC>				GeometryDescs;
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS	Inputs{};
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC		BuildDesc{};
@@ -62,6 +61,7 @@ namespace Luden
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS	Inputs{};
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC		BuildDesc{};
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS		BuildFlags{};
 
 		D3D12Buffer* InstanceBuffer;
 
@@ -80,6 +80,8 @@ namespace Luden
 		D3D12BVH(D3D12RHI* pD3D12RHI);
 		~D3D12BVH();
 
+		void Build(D3D12RHI* pD3D12RHI, Scene* pActiveScene);
+
 		// https://github.com/ArtemVetik/Raytracing-DX12/blob/main/RaytracingDemo/RenderEngine/AccelerationStructure.cpp
 		void CreateTLAS();
 
@@ -92,7 +94,6 @@ namespace Luden
 		
 		std::vector<D3D12BLAS*> BLASes;
 		std::vector<FRaytracingInstanceDesc> Instances;
-
 
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;
@@ -108,16 +109,4 @@ namespace Luden
 		uint32 MaxRecursion = 1;
 	};
 
-	class D3D12RaytracingPipeline
-	{
-	public:
-		D3D12RaytracingPipeline(FRaytracingPipelineSpecs PipelineSpecs);
-
-	private:
-		//D3D12StateObject* m_StateObject;
-		D3D12RootSignature* m_RootSignature;
-
-		FRaytracingPipelineSpecs m_PipelineSpecs{};
-	};
-	
 } // namespace Luden

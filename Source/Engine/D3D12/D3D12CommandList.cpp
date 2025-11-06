@@ -93,6 +93,11 @@ namespace Luden
 		VERIFY_D3D12_RESULT(m_GraphicsCommandList->Reset(m_CommandAllocator.Get(), nullptr));
 	}
 
+	HRESULT D3D12CommandList::ResetAllocator()
+	{
+		return GetAllocator()->Reset();
+	}
+
 	void D3D12CommandList::SetDescriptorHeap(D3D12DescriptorHeap* pDescriptorHeap)
 	{
 		ID3D12DescriptorHeap* heaps[1] = { pDescriptorHeap->GetHandleRaw() };

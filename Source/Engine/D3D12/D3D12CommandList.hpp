@@ -35,8 +35,11 @@ namespace Luden
 		HRESULT Open();
 		HRESULT Close();
 
+		HRESULT ResetAllocator();
+
 		// Reset CommandList and it's Allocator without signaling CommandList as Open.
 		void Flush();
+
 
 		bool IsOpen() const { return bIsOpen; }
 		

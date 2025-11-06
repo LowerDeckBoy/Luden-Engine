@@ -35,6 +35,11 @@ namespace Luden
 			return Buffers.at(Index);
 		}
 
+		INLINE D3D12ConstantBuffer* GetConstantBuffer(uint32 Index)
+		{
+			return ConstantBuffers.at(Index);
+		}
+
 		// Create SRV for Texture usage.
 		void CreateShaderResourceView(D3D12Resource* pResource, D3D12Descriptor& Descriptor, uint32 NumMips = 1, uint32 Count = 1);
 		// Create SRV for Buffer usage.
