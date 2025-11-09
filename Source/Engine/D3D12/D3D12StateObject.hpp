@@ -22,6 +22,11 @@ namespace Luden
 
 		Ref<ID3D12StateObjectProperties>& GetProperties() { return m_StateObjectProperties; }
 
+		void* GetShaderIdentifier(std::wstring ExportName)
+		{
+			return GetProperties()->GetShaderIdentifier(ExportName.data());
+		}
+
 		void Release();
 
 		D3D12Shader* RayGen;
@@ -62,6 +67,7 @@ namespace Luden
 
 		void SetMaxRayRecursion(uint32 MaxRecursion);
 		void SetPayloadSize(uint32 PayloadSize);
+		void SetAttributeSize(uint32 AttributeSize);
 
 		void SetStateObjectType(D3D12_STATE_OBJECT_TYPE Type);
 

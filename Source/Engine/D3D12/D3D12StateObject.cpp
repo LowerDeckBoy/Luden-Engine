@@ -57,10 +57,11 @@ namespace Luden
 			}
 		}	
 
-		Output.RayGen = m_RayGenShader;
-		Output.Miss = m_MissShader;
-		Output.ClosestHit = m_ClosestHitShader;
-		Output.PayloadSize = m_PayloadSize;
+		Output.RayGen		= m_RayGenShader;
+		Output.Miss			= m_MissShader;
+		Output.ClosestHit	= m_ClosestHitShader;
+		Output.PayloadSize	= m_PayloadSize;
+		Output.AttributeSize = m_AttributeSize;
 
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateStateObject(m_Desc, IID_PPV_ARGS(&Output.GetHandle())));
 		VERIFY_D3D12_RESULT(Output.GetHandle()->QueryInterface(IID_PPV_ARGS(&Output.m_StateObjectProperties)));
@@ -114,6 +115,11 @@ namespace Luden
 	void D3D12StateObjectBuilder::SetPayloadSize(uint32 PayloadSize)
 	{
 		m_PayloadSize = PayloadSize;
+	}
+
+	void D3D12StateObjectBuilder::SetAttributeSize(uint32 AttributeSize)
+	{
+		m_AttributeSize = AttributeSize;
 	}
 
 	void D3D12StateObjectBuilder::SetStateObjectType(D3D12_STATE_OBJECT_TYPE Type)

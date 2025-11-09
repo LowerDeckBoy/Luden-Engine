@@ -106,7 +106,7 @@ namespace Luden
 		// Note:
 		// Setting D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT cause issue 
 		// when building Acceleration Structures for Raytracing
-		desc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		desc.Alignment = 0; // D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT
 		desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		desc.SampleDesc = { 1, 0 };
 		desc.Flags = Flags;

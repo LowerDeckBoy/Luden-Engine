@@ -50,8 +50,8 @@ namespace Luden
 
 		void* mapped;
 		VERIFY_D3D12_RESULT(m_StorageBuffer->GetHandle()->Map(0, nullptr, &mapped));
-		//std::memcpy(mapped, &m_CpuData, TotalSizeInBytes);
-		//m_StorageBuffer->GetHandle()->Unmap(0, nullptr);
+		std::memcpy(mapped, &m_CpuData, TotalSizeInBytes);
+		m_StorageBuffer->GetHandle()->Unmap(0, nullptr);
 
 	}
 

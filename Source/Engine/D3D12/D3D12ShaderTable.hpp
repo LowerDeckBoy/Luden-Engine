@@ -102,12 +102,10 @@ namespace Luden
 		uint32 MissOffset = 0;
 		uint32 HitOffset = 0;
 
-
 		D3D12Resource* m_StorageBuffer;
 		D3D12Resource* m_StorageUploadBuffer;
 
 		uint8* m_CpuData;
-
 
 	};
 

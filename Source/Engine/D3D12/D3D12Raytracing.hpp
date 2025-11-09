@@ -49,12 +49,19 @@ namespace Luden
 		
 	}; // class D3D12BLAS
 
+	// https://github.com/ArtemVetik/Raytracing-DX12/blob/main/RaytracingDemo/RenderEngine/AccelerationStructure.cpp
+	// https://github.com/PappaNiels/IntroDXR/blob/main/code/DXR/Renderer/Attributes/TLAS.cpp
+	// https://scispace.com/pdf/introduction-to-directx-raytracing-2ip1x4g9qb.pdf
 	class D3D12TLAS : public D3D12AccelerationStructure
 	{
 	public:
 		D3D12TLAS() = default;
-		D3D12TLAS(D3D12Device* pDevice);
+		D3D12TLAS(D3D12RHI* pD3D12RHI);
 		~D3D12TLAS();
+
+		void Create();
+
+		void AddBLAS(Model* pModel);
 
 		D3D12Descriptor ShaderResourceView;
 		D3D12Descriptor UnorderedAccessView;
@@ -65,10 +72,15 @@ namespace Luden
 
 		D3D12Buffer* InstanceBuffer;
 
+		std::vector<FRaytracingInstanceDesc> Instances;
 		uint64 InstanceDescsSize = 0;
 
+		std::vector<D3D12BLAS*> BLASes;
+
 	private:
-		D3D12Device* m_ParentDevice = nullptr;
+		//D3D12Device* m_ParentDevice = nullptr;
+		void* pData;
+		D3D12RHI* m_RHI = nullptr;
 
 	}; // class D3D12TLAS
 
@@ -82,31 +94,23 @@ namespace Luden
 
 		void Build(D3D12RHI* pD3D12RHI, Scene* pActiveScene);
 
-		// https://github.com/ArtemVetik/Raytracing-DX12/blob/main/RaytracingDemo/RenderEngine/AccelerationStructure.cpp
-		void CreateTLAS();
-
-		void AddBLAS(Model* pModel, D3D12CommandList* pCommandList);
-
 		// Release all resources in this BVH.
 		void Release();
 
 		D3D12TLAS* TLAS;
 		
-		std::vector<D3D12BLAS*> BLASes;
-		std::vector<FRaytracingInstanceDesc> Instances;
-
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;
-		void* pData;
+
 	}; // class D3D12BVH
 
-	struct FRaytracingPipelineSpecs
-	{
-		// How much data will a single ray carry.
-		uint32 PayloadSize;
-		uint32 AttributeSize = 8;
-		// 2 -> Shadows
-		uint32 MaxRecursion = 1;
-	};
+	//struct FRaytracingPipelineSpecs
+	//{
+	//	// How much data will a single ray carry.
+	//	uint32 PayloadSize;
+	//	uint32 AttributeSize = 8;
+	//	// 2 -> Shadows
+	//	uint32 MaxRecursion = 1;
+	//};
 
 } // namespace Luden

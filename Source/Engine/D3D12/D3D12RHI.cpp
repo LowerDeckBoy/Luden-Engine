@@ -84,11 +84,13 @@ namespace Luden
 			if (::WaitForSingleObject(FrameSync.Event, 3'000) == WAIT_TIMEOUT)
 			{
 				LOG_ERROR("GPU Timeout (Wait())");
+				DEBUGBREAK();
 			}
 		}
 		else
 		{
 			LOG_FATAL("[Wait()]: FrameSync.Fence.Fence->SetEventOnCompletion(FrameSync.GetCurrentValue(), FrameSync.Event)");
+			DEBUGBREAK();
 		}
 
 		FrameSync.SignaledValues.at(BackBufferIndex) = FrameSync.GetCurrentValue();
@@ -110,6 +112,7 @@ namespace Luden
 			if (::WaitForSingleObject(fenceEvent, 2'000) == WAIT_TIMEOUT)
 			{
 				LOG_FATAL("GPU Timeout (Flush)");
+				DEBUGBREAK();
 			}
 			::CloseHandle(fenceEvent);
 		}
@@ -139,16 +142,21 @@ namespace Luden
 		//if (FrameSync.SignaledValues.at(BackBufferIndex) <= nextFenceValue)
 		if (FrameSync.GraphicsFence.Fence->GetCompletedValue() < nextFenceValue)
 		{
-			if (SUCCEEDED(FrameSync.GraphicsFence.Fence->SetEventOnCompletion(nextFenceValue, FrameSync.Event)))
+			HRESULT result = FrameSync.GraphicsFence.Fence->SetEventOnCompletion(nextFenceValue, FrameSync.Event);
+			if (SUCCEEDED(result))
 			{
 				if (::WaitForSingleObject(FrameSync.Event, 3'000) == WAIT_TIMEOUT)
 				{
 					LOG_ERROR("GPU Timeout (AdvanceFrame())");
+					VERIFY_D3D12_RESULT(result);
+					DEBUGBREAK();
 				}
 			}
 			else
 			{
 				LOG_FATAL("[AdvanceFrame()]: FrameSync.Fence.Fence->SetEventOnCompletion(FrameSync.GetCurrentValue(), FrameSync.Event)");
+				VERIFY_D3D12_RESULT(result);
+				DEBUGBREAK();
 			}
 		}
 
@@ -195,6 +203,7 @@ namespace Luden
 				if (::WaitForSingleObject(Event, 2'000) != WAIT_OBJECT_0)
 				{
 					LOG_FATAL("GPU Timeout!");
+					DEBUGBREAK();
 				}
 			}
 			else
