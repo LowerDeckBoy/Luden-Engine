@@ -1,14 +1,13 @@
-#ifndef CLOSESTHIT_HLSL
-#define CLOSESTHIT_HLSL
+#ifndef CLOSEST_HIT_HLSL
+#define CLOSEST_HIT_HLSL
 
-#include "Common.hlsli"
+#include "RaytraceCommon.hlsli"
 
 [shader("closesthit")]
-void ClosestHit(inout HitInfo Payload, BuiltInTriangleIntersectionAttributes Attribs)
+void ClosestHit(inout HitInfo Payload : SV_RayPayload, RayAttributes Attribs)
 {
-	float3 color = float3(1.0f, 1.0f, 1.0f);
-	Payload.Color = float4(color, RayTCurrent());
-
+	float3 barycentrics = GetBarycentrics(Attribs);
+	Payload.Color = float4(barycentrics, 1.0f);
 }
 
-#endif // CLOSESTHIT_HLSL
+#endif // CLOSEST_HIT_HLSL

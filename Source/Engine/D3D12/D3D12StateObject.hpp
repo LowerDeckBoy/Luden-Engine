@@ -59,9 +59,9 @@ namespace Luden
 		D3D12StateObjectBuilder();
 		//D3D12StateObjectBuilder(D3D12StateObject& OutStateObject, D3D12Device* pDevice);
 
-		void AddRayGen(D3D12Shader* pShader, std::vector<LPCWSTR> Exports);
-		void AddMiss(D3D12Shader* pShader, std::vector<LPCWSTR> Exports);
-		void AddClosestHit(D3D12Shader* pShader, std::vector<LPCWSTR> Exports);
+		void AddRayGen(D3D12Shader* pShader, const std::vector<LPCWSTR>& Exports);
+		void AddMiss(D3D12Shader* pShader, const std::vector<LPCWSTR>& Exports);
+		void AddClosestHit(D3D12Shader* pShader, const std::vector<LPCWSTR>& Exports);
 
 		void AddHitGroup(FHitGroup HitGroup);
 
@@ -72,7 +72,6 @@ namespace Luden
 		void SetStateObjectType(D3D12_STATE_OBJECT_TYPE Type);
 
 		void SetGlobalRootSignature(D3D12RootSignature* pRootSignature);
-		void SetGlobalRootSignature(D3D12RootSignature* pRootSignature, std::vector<LPCWSTR> Exports);
 
 		void Build(D3D12Device* pDevice, D3D12StateObject& Output);
 

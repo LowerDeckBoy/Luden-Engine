@@ -23,7 +23,7 @@ namespace Luden
 
 	D3D12StateObjectBuilder::D3D12StateObjectBuilder()
 	{
-		m_Desc = CD3DX12_STATE_OBJECT_DESC(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE);
+		//m_Desc = CD3DX12_STATE_OBJECT_DESC(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE);
 	}
 
 	void D3D12StateObjectBuilder::Build(D3D12Device* pDevice, D3D12StateObject& Output)
@@ -67,7 +67,7 @@ namespace Luden
 		VERIFY_D3D12_RESULT(Output.GetHandle()->QueryInterface(IID_PPV_ARGS(&Output.m_StateObjectProperties)));
 	}
 
-	void D3D12StateObjectBuilder::AddRayGen(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
+	void D3D12StateObjectBuilder::AddRayGen(D3D12Shader* pShader, const std::vector<LPCWSTR>& Exports)
 	{
 		const auto bytecode = CD3DX12_SHADER_BYTECODE(pShader->Data, pShader->Size);
 
@@ -79,7 +79,7 @@ namespace Luden
 
 	}
 
-	void D3D12StateObjectBuilder::AddMiss(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
+	void D3D12StateObjectBuilder::AddMiss(D3D12Shader* pShader, const std::vector<LPCWSTR>& Exports)
 	{
 		const auto bytecode = CD3DX12_SHADER_BYTECODE(pShader->Data, pShader->Size);
 
@@ -90,7 +90,7 @@ namespace Luden
 		m_MissShader = pShader;
 	}
 
-	void D3D12StateObjectBuilder::AddClosestHit(D3D12Shader* pShader, std::vector<LPCWSTR> Exports)
+	void D3D12StateObjectBuilder::AddClosestHit(D3D12Shader* pShader, const std::vector<LPCWSTR>& Exports)
 	{
 		const auto bytecode = CD3DX12_SHADER_BYTECODE(pShader->Data, pShader->Size);
 
@@ -131,16 +131,6 @@ namespace Luden
 	{
 		auto globalRootSignature = m_Desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
 		globalRootSignature->SetRootSignature(pRootSignature->GetHandleRaw());
-	}
-
-	void D3D12StateObjectBuilder::SetGlobalRootSignature(D3D12RootSignature* pRootSignature, std::vector<LPCWSTR> Exports)
-	{
-		auto globalRootSignature = m_Desc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-		globalRootSignature->SetRootSignature(pRootSignature->GetHandleRaw());
-
-		auto associations = m_Desc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
-		associations->SetSubobjectToAssociate(*globalRootSignature);
-		associations->AddExports(Exports.data(), static_cast<uint32>(Exports.size()));
 	}
 
 } // namespace Luden

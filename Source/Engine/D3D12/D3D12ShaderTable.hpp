@@ -8,23 +8,29 @@
 
 namespace Luden
 {
+	class D3D12StateObject;
+
 	struct FShaderIdentifier
 	{
 		FShaderIdentifier() = default;
-		FShaderIdentifier(void* pData)
+		FShaderIdentifier(void* /* pData */)
 		{
-			std::memcpy(Data, pData, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+			//std::memcpy(Data, pData, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
 		}
 
-		void* Data;
-		const uint32 SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
+		uint8* Data;
+		uint32 SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 	};
 
 	struct FShaderTableRecord
 	{
 		FShaderTableRecord() = default;
+		FShaderTableRecord(void* pShaderIdentifer)
+			: Identifier(pShaderIdentifer), RootArgs(nullptr)
+		{
+		}
 		FShaderTableRecord(const FShaderIdentifier& Identifier) 
-			: Identifier(Identifier), RootArgs(nullptr)
+			: Identifier(Identifier.Data), RootArgs(nullptr)
 		{}
 		FShaderTableRecord(const FShaderIdentifier& Identifier, void* pRootArgs, usize ArgsSize) 
 			: Identifier(Identifier), RootArgs(pRootArgs), ArgsSize(static_cast<uint32>(ArgsSize))
@@ -47,7 +53,7 @@ namespace Luden
 		D3D12ShaderTable();
 		~D3D12ShaderTable();
 
-		void Create(D3D12Device* pDevice);
+		void Create(D3D12Device* pDevice, std::string_view Name = "");
 
 		void AddRecord(const FShaderTableRecord& Record)
 		{
@@ -88,9 +94,13 @@ namespace Luden
 		D3D12ShaderBindingTable();
 		~D3D12ShaderBindingTable();
 
-		void Create(D3D12Device* pDevice);
+		void Create(D3D12Device* pDevice, D3D12StateObject* pStateObject);
 
-		//void WriteRecords(uint8* pDestination);
+		D3D12Resource* GetStorageBuffer() { return m_StorageBuffer; }
+
+		void AddRayGenRecord(const FShaderIdentifier& ShaderIdentifer);
+		void AddMissRecord(const FShaderIdentifier& ShaderIdentifer);
+		void AddHitGroupRecord(const FShaderIdentifier& ShaderIdentifer);
 
 		D3D12ShaderTable RayGenTable;
 		D3D12ShaderTable MissTable;
@@ -99,13 +109,28 @@ namespace Luden
 		uint64 TotalSizeInBytes = 0;
 
 		uint64 RayGenOffset = 0;
-		uint32 MissOffset = 0;
-		uint32 HitOffset = 0;
+		uint64 MissOffset = 0;
+		uint64 HitOffset = 0;
 
+		void* m_CpuData;
+
+	private:
 		D3D12Resource* m_StorageBuffer;
-		D3D12Resource* m_StorageUploadBuffer;
 
-		uint8* m_CpuData;
+		FShaderTableRecord				m_RayGenRecord;
+		std::vector<FShaderTableRecord>	m_MissRecords;
+		std::vector<FShaderTableRecord>	m_HitRecords;
+
+		// https://github.com/ArtemVetik/Raytracing-DX12/blob/main/RaytracingDemo/RenderEngine/DXRHelpers/nv_helpers_dx12/ShaderBindingTableGenerator.cpp
+		//void GetTotalSize();
+
+		// For now should always be 64 bytes.
+		//void GetMaxShaderEntrySize();
+
+		// Copy each shader entry into SBT buffer.
+		//void CopyShaderData();
+
+		const uint64 m_ShaderIdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 
 	};
 

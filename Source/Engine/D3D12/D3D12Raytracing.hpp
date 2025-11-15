@@ -70,7 +70,8 @@ namespace Luden
 		std::vector<D3D12BLAS*> BLASes;
 
 	private:
-		D3D12_RAYTRACING_INSTANCE_DESC* instanceDescs;
+		D3D12_RAYTRACING_INSTANCE_DESC* instanceDescs{};
+		//std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instanceDescs{};
 		D3D12RHI* m_RHI = nullptr;
 
 	}; // class D3D12TLAS
