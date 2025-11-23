@@ -52,6 +52,7 @@ namespace Luden
 	void D3D12ShaderBindingTable::AddRayGenRecord(const FShaderIdentifier& ShaderIdentifer)
 	{
 		m_RayGenRecord = FShaderTableRecord(ShaderIdentifer);
+		//m_RayGenRecord.Identifier = ShaderIdentifer;
 	}
 
 	void D3D12ShaderBindingTable::AddMissRecord(const FShaderIdentifier& ShaderIdentifer)

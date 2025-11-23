@@ -13,29 +13,26 @@ namespace Luden
 	struct FShaderIdentifier
 	{
 		FShaderIdentifier() = default;
-		FShaderIdentifier(void* /* pData */)
+		FShaderIdentifier(void* pData)
 		{
-			//std::memcpy(Data, pData, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+			Data = pData;
+			//std::memcpy(Data, pData, ShaderIdentifierSizeInBytes);
 		}
 
-		uint8* Data;
-		uint32 SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
+		void* Data;
+		uint32 ShaderIdentifierSizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 	};
 
 	struct FShaderTableRecord
 	{
 		FShaderTableRecord() = default;
-		FShaderTableRecord(void* pShaderIdentifer)
-			: Identifier(pShaderIdentifer), RootArgs(nullptr)
-		{
-		}
 		FShaderTableRecord(const FShaderIdentifier& Identifier) 
 			: Identifier(Identifier.Data), RootArgs(nullptr)
 		{}
-		FShaderTableRecord(const FShaderIdentifier& Identifier, void* pRootArgs, usize ArgsSize) 
+		FShaderTableRecord(FShaderIdentifier Identifier, void* pRootArgs, usize ArgsSize) 
 			: Identifier(Identifier), RootArgs(pRootArgs), ArgsSize(static_cast<uint32>(ArgsSize))
 		{
-			TotalSize = Identifier.SizeInBytes + static_cast<uint32>(ArgsSize);
+			TotalSize = Identifier.ShaderIdentifierSizeInBytes + static_cast<uint32>(ArgsSize);
 		}
 
 		FShaderIdentifier Identifier;
@@ -47,6 +44,7 @@ namespace Luden
 
 	// https://microsoft.github.io/DirectX-Specs/d3d/Raytracing.html#shader-identifier
 	// Table per shader type.
+	// TODO: requires rework.
 	class D3D12ShaderTable
 	{
 	public:

@@ -45,9 +45,6 @@ namespace Luden
 		
 	}; // class D3D12BLAS
 
-	// https://github.com/ArtemVetik/Raytracing-DX12/blob/main/RaytracingDemo/RenderEngine/AccelerationStructure.cpp
-	// https://github.com/PappaNiels/IntroDXR/blob/main/code/DXR/Renderer/Attributes/TLAS.cpp
-	// https://scispace.com/pdf/introduction-to-directx-raytracing-2ip1x4g9qb.pdf
 	class D3D12TLAS : public D3D12AccelerationStructure
 	{
 	public:
@@ -58,6 +55,7 @@ namespace Luden
 		void Create();
 
 		void AddBLAS(Model* pModel);
+		void AddBLASPerMesh(Model* pModel);
 
 		D3D12Descriptor ShaderResourceView;
 		D3D12Descriptor UnorderedAccessView;
@@ -70,9 +68,9 @@ namespace Luden
 		std::vector<D3D12BLAS*> BLASes;
 
 	private:
-		D3D12_RAYTRACING_INSTANCE_DESC* instanceDescs{};
-		//std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instanceDescs{};
-		D3D12RHI* m_RHI = nullptr;
+		D3D12_RAYTRACING_INSTANCE_DESC* m_InstanceDescs{};
+		
+		D3D12RHI* m_D3D12RHI = nullptr;
 
 	}; // class D3D12TLAS
 

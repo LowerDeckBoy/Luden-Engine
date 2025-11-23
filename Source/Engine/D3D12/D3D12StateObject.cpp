@@ -2,6 +2,7 @@
 #include "D3D12RootSignature.hpp"
 #include "D3D12StateObject.hpp"
 #include "D3D12Utility.hpp"
+#include <D3D12AgilitySDK/d3dx12/d3dx12_state_object.h>
 
 namespace Luden
 {
@@ -19,11 +20,6 @@ namespace Luden
 	void D3D12StateObject::Release()
 	{
 
-	}
-
-	D3D12StateObjectBuilder::D3D12StateObjectBuilder()
-	{
-		//m_Desc = CD3DX12_STATE_OBJECT_DESC(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE);
 	}
 
 	void D3D12StateObjectBuilder::Build(D3D12Device* pDevice, D3D12StateObject& Output)
@@ -57,11 +53,11 @@ namespace Luden
 			}
 		}	
 
-		Output.RayGen		= m_RayGenShader;
-		Output.Miss			= m_MissShader;
-		Output.ClosestHit	= m_ClosestHitShader;
-		Output.PayloadSize	= m_PayloadSize;
-		Output.AttributeSize = m_AttributeSize;
+		Output.RayGen			= m_RayGenShader;
+		Output.Miss				= m_MissShader;
+		Output.ClosestHit		= m_ClosestHitShader;
+		Output.PayloadSize		= m_PayloadSize;
+		Output.AttributeSize	= m_AttributeSize;
 
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateStateObject(m_Desc, IID_PPV_ARGS(&Output.GetHandle())));
 		VERIFY_D3D12_RESULT(Output.GetHandle()->QueryInterface(IID_PPV_ARGS(&Output.m_StateObjectProperties)));

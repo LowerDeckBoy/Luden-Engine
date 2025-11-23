@@ -1,9 +1,5 @@
 #pragma once
 
-#include "D3D12Shader.hpp"
-#include <Core/RefPtr.hpp>
-#include <D3D12AgilitySDK/d3d12.h>
-#include <D3D12AgilitySDK/d3dx12/d3dx12_state_object.h>
 #include "D3D12ShaderTable.hpp"
 
 namespace Luden
@@ -11,6 +7,7 @@ namespace Luden
 	class D3D12Device;
 	class D3D12RootSignature;
 
+	// RTPSO
 	class D3D12StateObject
 	{
 	public:
@@ -34,8 +31,8 @@ namespace Luden
 		D3D12Shader* ClosestHit;
 
 		uint32 MaxRecursion		= 1;
-		uint32 PayloadSize		= 16;
-		uint32 AttributeSize	= 8; // Defaults to size of barycentrics.
+		uint32 PayloadSize		= sizeof(DirectX::XMFLOAT4);
+		uint32 AttributeSize	= sizeof(DirectX::XMFLOAT2); // Defaults to size of barycentrics.
 
 		Ref<ID3D12StateObject>				m_StateObject;
 		Ref<ID3D12StateObjectProperties>	m_StateObjectProperties;
@@ -56,8 +53,7 @@ namespace Luden
 	{
 		friend class D3D12StateObject;
 	public:
-		D3D12StateObjectBuilder();
-		//D3D12StateObjectBuilder(D3D12StateObject& OutStateObject, D3D12Device* pDevice);
+		D3D12StateObjectBuilder() = default;
 
 		void AddRayGen(D3D12Shader* pShader, const std::vector<LPCWSTR>& Exports);
 		void AddMiss(D3D12Shader* pShader, const std::vector<LPCWSTR>& Exports);
