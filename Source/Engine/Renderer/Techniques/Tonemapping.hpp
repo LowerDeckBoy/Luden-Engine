@@ -8,6 +8,7 @@ namespace Luden
 
 	enum TonemapMode : int32
 	{
+		ACESSimple,
 		ACES,
 		AgX,
 		AgX_Punchy,

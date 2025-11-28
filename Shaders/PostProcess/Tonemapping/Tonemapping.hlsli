@@ -1,21 +1,20 @@
 #ifndef TONEMAPPING_HLSL
 #define TONEMAPPING_HLSL
 
-// https://github.com/NVIDIA-RTX/RTXGI/blob/main/Samples/Pathtracer/Tonemapping.hlsl
-
 #include "../../Common/Bindless.hlsli"
 #include "../../Common/Color.hlsli"
 
 namespace Tonemapping
 {
-	static const uint TypeACESFilm			= 0;
-	static const uint TypeAgX				= 1;
-	static const uint TypeAgXPunchy			= 2;
-	static const uint TypeAgXGolden			= 3;
-	static const uint TypeReinhard			= 4;
-	static const uint TypeGammaCorrection	= 5;
-	static const uint TypeUncharted2		= 6;
-	static const uint TypeHable				= 7;
+	static const uint TypeACESSimple		= 0;
+	static const uint TypeACESFilm			= 1;
+	static const uint TypeAgX				= 2;
+	static const uint TypeAgXPunchy			= 3;
+	static const uint TypeAgXGolden			= 4;
+	static const uint TypeReinhard			= 5;
+	static const uint TypeGammaCorrection	= 6;
+	static const uint TypeUncharted2		= 7;
+	static const uint TypeHable				= 8;
 
 	float3 TonemapReinhard(float3 Color)
 	{
@@ -44,7 +43,8 @@ namespace Tonemapping
 		return saturate(((Color * (A * Color + C * B) + D * E) / (Color * (A * Color + B) + D * F)) - E / F);
 	}
 
-	float3 TonemapACES(float3 Color)
+	// https://github.com/kcloudy0717/Kaguya/blob/master/Source/Application/Kaguya/Shaders/PostProcess/ACES.hlsli
+	float3 TonemapACESSimple(float3 Color)
 	{
 		const float a = 2.51f;
 		const float b = 0.03f;
@@ -53,6 +53,34 @@ namespace Tonemapping
 		const float e = 0.14f;
 		
 		return saturate((Color * (a * Color + b)) / (Color * (c * Color + d) + e));
+	}
+	
+	float3 TonemapACESFilm(float3 Color)
+	{
+		static const float3x3 ACESInputMat =
+		{
+			{ 0.59719, 0.35458, 0.04823 },
+			{ 0.07600, 0.90834, 0.01566 },
+			{ 0.02840, 0.13383, 0.83777 }
+		};
+
+		// ODT_SAT => XYZ => D60_2_D65 => sRGB
+		static const float3x3 ACESOutputMat =
+		{
+			{ 1.60475, -0.53108, -0.07367 },
+			{ -0.10208, 1.10813, -0.00605 },
+			{ -0.00327, -0.07276, 1.07602 }
+		};
+		
+		Color = mul(ACESInputMat, Color);
+		
+		float3 a = Color * (Color + 0.0245786f) - 0.000090537f;
+		float3 b = Color * (0.983729f * Color + 0.4329510f) + 0.238081f;
+		Color = a / b;
+		
+		Color = mul(ACESOutputMat, Color);
+		
+		return saturate(Color);
 	}
 
 	float3 TonemapHable(float3 Color)
@@ -74,7 +102,7 @@ namespace Tonemapping
 
 		return saturate(Color);
 	}
-				
+		
 	static const float3x3 AgXTransformMatrix = float3x3(
 		0.8424010709504686f,	0.04240107095046854f,	0.04240107095046854f,
 		0.07843650156180276f,	0.8784365015618028f,	0.07843650156180276f,
@@ -138,7 +166,7 @@ namespace Tonemapping
 		Color = pow(Color * slope + offset, power);
 		Color = luma + saturation * (Color - luma);
 		Color = AgxEotf(Color);
-
+		
 		return saturate(Color);
 	}
 	
@@ -184,7 +212,8 @@ namespace Tonemapping
 		
 		switch (Type)
 		{
-			case TypeACESFilm:				return TonemapACES(output);
+			case TypeACESSimple:			return TonemapACESSimple(output);
+			case TypeACESFilm:				return TonemapACESFilm(output);
 			case TypeAgX:					return TonemapAgX(output);
 			case TypeAgXPunchy:				return TonemapAgXPunchy(output);
 			case TypeAgXGolden:				return TonemapAgXGolden(output);
@@ -192,7 +221,7 @@ namespace Tonemapping
 			case TypeGammaCorrection:		return TonemapGammaCorrection(output);
 			case TypeUncharted2:			return TonemapUncharted2(output);
 			case TypeHable:					return TonemapHable(output);
-			default:						return TonemapACES(output);
+			default:						return TonemapACESSimple(output);
 		}
 	}
 	
