@@ -14,12 +14,13 @@ struct SkyConstants
 
 struct SkyParameters
 {
-	float4 SkyColor;
-	float4 SunColor;
-	float3 CameraPosititon;
-	float padding;
+	float3 SkyColor;
+	float SunSize;
+	float3 SunColor;
+	float SunBloom;
 	float3 LightDirection;
 	uint VertexBufferIndex;
+	float3 CameraPosititon;
 };
 
 float2 DirectionToEquirectUV(float3 v)
@@ -37,15 +38,21 @@ struct VS_INPUT
 {
 	float3 Position : POSITION;
 	float2 TexCoord : TEXCOORD;
-	float3 NORMAL	: NORMAL;
+	float3 Normal	: NORMAL;
 };
 
 struct VS_OUTPUT
 {
 	float4 Position : SV_POSITION;
 	float2 TexCoord : TEXCOORD;
-	float3 NORMAL	: NORMAL;
+	float3 Normal	: NORMAL;
+	float3 ViewDirection : VIEW_DIR;
 };
+
+float GetSunPosition(float3 V, float3 V2)
+{
+	return acos(dot(normalize(V), normalize(V2)));
+}
 
 VS_INPUT LoadVertex(uint Location)
 {
@@ -62,27 +69,46 @@ VS_OUTPUT VSMain(uint VertexID : SV_VertexID)
 	
 	VS_INPUT vertex = LoadVertex(VertexID);
 	
-	float3 position = mul(float4(vertex.Position.xyz, 0.0f), Constants.World).xyz;
-	position = mul(float4(position, 0.0f), Constants.View).xyz;
-	//float3 position = mul(float4(vertex.Position.xyz, 1.0f), Constants.View).xyz;
-	//float3 position = mul(float4(vertex.Position.xyz, 1.0f), Constants.View).xyz;
-	output.Position = mul(float4(position, 0.0f), Constants.Projection);
+	float3 position = mul(float4(vertex.Position.xyz, 1.0f), Constants.View).xyz;
+	position = mul(float4(position, 1.0f), Constants.Projection).xyz;
+	output.Position = float4(position, 1.0f);
 	output.Position.z = output.Position.w;
 	
 	output.TexCoord = vertex.TexCoord.xy;
 	
+	//const float2 pos = Vertex
+	float4 rayStart = mul(float4((vertex.Position.xy), -1.0, 1.0f), Constants.World);
+	float4 rayEnd	= mul(float4((vertex.Position.xy), +1.0, 1.0f), Constants.World);
+	
+	rayStart = rayStart / rayStart.w;
+	rayEnd = rayEnd / rayEnd.w;
+	
+	output.ViewDirection = normalize(rayEnd.xyz - rayStart.xyz);
+	output.ViewDirection.y = abs(output.ViewDirection.y);
+	
 	return output;
 }
 
+// https://github.com/podgorskiy/ProceduralSky_bgfx/blob/master/sources/fs_proceduralsky_sky.sc
 float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 {
-	float3 V = normalize(float3(pin.TexCoord * 2.0f - 1.0f, -1.0f));
-	float3 L = -Parameters.LightDirection;
+	//float3 V = normalize(float3(pin.TexCoord * 2.0f - 1.0f, -1.0f));
+	//float3 V = normalize(float3(pin.ViewDirection.xy * 2.0f - 1.0f, 1.0f));
 	
-	float3 procedural = GetProceduralSky(Parameters.SkyColor.rgb, Parameters.SunColor.rgb, V, L);
+	float sunSize	= Parameters.SunSize;
+	float sunBloom	= Parameters.SunBloom;
+	float size2		= sunSize * sunSize;
+	//float3 sunDirection = normalize(Parameters.LightDirection);
+	float3 sunDirection = normalize(float3(0.0f, 1.0f, 0.0f));
+
+	float distance = 2.0f - (1.0f - dot(normalize(pin.ViewDirection), sunDirection));
+	//float distance = 2.0f - (1.0f - dot(V, sunDirection));
+	float sun = exp(-distance / sunBloom / size2) + step(distance, size2);
+	float sun2 = min(sun * sun, 1.0);
+	float3 color = Parameters.SkyColor.rgb + (sun * Parameters.SunColor);
 	
-	return float4(procedural, 1.0f);
-	return float4(Parameters.SkyColor.xyz, 1.0f);
+	return float4(color, 1.0f);
+
 }
 
 #endif // SKYDOME_HLSL
