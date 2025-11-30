@@ -49,7 +49,7 @@ namespace Luden
 			BufferDesc{
 				.BufferUsage = BufferUsageFlag::Index,
 				.Data = indices.data(),
-				.NumElements= 36,
+				.NumElements = 36,
 				.Stride = sizeof(uint32),
 				.Size = 36 * sizeof(uint32),
 			}
@@ -85,10 +85,12 @@ namespace Luden
 		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
 
 		m_Transform.Translation = pCamera->Position;
-		m_Transform.Scale = DirectX::XMFLOAT3(50.0f, 50.0f, 50.0f);
-		SkyConstants.World = World * DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
-			DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
-			DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
+		m_Transform.Scale = DirectX::XMFLOAT3(100.0f, 100.0f, 100.0f);
+		//SkyConstants.World = World * DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
+		//	DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
+		//	DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
+		//SkyConstants.World		= DirectX::XMMatrixTranspose(DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
+		SkyConstants.World		= (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
 		SkyConstants.View		= pCamera->GetView();
 		SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
 
@@ -118,17 +120,18 @@ namespace Luden
 		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
 
 		m_Transform.Translation = pCamera->Position;
-		m_Transform.Rotation = DirectX::XMFLOAT4(90.0f, 0.0f, 0.0f, 1.0f);
+		//m_Transform.Rotation = DirectX::XMFLOAT4(90.0f, 0.0f, 0.0f, 1.0f);
 		m_Transform.Scale = DirectX::XMFLOAT3(50.0f, 50.0f, 50.0f);
 		SkyConstants.World = World * DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
 			DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
 			DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
+		SkyConstants.World = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
 		SkyConstants.View = pCamera->GetView();
 		SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
 
 		SkyParameters.CameraPosition = pCamera->Position;
 		SkyParameters.SunPosition = SunPosition;
-		SkyParameters.VertexBufferIndx = SkydomeVertexBuffer.ShaderResourceView.Index;
+		SkyParameters.VertexBufferIndex = SkydomeVertexBuffer.ShaderResourceView.Index;
 
 		commandList->PushConstants(0, 16, &SkyParameters);
 		commandList->PushConstants(1, 48, &SkyConstants);
@@ -221,6 +224,120 @@ namespace Luden
 		D3D12UploadContext::UploadBuffer(&SkydomeVertexBuffer, SkydomeVertexBuffer.GetBufferDesc().Size);
 		D3D12UploadContext::UploadBuffer(&SkydomeIndexBuffer, SkydomeIndexBuffer.GetBufferDesc().Size);
 		D3D12UploadContext::Upload();
+
+	}
+
+	ProceduralSky::ProceduralSky(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler)
+		: m_D3D12RHI(pD3D12RHI)
+	{
+		
+		m_PSO.Vertex	= pShaderCompiler->CompileVS("../../Shaders/Sky/ProceduralSky.hlsl", true);
+		m_PSO.Pixel		= pShaderCompiler->CompilePS("../../Shaders/Sky/ProceduralSky.hlsl", false);
+
+		D3D12PipelineStateBuilder builder(pD3D12RHI->Device);
+		builder.SetRootSignature(&m_PSO.RootSignature);
+		builder.SetVertexShader(&m_PSO.Vertex);
+		builder.SetPixelShader(&m_PSO.Pixel);
+		builder.SetCullMode(D3D12_CULL_MODE_NONE);
+		//builder.SetFillMode(D3D12_FILL_MODE_WIREFRAME);
+		builder.EnableDepth(false);
+		//builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
+		builder.SetRenderTargetFormats({ DXGI_FORMAT_R32G32B32A32_FLOAT });
+		VERIFY_D3D12_RESULT(builder.Build(m_PSO.PipelineState));
+
+		VERIFY_D3D12_RESULT(m_PSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &m_PSO.Vertex, PipelineType::Graphics));
+
+		DebugRenderTarget.Create(pD3D12RHI->Device, 1920, 1080, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor);
+
+		Initialize();
+	}
+
+	ProceduralSky::~ProceduralSky()
+	{
+
+	}
+
+	void ProceduralSky::Initialize(uint32 VerticalCount, uint32 HorizontalCount)
+	{
+		for (uint32 i = 0; i < VerticalCount; i++)
+		{
+			for (uint32 j = 0; j < HorizontalCount; j++)
+			{
+				SkyVertex v{};
+				v.Position.x = float(j) / (HorizontalCount - 1) * 2.0f - 1.0f;
+				v.Position.y = float(i) / (VerticalCount - 1) * 2.0f - 1.0f;
+				m_Vertices.push_back(v);
+			}
+		}
+
+		m_Indices.reserve(static_cast<usize>((VerticalCount - 1) * (HorizontalCount - 1) * 6));
+
+		for (uint32 i = 0; i < VerticalCount - 1; i++)
+		{
+			for (uint32 j = 0; j < HorizontalCount - 1; j++)
+			{
+
+				m_Indices.push_back((uint32)(j + 0 + HorizontalCount * (i + 0)));
+				m_Indices.push_back((uint32)(j + 1 + HorizontalCount * (i + 0)));
+				m_Indices.push_back((uint32)(j + 0 + HorizontalCount * (i + 1)));
+				
+				m_Indices.push_back((uint32)(j + 1 + HorizontalCount * (i + 0)));
+				m_Indices.push_back((uint32)(j + 1 + HorizontalCount * (i + 1)));
+				m_Indices.push_back((uint32)(j + 0 + HorizontalCount * (i + 1)));
+
+			}
+		}
+	
+		m_VertexBuffer.Create(m_D3D12RHI->Device, BufferDesc{
+				.BufferUsage = BufferUsageFlag::Structured,
+				.Data = m_Vertices.data(),
+				.NumElements = static_cast<uint32>(m_Vertices.size()),
+				.Stride = sizeof(m_Vertices.at(0)),
+				.bBindless = true
+			});
+
+		m_IndexBuffer.Create(m_D3D12RHI->Device, BufferDesc{
+				.BufferUsage = BufferUsageFlag::Index,
+				.Data = m_Indices.data(),
+				.NumElements = static_cast<uint32>(m_Indices.size()),
+				.Stride = sizeof(m_Indices.at(0)),
+				.bBindless = true
+			});
+
+		D3D12UploadContext::UploadBuffer(&m_VertexBuffer, m_VertexBuffer.GetBufferDesc().Size);
+		D3D12UploadContext::UploadBuffer(&m_IndexBuffer, m_IndexBuffer.GetBufferDesc().Size);
+		D3D12UploadContext::Upload();
+
+	}
+
+	void ProceduralSky::Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 /* SunPosition */)
+	{
+		const auto renderBeginTime = Time::GetTimestamp();
+
+		auto commandList = CurrentFrame.GraphicsCommandList;
+
+		commandList->SetPipelineState(&m_PSO.PipelineState);
+		commandList->SetRootSignature(&m_PSO.RootSignature);
+
+		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		commandList->SetRenderTargets(DebugRenderTarget.RenderTargetHandle);
+		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
+
+		SkyConstants.InversedViewProjection = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
+
+		SkyParameters.CameraPosition = pCamera->Position;
+		SkyParameters.SunPosition = this->SunPosition;
+		SkyParameters.VertexBufferIndex = m_VertexBuffer.ShaderResourceView.Index;
+
+		commandList->PushConstants(0, 16, &SkyParameters);
+		commandList->PushConstants(1, 48, &SkyConstants);
+
+		commandList->SetVertexBuffer(&m_VertexBuffer);
+		commandList->SetIndexBuffer(&m_IndexBuffer);
+		commandList->DrawIndexed(static_cast<uint32>(m_Indices.size()), 0, 0);
+		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+
+		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 
 	}
 

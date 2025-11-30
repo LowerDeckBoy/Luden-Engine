@@ -26,17 +26,19 @@ namespace Luden
 
 		struct
 		{
-			DirectX::XMFLOAT4 SkyColor = DirectX::XMFLOAT4(0.0f, 0.2f, 1.0f, 1.0f);
-			DirectX::XMFLOAT4 SunColor = DirectX::XMFLOAT4(1.0f, 0.757f, 0.616f, 1.0f);
-			DirectX::XMFLOAT3 CameraPosition;
-			float padding;
+			DirectX::XMFLOAT3 SkyColor = DirectX::XMFLOAT3(0.0f, 0.2f, 1.0f);
+			float SunSize = 0.03f;
+			DirectX::XMFLOAT3 SunColor = DirectX::XMFLOAT3(1.0f, 0.757f, 0.616f);
+			float SunBloom = 2.f;
 			DirectX::XMFLOAT3 SunPosition;
-			uint32 VertexBufferIndx = 0;
+			uint32 VertexBufferIndex = 0;
+			DirectX::XMFLOAT3 CameraPosition;
 		} SkyParameters{};
 
 		double RenderTime = 0.0;
 
 		D3D12RenderTexture DebugRenderTarget;
+
 	private:
 		D3D12RHI* m_D3D12RHI;
 		D3D12Pipeline m_PSO;
@@ -65,4 +67,55 @@ namespace Luden
 		void BuildSkydome();
 
 	};
-}
+
+	class ProceduralSky
+	{
+	public:
+		ProceduralSky(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler);
+		~ProceduralSky();
+		 
+		void Initialize(uint32 VerticalCount = 32, uint32 HorizontalCount = 32);
+
+		void Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition);	
+
+		struct
+		{
+			DirectX::XMMATRIX InversedViewProjection;
+			DirectX::XMMATRIX View;
+			DirectX::XMMATRIX Projection;
+		} SkyConstants{};
+
+		struct
+		{
+			DirectX::XMFLOAT3 SkyColor = DirectX::XMFLOAT3(0.0f, 0.2f, 1.0f);
+			float SunSize = 0.03f;
+			DirectX::XMFLOAT3 SunColor = DirectX::XMFLOAT3(1.0f, 0.757f, 0.616f);
+			float SunBloom = 2.f;
+			DirectX::XMFLOAT3 SunPosition;
+			uint32 VertexBufferIndex = 0;
+			DirectX::XMFLOAT3 CameraPosition;
+		} SkyParameters{};
+
+		D3D12RenderTexture DebugRenderTarget;
+
+		double RenderTime = 0;
+
+		DirectX::XMFLOAT3 SunPosition = DirectX::XMFLOAT3(0.0f, 1.0f, 6.28f);
+
+	private:
+		D3D12RHI* m_D3D12RHI = nullptr;
+		D3D12Pipeline m_PSO;
+
+		struct SkyVertex
+		{
+			DirectX::XMFLOAT2 Position;
+		};
+
+		std::vector<SkyVertex> m_Vertices;
+		std::vector<uint32> m_Indices;
+
+		D3D12Buffer m_VertexBuffer;
+		D3D12Buffer m_IndexBuffer;
+
+	};
+} // namespace Luden
