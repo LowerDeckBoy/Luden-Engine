@@ -7,23 +7,6 @@ namespace Luden
 {
 	class ShaderCompiler;
 
-	/*
-	struct BloomParameters
-	{
-		// Temp
-		uint32	BaseColor;
-		uint32	LightImage;
-		uint32	SceneImage;
-		float	Threshold	= 1.0f;
-		float	Intensity	= 1.25f;
-		float	Exposure	= 1.0f;
-		// Temp
-		float	Gamma		= 1.0f;
-		// For Down and Up sampling textures.
-		uint32	MipIndex;
-	};
-	*/
-
 	class Bloom : public RenderPass
 	{
 	public:
@@ -51,7 +34,7 @@ namespace Luden
 			uint32	SceneImage;
 			float	Threshold		= 1.0f;
 			float	ThresholdKnee	= 0.5f;
-			float	Intensity		= 1.0f;
+			float	Intensity		= 0.1f;
 			float	Gamma			= 1.0f;
 			// For Down and Up sampling textures.
 			uint32	MipIndex;
