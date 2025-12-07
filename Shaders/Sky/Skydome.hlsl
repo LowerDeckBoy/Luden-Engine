@@ -31,8 +31,8 @@ float2 DirectionToEquirectUV(float3 v)
 	return uv;
 }
 
-ConstantBuffer<SkyParameters> Parameters : register(b0);
-ConstantBuffer<SkyConstants> Constants : register(b1);
+ConstantBuffer<SkyParameters> Parameters	: register(b0);
+ConstantBuffer<SkyConstants>  Constants		: register(b1);
 
 struct VS_INPUT
 {
@@ -47,6 +47,7 @@ struct VS_OUTPUT
 	float2 TexCoord : TEXCOORD;
 	float3 Normal	: NORMAL;
 	float3 ViewDirection : VIEW_DIR;
+	float Height : HEIGHT;
 };
 
 float GetSunPosition(float3 V, float3 V2)
@@ -70,21 +71,26 @@ VS_OUTPUT VSMain(uint VertexID : SV_VertexID)
 	VS_INPUT vertex = LoadVertex(VertexID);
 	
 	float3 position = mul(float4(vertex.Position.xyz, 1.0f), Constants.View).xyz;
-	position = mul(float4(position, 1.0f), Constants.Projection).xyz;
 	output.Position = float4(position, 1.0f);
 	output.Position.z = output.Position.w;
+	output.Height = vertex.Position.y;
+	
+	//float3 position = mul(float4(vertex.Position.xyz, 1.0f), Constants.View).xyz;
+	//position = mul(float4(position, 1.0f), Constants.Projection).xyz;
+	//output.Position = float4(position, 1.0f);
 	
 	output.TexCoord = vertex.TexCoord.xy;
 	
-	//const float2 pos = Vertex
-	float4 rayStart = mul(float4((vertex.Position.xy), -1.0, 1.0f), Constants.World);
-	float4 rayEnd	= mul(float4((vertex.Position.xy), +1.0, 1.0f), Constants.World);
+	float4 rayStart = mul(float4(vertex.Position.xy, -1.0f, 1.0f), Constants.World);
+	float4 rayEnd	= mul(float4(vertex.Position.xy, +1.0f, 1.0f), Constants.World);
+	//float4 rayStart = mul(float4((output.Position.xy), -1.0, 1.0f), Constants.World);
+	//float4 rayEnd	= mul(float4((output.Position.xy), +1.0, 1.0f), Constants.World);
 	
 	rayStart = rayStart / rayStart.w;
 	rayEnd = rayEnd / rayEnd.w;
 	
 	output.ViewDirection = normalize(rayEnd.xyz - rayStart.xyz);
-	output.ViewDirection.y = abs(output.ViewDirection.y);
+	//output.ViewDirection.y = abs(output.ViewDirection.y);
 	
 	return output;
 }
@@ -95,19 +101,26 @@ float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 	//float3 V = normalize(float3(pin.TexCoord * 2.0f - 1.0f, -1.0f));
 	//float3 V = normalize(float3(pin.ViewDirection.xy * 2.0f - 1.0f, 1.0f));
 	
+	float3 horizonColor = float3(253.0f / 256.0f, 94.0f / 256.0f, 83.0f / 256.0f);
+	
 	float sunSize	= Parameters.SunSize;
 	float sunBloom	= Parameters.SunBloom;
 	float size2		= sunSize * sunSize;
-	//float3 sunDirection = normalize(Parameters.LightDirection);
-	float3 sunDirection = normalize(float3(0.0f, 1.0f, 0.0f));
+	float3 sunDirection = normalize(Parameters.LightDirection);
 
 	float distance = 2.0f - (1.0f - dot(normalize(pin.ViewDirection), sunDirection));
-	//float distance = 2.0f - (1.0f - dot(V, sunDirection));
 	float sun = exp(-distance / sunBloom / size2) + step(distance, size2);
 	float sun2 = min(sun * sun, 1.0);
-	float3 color = Parameters.SkyColor.rgb + (sun * Parameters.SunColor);
+	//float3 color = Parameters.SkyColor.rgb + (sun2 * Parameters.SunColor);
 	
-	return float4(color, 1.0f);
+	float3 gLowColor  = float3(253.0 / 256.0, 94.0 / 256.0, 83.0 / 256.0);
+	float3 gHighColor = float3(21.0 / 256.0, 40.0 / 256.0, 82.0 / 256.0);
+	//float3 color = lerp(gLowColor, gHighColor, pin.Height);
+	//float3 color = lerp(gLowColor, Parameters.SkyColor, pin.Height);
+	//float3 color = lerp(horizonColor, Parameters.SkyColor, pin.Position.y);
+	float3 color = lerp(float3(0.0f, 0.0f, 0.0f), float3(1.0f, 1.0f, 1.0f), pin.Height);
+	
+	return float4(color * 0.3, 1.0f);
 
 }
 
