@@ -3,6 +3,9 @@
 
 #include "Common/Common.hlsli"
 
+// https://arxiv.org/abs/2410.18026
+// https://mimosa-pudica.net/improved-oren-nayar.html
+
 //
 // N  - surface's normal
 // V  - view vector (camera's eye)
@@ -13,7 +16,6 @@
 // F - The fresnel coefficient.
 // G - The geometric attenuation between microfacets.
 //
-
 
 // Trowbridge-Reitz GGX normal distribution function.
 // Halfway vector (H) aligned microfacets approximation. 

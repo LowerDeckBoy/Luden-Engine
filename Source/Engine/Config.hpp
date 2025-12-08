@@ -55,8 +55,6 @@ namespace Luden
 		// Whether to enable alpha masking cutoff in pixel shaders.
 		bool bAlphaMask = true;
 
-		// Temporarly
-		//bool bLightPassCompute = true;
 		bool padding;
 		bool bDrawIndirect = false;
 
@@ -68,10 +66,10 @@ namespace Luden
 		
 		bool bEnableSSAO = true;
 
-		bool bEnableSky = false;
+		bool bEnableSky = true;
 		bool bEnableAtmosphere = false;
 
-		bool bEnableSSR = true;
+		bool bEnableSSR = false;
 
 		/* =============== Post - Processing =============== */
 		// Whether to enable PostProcessing or not.

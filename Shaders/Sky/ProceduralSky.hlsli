@@ -4,6 +4,7 @@
 
 // TEMP
 // https://github.com/pkurth/D3D12Renderer/blob/master/shaders/common/procedural_sky.hlsli
+// https://docs.godotengine.org/en/stable/classes/class_proceduralskymaterial.html
 
 
 static float halton(uint index, uint base)
@@ -174,7 +175,7 @@ static float3 GetProceduralSky(float3 SkyColor, float3 SunColor, float3 V, float
 {
 	float LdotV = dot(L, V);
 
-	float3 skyColor = SkyColor;// * max(0.2f, L.y);
+	float3 skyColor = SkyColor * max(0.2f, L.y);
 	float3 sunColor = saturate(lerp(SunColor, float3(1.f, 1.f, 0.8f), L.y));
 	float3 sunHalo =
 		lerp(
@@ -186,7 +187,7 @@ static float3 GetProceduralSky(float3 SkyColor, float3 SunColor, float3 V, float
 
 
 	float3 color = skyColor;
-	color += saturate(2.f * pow(saturate(LdotV), 5000.f)) * (sunColor + 0.4f.xxx) * 300.f;
+	//color += saturate(2.f * pow(saturate(LdotV), 5000.f)) * (sunColor + 0.4f.xxx) * 300.f;
 	//color += pow(sunHalo, 2);
 	color += pow(sunHalo, 1);
 	color += pow(1.f - V.y, 2) * sunColor * 0.5f;

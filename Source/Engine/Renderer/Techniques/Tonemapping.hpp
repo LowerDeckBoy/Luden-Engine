@@ -28,7 +28,7 @@ namespace Luden
 		void Render(Frame& CurrentFrame, uint32 SceneImageIndex, uint32 Width, uint32 Height);
 
 		float Exposure = 1.45f;
-		int32 Mode = TonemapMode::AgX_Punchy;
+		int32 Mode = TonemapMode::ACES;
 
 		double RenderTime = 0.0;
 

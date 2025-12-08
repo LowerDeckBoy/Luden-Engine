@@ -21,34 +21,34 @@ namespace Luden::Panel
 	{
 		// Drawable entites should always have Name component.
 		DrawComponent<ecs::NameComponent>(Target, [&](auto& component) { 
-				gui::DrawNameComponent(component);
+				Gui::DrawNameComponent(component);
 			});
 		
 		if (Target.HasComponent<ecs::TransformComponent>())
 		{
 			DrawComponent<ecs::TransformComponent>(Target, [&](auto& component) { 
-				gui::DrawTransformComponent(component); 
+				Gui::DrawTransformComponent(component); 
 			});
 		}
 
 		if (Target.HasComponent<ecs::PointLightComponent>())
 		{
 			DrawComponent<ecs::PointLightComponent>(Target, [&](auto& component) { 
-				gui::DrawPointLightComponent(component); 
+				Gui::DrawPointLightComponent(component); 
 				});
 		}
 
 		if (Target.HasComponent<ecs::DirectionalLightComponent>())
 		{
 			DrawComponent<ecs::DirectionalLightComponent>(Target, [&](auto& component) {
-				gui::DrawDirectionalLightComponent(component);
+				Gui::DrawDirectionalLightComponent(component);
 				});
 		}
 
 		if (Target.HasComponent<ecs::SpotLightComponent>())
 		{
 			DrawComponent<ecs::SpotLightComponent>(Target, [&](auto& component) {
-				gui::DrawSpotLightComponent(component);
+				Gui::DrawSpotLightComponent(component);
 				});
 		}
 

@@ -4,7 +4,7 @@
 //#include <ImGui/imgui_internal.h>
 #include <string>
 
-namespace Luden::gui
+namespace Luden::Gui
 {
 	inline void OnItemHover(std::string_view TooltipText, bool bStationary = true)
 	{

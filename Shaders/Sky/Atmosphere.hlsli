@@ -1,9 +1,24 @@
 #ifndef ATMOSPHERE_HLSLI
 #define ATMOSPHERE_HLSLI
 
+#include "../Common/Common.hlsli"
+
 // https://github.com/Gaukler/PlainRenderer/blob/master/resources/shaders/sky.inc
+// https://github.com/mateeeeeee/Adria/blob/master/Adria/Resources/Shaders/Atmosphere.hlsli
 
 #define INFINITY 1.0 / 0.0
+
+struct Params
+{
+	float3 PlanetRadius;
+	float PlanetCenter;
+	float AtmosphereHeight;
+	float RayleighHeight;
+	float MieHeight;
+	float4 CoefficientsRayleigh;
+	float4 CoefficientsMie;
+	float4 CoefficientsOzone;
+};
 
 float3 GetSunColor(float3 Color, float3 V)
 {
@@ -28,22 +43,24 @@ float3 GetSphereIntersection(float3 RayStart, float3 RayDirection, float3 Sphere
 	return float2(-b - d, -b + d) / (2.0f * a);
 }
 
-float RayleighHeightFactor(float Height)
+float GetRayleighHeightFactor(float Height)
 {
 	return exp(-Height * (1.0f / 8.0f));
 }
 
-float MieHeightFactor(float Height)
+float GetMieHeightFactor(float Height)
 {
 	return exp(-Height * (1.0f / 1.2f));
 }
 
-float OzoneHeightFactor(float Height)
+float GetOzoneHeightFactor(float Height)
 {
 	return max(0.0f, 1.0f - abs(Height - 25.0f) / 15.0f);
 }
 
-float3 RayleightPhase();
-
+float GetRayleightPhase(float CosThetha)
+{
+	return 3 * (1 + CosThetha * CosThetha) / (16 * PI);
+}
 
 #endif // ATMOSPHERE_HLSLI

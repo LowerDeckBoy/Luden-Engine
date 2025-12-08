@@ -38,6 +38,17 @@ float3 SRGB2RGB(float3 Color)
 	return output;
 }
 
+static const float3x3 REC2020ToLinearSRGB = float3x3(
+		1.6605, -0.1246, -0.0182,
+		-0.5876, 1.1329, -0.1006,
+		-0.0728, -0.0083, 1.1187
+	);
+
+static const float3x3 LinearSRGBToREC2020 = float3x3(
+		0.6274, 0.0691, 0.0164,
+		0.3293, 0.9195, 0.0880,
+		0.0433, 0.0113, 0.8956
+	);
 
 
 #endif // COLOR_HLSLI

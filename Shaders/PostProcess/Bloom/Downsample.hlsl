@@ -8,9 +8,9 @@ float3 Downsample(in Texture2D Texture, float2 UV, float2 TexelSize)
 	const float x = TexelSize.x;
 	const float y = TexelSize.y;
 
-	const float3 a = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x,	UV.y + 2.0f * y)).rgb;
+	const float3 a = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x,		UV.y + 2.0f * y)).rgb;
 	const float3 b = Texture.Sample(TexSampler, float2(UV.x,				UV.y + 2.0f * y)).rgb;
-	const float3 c = Texture.Sample(TexSampler, float2(UV.x + 2.0f * x,	UV.y + 2.0f * y)).rgb;
+	const float3 c = Texture.Sample(TexSampler, float2(UV.x + 2.0f * x,		UV.y + 2.0f * y)).rgb;
 	
 	const float3 d = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x, 	UV.y)).rgb;
 	const float3 e = Texture.Sample(TexSampler, float2(UV.x,				UV.y)).rgb;
@@ -40,7 +40,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	RWTexture2D<float4> output		 	= GetRWTexture<float4>(Constants.MipIndex);
 	
 	const float2 textureSize = GetTextureSize(output);
-
+	
 	if (DispatchThreadID.x >= textureSize.x || DispatchThreadID.y >= textureSize.y)
 	{
 		return;

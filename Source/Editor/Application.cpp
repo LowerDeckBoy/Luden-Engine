@@ -45,8 +45,8 @@ namespace Luden
 
 		MainScene = new Scene(&Importer);
 
-		//SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_sponza.json");
 		SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_test.json");
+		//SceneSerializer::Load(&Importer, MainScene, "../../Assets/Scenes/scene_sponza.json");
 
 		m_Renderer->BuildScene(MainScene);
 		m_Renderer->ActiveScene = MainScene;

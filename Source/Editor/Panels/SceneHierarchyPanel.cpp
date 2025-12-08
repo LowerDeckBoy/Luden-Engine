@@ -58,7 +58,7 @@ namespace Luden::Panel
 					const char* icon = name.bVisibleInScene ? ICON_FA_EYE : ICON_FA_EYE_SLASH;
 
 					ImGui::PushID(name.Name.data());
-					ImGui::PushStyleColor(ImGuiCol_Button, gui::Color::BackgroundDark);
+					ImGui::PushStyleColor(ImGuiCol_Button, Gui::Color::BackgroundDark);
 					if (ImGui::Button(icon))
 					{
 						name.bVisibleInScene = !name.bVisibleInScene;

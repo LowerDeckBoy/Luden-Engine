@@ -12,7 +12,7 @@ namespace Luden
 	class Entity;
 } // namespace Luden
 
-namespace Luden::gui
+namespace Luden::Gui
 {
 	namespace Math
 	{

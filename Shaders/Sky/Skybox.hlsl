@@ -42,12 +42,18 @@ float2 DirectionToEquirectUV(float3 v)
 	return uv;
 }
 
+float2 SampleSphericalMap(float3 v)
+{
+	float2 uv = float2(atan2(v.z, v.x), asin(-v.y));
+	uv *= float2(0.1591f, 0.3183f);
+	uv += 0.5f;
+	return uv;
+}
+
 float GetSunPosition(float3 V, float3 V2)
 {
 	return acos(dot(normalize(V), normalize(V2)));
 }
-
-
 
 ConstantBuffer<SkyParameters> Parameters : register(b0);
 ConstantBuffer<SkyConstants>  Constants : register(b1);
@@ -60,7 +66,6 @@ float3 GetSimpleSkyColor(float3 V, float3 L, float2 UV)
 	float lightMask = smoothstep(-0.1f, 0.1f, L.y);
 	
 	float horizonMask = pow(smoothstep(.40, .52, UV.y), 3);
-	//float horizonMask = pow(smoothstep(DegreesToRadians(.40), DegreesToRadians(.52), UV.y), 3);
 	
 	float horizonActivation = pow(smoothstep(.25, 0, Parameters.LightDirection.y), 3) * smoothstep(-.2, .15, Parameters.LightDirection.y);
 	
@@ -74,6 +79,7 @@ struct VS_OUTPUT
 {
 	float4 Position : SV_POSITION;
 	float3 TexCoord : TEXCOORD;
+	float3 ViewDirection : VIEW_DIR;
 };
 
 [RootSignature(SKY_RS)]
@@ -81,50 +87,77 @@ VS_OUTPUT VSMain(uint VertexID : SV_VertexID)
 {
 	VS_OUTPUT output = (VS_OUTPUT) 0;
 
-	//float4x4 vp = mul(Constants.View, Constants.Projection);
-	float3 position = mul(float4(Vertices[VertexID], 1.0f), transpose(Constants.View)).xyz;
-	//float3 position = mul(float4(Vertices[VertexID], 1.0f), Constants.World).xyz;
-	//position = mul(float4(position, 1.0f), Constants.View).xyz;
-	output.Position = mul(float4(position, 1.0f), Constants.Projection);
-	output.Position.z = output.Position.w;
+	float3 position		= mul(float4(Vertices[VertexID], 1.0f), Constants.View).xyz;
+	output.Position		= mul(float4(position, 1.0f), Constants.Projection);
+	output.Position.z	= output.Position.w;
 	
 	output.TexCoord = Vertices[VertexID];
+
+	//const float2 pos = output.Position.xy;
+	const float2 pos = Vertices[VertexID].xy;
+	float4 rayStart = mul(float4(pos, -1.0, 1.0f), Constants.World);
+	float4 rayEnd	= mul(float4(pos, +1.0, 1.0f), Constants.World);
+	
+	rayStart = rayStart / rayStart.w;
+	rayEnd = rayEnd / rayEnd.w;
+	
+	output.ViewDirection = normalize(rayEnd.xyz - rayStart.xyz);
+	//output.ViewDirection.y = abs(output.ViewDirection.y);
+	
+	//output.ViewDirection
 	
 	return output;
 }
 
 // https://flareonz44.github.io/procedural-skybox-shader
 // https://github.com/shff/opengl_sky
+// https://github.com/podgorskiy/ProceduralSky_bgfx/blob/master/sources/fs_proceduralsky_sky.sc
 float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 {
-	if (-Parameters.LightDirection.y < 0.0f)
-	{
-		discard;
-	}
+	//if (Parameters.LightDirection.y < 0.0f)
+	//{
+	//	discard;
+	//}
+	
+	float sunSize = 0.02f;
+	float sunBloom = 3.0f;
+	float size2 = sunSize * sunSize;
 
-	float3 V = normalize(pin.TexCoord);
-	//float3 V = normalize(float3(pin.TexCoord.xy * 2.0f - 1.0f, -1.0f));
-	//float3 V = normalize(pin.TexCoord.xyz - Parameters.CameraPosititon);
+	float3 UV = pin.TexCoord;
+	float3 V = normalize(pin.TexCoord - Parameters.CameraPosititon);
 	//float2 uv = DirectionToEquirectUV(V);
-	float2 uv = float2(atan2(V.z, V.x) / HalfPI, (asin(V.y) + HalfPI) / PI);
-	//float3 V = normalize(float3(pin.TexCoord.xy * 2.0f - 1.0f, 1.0f));
+	float2 uv = SampleSphericalMap(V);
 	float3 L = Parameters.LightDirection;
 	
-	float3 output = float3(0.0f, 0.0f, 0.0f);
+	//float4 rayStart = mul(float4(pin.Position.xy, -1.0, 1.0f), Constants.World);
+	//float4 rayEnd	= mul(float4(pin.Position.xy, +1.0, 1.0f), Constants.World);
+	//
+	//rayStart = rayStart / rayStart.w;
+	//rayEnd = rayEnd / rayEnd.w;
+	//
+	//float3 viewDirection = normalize(rayEnd.xyz - rayStart.xyz);
+	//viewDirection.y = abs(viewDirection.y);
 	
-	//float ang_sun = GetSunPosition(V, normalize(L));
-	//
-	//
-	//if (ang_sun < .1f)
-	//{
-	//	output = float3(Parameters.SunColor.rgb);
-	//}
-	//else
-	//{
-	//	output = float3(Parameters.SkyColor.rgb);
-	//}
+	float3 output = float3(0.0f, 0.0f, 0.0f);
 
+	float3 sunDirection = normalize(-Parameters.LightDirection);
+	//float distance = 2.0f - (1.0f - dot(normalize(Parameters.CameraPosititon), sunDirection));//-1.0f;
+	//float distance = 2.0f - (1.0f - dot(V, sunDirection)); //-1.0f;
+	float distance = 2.0f - (1.0f - dot(normalize(pin.ViewDirection), sunDirection)); //-1.0f;
+	//float sun = exp(-distance / u_parameters.y / size2) + step(distance, size2);
+	float sun = exp(-distance / sunBloom / size2) + step(distance, size2);
+	//float sun = acos(normalize(dot(Parameters.SkyColor.rgb, V)));
+	float sun2 = min(sun * sun, 1.0);
+	float3 color = Parameters.SkyColor.rgb + sun;
+
+	
+	//float fCos = normalize(dot(Parameters.LightDirection.xyz, UV));
+
+	//GetSunPosition()
+	
+	return float4(color, 1.0f);
 	return float4(GetSimpleSkyColor(V, normalize(L), uv), 1.0f);
+
 
 	return float4(output, 1.0f);
 	//return float4(procedural, 1.0f);

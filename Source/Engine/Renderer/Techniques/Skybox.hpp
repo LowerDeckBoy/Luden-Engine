@@ -19,14 +19,14 @@ namespace Luden
 
 		struct
 		{
-			DirectX::XMMATRIX World;
-			DirectX::XMMATRIX View;
+			DirectX::XMMATRIX InversedViewProjection;
+			DirectX::XMMATRIX WorldViewProjection;
 			DirectX::XMMATRIX Projection;
 		} SkyConstants{};
 
 		struct
 		{
-			DirectX::XMFLOAT3 SkyColor = DirectX::XMFLOAT3(0.0f, 0.2f, 1.0f);
+			DirectX::XMFLOAT3 SkyColor = DirectX::XMFLOAT3(0.4f, 0.45f, 1.0f);
 			float SunSize = 0.03f;
 			DirectX::XMFLOAT3 SunColor = DirectX::XMFLOAT3(1.0f, 0.757f, 0.616f);
 			float SunBloom = 2.f;
@@ -77,6 +77,8 @@ namespace Luden
 		void Initialize(uint32 VerticalCount = 32, uint32 HorizontalCount = 32);
 
 		void Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition);	
+		
+		void Resize(uint32 Width, uint32 Height);
 
 		struct
 		{
@@ -87,10 +89,10 @@ namespace Luden
 
 		struct
 		{
-			DirectX::XMFLOAT3 SkyColor = DirectX::XMFLOAT3(0.0f, 0.2f, 1.0f);
+			DirectX::XMFLOAT3 SkyColor = DirectX::XMFLOAT3(0.4f, 0.45f, 1.0f);
 			float SunSize = 0.03f;
 			DirectX::XMFLOAT3 SunColor = DirectX::XMFLOAT3(1.0f, 0.757f, 0.616f);
-			float SunBloom = 2.f;
+			float SunBloom = 3.0f;
 			DirectX::XMFLOAT3 SunPosition;
 			uint32 VertexBufferIndex = 0;
 			DirectX::XMFLOAT3 CameraPosition;

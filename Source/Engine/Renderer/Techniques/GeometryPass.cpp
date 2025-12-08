@@ -222,13 +222,13 @@ namespace Luden
 			}
 		}
 
-		//commandList->ResourceTransition({
-		//	{ &BaseColor,			D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &Normal,				D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &NormalVS,			D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
-		//	{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
-		//});
+		commandList->ResourceTransition({
+			{ &BaseColor,			D3D12_RESOURCE_STATE_GENERIC_READ },
+			{ &Normal,				D3D12_RESOURCE_STATE_GENERIC_READ },
+			{ &NormalVS,			D3D12_RESOURCE_STATE_GENERIC_READ },
+			{ &MetallicRoughness,	D3D12_RESOURCE_STATE_GENERIC_READ },
+			{ &Emissive,			D3D12_RESOURCE_STATE_GENERIC_READ },
+		});
 
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 

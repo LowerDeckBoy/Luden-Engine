@@ -37,13 +37,6 @@ namespace Luden
 
 	void Scene::Build(D3D12Device* pDevice)
 	{
-		//if (IsEmpty())
-		//{
-		//	LOG_WARNING("Empty scene cannot be built.");
-		//
-		//	return;
-		//}
-		
 		SceneDataBuffer = new D3D12ConstantBuffer(pDevice, &SceneData, sizeof(SceneData));
 
 		for (auto& model : Models)

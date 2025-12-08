@@ -41,6 +41,7 @@ namespace Luden::Panel
 		void DrawScatteringConfig();
 		void DrawAtmosphereConfig();
 		void DrawSkyConfig();
+		void DrawProceduralSkyConfig();
 
 		void DrawSpaceScreenReflectionsConfig();
 

@@ -41,4 +41,9 @@ float3 GetBarycentrics(in BuiltInTriangleIntersectionAttributes Attributes)
 		Attributes.barycentrics.y);
 }
 
+float3 GetHitWorldPosition()
+{
+	return WorldRayOrigin() + RayTCurrent() * WorldRayDirection();
+}
+
 #endif // RAYTRACING_COMMON_HLSL

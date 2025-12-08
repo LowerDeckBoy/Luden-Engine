@@ -118,10 +118,7 @@ namespace Luden
 			VERIFY_D3D12_RESULT(m_ParentDevice->LogicalDevice->GetDeviceRemovedReason());
 			return;
 		}
-		//else
-		//{
-		//	VERIFY_D3D12_RESULT(present);
-		//}
+
 		VERIFY_D3D12_RESULT(present);
 	}
 

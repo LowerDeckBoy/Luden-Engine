@@ -30,15 +30,16 @@ namespace Luden
 
 		NoiseTexture = new D3D12Texture();
 
-		GBuffer			= new GeometryPass(pD3D12RHI, m_ShaderCompiler, width, height);
-		LightingPass	= new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, width, height);
+		GBuffer				= new GeometryPass(pD3D12RHI, m_ShaderCompiler, width, height);
+		LightingPass		= new LightPass(pD3D12RHI, m_ShaderCompiler, GBuffer, width, height);
 
-		BloomPass		= new Bloom(pD3D12RHI, m_ShaderCompiler, width, height);
-		FXAAPass		= new FXAA(pD3D12RHI, m_ShaderCompiler, width, height);
-		TonemappingPass = new Tonemapping(pD3D12RHI, m_ShaderCompiler);
-		SSAOPass		= new SSAO(pD3D12RHI, m_ShaderCompiler, width, height);
-		SSRPass			= new SSR(pD3D12RHI, m_ShaderCompiler, width, height);
-		SkyboxPass		= new Skybox(pD3D12RHI, m_ShaderCompiler);
+		BloomPass			= new Bloom(pD3D12RHI, m_ShaderCompiler, width, height);
+		FXAAPass			= new FXAA(pD3D12RHI, m_ShaderCompiler, width, height);
+		TonemappingPass		= new Tonemapping(pD3D12RHI, m_ShaderCompiler);
+		SSAOPass			= new SSAO(pD3D12RHI, m_ShaderCompiler, width, height);
+		SSRPass				= new SSR(pD3D12RHI, m_ShaderCompiler, width, height);
+		SkyboxPass			= new Skybox(pD3D12RHI, m_ShaderCompiler);
+		ProceduralSkyPass	= new ProceduralSky(pD3D12RHI, m_ShaderCompiler);
 
 	}
 
@@ -60,6 +61,7 @@ namespace Luden
 
 		delete NoiseTexture;
 
+		delete ProceduralSkyPass;
 		delete SkyboxPass;
 		delete SSRPass;
 		delete FXAAPass;
@@ -77,14 +79,15 @@ namespace Luden
 	void Renderer::BeginFrame()
 	{
 		auto* frame = &m_D3D12RHI->Frames.at(BackBufferIndex);
+		auto* commandList = frame->GraphicsCommandList;
 
-		if (!frame->GraphicsCommandList->IsOpen())
+		if (!commandList->IsOpen())
 		{
-			frame->GraphicsCommandList->Open();
+			commandList->Open();
 		}
 
-		frame->GraphicsCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
-		frame->GraphicsCommandList->SetViewport(&m_D3D12RHI->SwapChain->GetSwapChainViewport());
+		commandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
+		commandList->SetViewport(&m_D3D12RHI->SwapChain->GetSwapChainViewport());
 
 	}
 
@@ -95,7 +98,14 @@ namespace Luden
 
 		frame->GraphicsCommandList->ResourceTransition(&backbuffer, D3D12_RESOURCE_STATE_PRESENT);
 
-		m_D3D12RHI->GraphicsQueue->Execute({ frame->GraphicsCommandList, frame->ComputeCommandList });
+		if (!Config::Get().bRaytracing)
+		{
+			m_D3D12RHI->GraphicsQueue->Execute({ frame->GraphicsCommandList, frame->ComputeCommandList });
+		}
+		else
+		{
+			m_D3D12RHI->GraphicsQueue->Execute({ frame->GraphicsCommandList });
+		}
 
 	}
 
@@ -151,7 +161,7 @@ namespace Luden
 				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 				commandList->ClearDepthStencilView(depthStencilView);
 				GBuffer->Render(ActiveScene, Camera, *frame);
-				GBuffer->RenderTransparent(ActiveScene, Camera, *frame);
+				//GBuffer->RenderTransparent(ActiveScene, Camera, *frame);
 				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
 			}
 			else
@@ -173,16 +183,17 @@ namespace Luden
 				SSAOPass->Render(*frame, GBuffer, NoiseTexture->ShaderResourceHandle.Index, Camera);
 			}
 
-			// Light Pass
-			LightingPass->Render(ActiveScene, *frame, Camera, SSAOPass->RenderTarget.ShaderResourceHandle.Index);
-			
 			if (Config::Get().bEnableSky)
 			{
 				auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
 				//SkyboxPass->Render(*frame, Camera, directional.Direction);
 				SkyboxPass->RenderSkydome(*frame, Camera, directional.Direction);
+				//ProceduralSkyPass->Render(*frame, Camera, directional.Direction);
 			}
 
+			// Light Pass
+			LightingPass->Render(ActiveScene, *frame, Camera, SSAOPass->RenderTarget.ShaderResourceHandle.Index);
+			
 			// Post-Processes
 			if (Config::Get().bEnablePostProcess)
 			{
@@ -226,14 +237,13 @@ namespace Luden
 		}
 		else
 		{
-			if (!commandList->IsOpen())
-			{
-				commandList->Open();
-			}
+			const auto raytraceBeginTime = Time::GetTimestamp();
 
-			commandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
+			Raytrace(*frame);
 
-			DispatchRayTracing(*frame);
+			//DispatchRayTracing(*frame);
+
+			RaytraceRenderTime = Time::GetDurationInMiliseconds(raytraceBeginTime);
 
 			commandList->ResourceTransition({
 				{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_COPY_DEST },
@@ -286,7 +296,7 @@ namespace Luden
 		const uint32 height = m_ParentWindow->HostImageHeight;
 
 		m_D3D12RHI->SwapChain->Resize(width, height);
-		m_D3D12RHI->SceneDepthBuffer->Resize(width, height, 1.0f);
+		m_D3D12RHI->SceneDepthBuffer->Resize(width, height);
 
 		SceneTextures.Scene.Resize(width, height);
 		GBuffer->Resize(width, height);
@@ -295,6 +305,7 @@ namespace Luden
 		FXAAPass->Resize(width, height);
 		SSRPass->Resize(width, height);
 		SSAOPass->Resize(width, height);
+		ProceduralSkyPass->Resize(width, height);
 
 		if (RaytracingBVH != nullptr)
 		{
@@ -479,7 +490,7 @@ namespace Luden
 
 		InitializeRaytracingResources();
 
-		m_D3D12RHI->Wait();
+		//m_D3D12RHI->Wait();
 		//m_D3D12RHI->Flush();
 	}
 
@@ -527,19 +538,8 @@ namespace Luden
 
 	void Renderer::InitializeRaytracingResources()
 	{
-
-		if (!m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->IsOpen())
-		{
-			m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->Open();
-		}
 		RaytracingBVH = new D3D12BVH(m_D3D12RHI);
-
-		for (auto& model : ActiveScene->Models)
-		{
-			RaytracingBVH->AddBLAS(model.get(), m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList);
-		}
-
-		RaytracingBVH->CreateTLAS();
+		RaytracingBVH->Build(m_D3D12RHI, ActiveScene);
 
 		TextureDesc textureDesc{};
 		textureDesc.Width	= m_ParentWindow->HostImageWidth;
@@ -550,16 +550,13 @@ namespace Luden
 		RaytracingOutput = new D3D12Texture(m_D3D12RHI->Device, textureDesc);
 		RaytracingOutput->SetDebugName("D3D12 Raytracing Output Texture");
 
-		std::string_view rayGenShaderName		= "RayGen";
-		std::string_view missShaderName			= "Miss";
-		std::string_view closestHitShaderName	= "ClosestHit";
-
-		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl",		false, rayGenShaderName.data()));
-		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl",		false, missShaderName.data()));
-		ClosestHitShader	= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/ClosestHit.hlsl", false, closestHitShaderName.data()));
+		RayGenShader		= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/RayGen.hlsl",		false, "RayGen"));
+		MissShader			= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/Miss.hlsl",		false, "Miss"));
+		ClosestHitShader	= new D3D12Shader(m_ShaderCompiler->CompileLib("../../Shaders/Raytracing/Base/ClosestHit.hlsl", false, "ClosestHit"));
 
 		RaytracingRS = new D3D12RootSignature();
-		RaytracingRS->AddConstants(54, 0, 0);
+		RaytracingRS->AddConstants(53, 0, 0);
+		RaytracingRS->AddSRV(0, 0);
 		RaytracingRS->AddStaticSampler(0, 0, D3D12_FILTER_COMPARISON_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_COMPARISON_FUNC_ALWAYS);
 		VERIFY_D3D12_RESULT(RaytracingRS->Build(m_D3D12RHI->Device, PipelineType::Compute));
 
@@ -569,6 +566,7 @@ namespace Luden
 		builder.AddMiss(MissShader, { L"Miss" });
 		builder.AddClosestHit(ClosestHitShader, { L"ClosestHit" });
 		builder.SetPayloadSize(16);
+		builder.SetAttributeSize(8);
 		builder.SetMaxRayRecursion(1);
 
 		// Primary hit ray
@@ -579,29 +577,31 @@ namespace Luden
 
 		builder.AddHitGroup(hitGroup);
 
-		builder.SetGlobalRootSignature(RaytracingRS, { L"RayGen", L"Miss", L"HitGroup" });
+		builder.SetGlobalRootSignature(RaytracingRS);
 		RaytracingPSO = new D3D12StateObject();
 		builder.Build(m_D3D12RHI->Device, *RaytracingPSO);
 		
 		RaytracingShaderTable = new D3D12ShaderBindingTable();
 		
-		FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"RayGen")));
+		FShaderTableRecord raygenRecord(FShaderIdentifier(RaytracingPSO->GetShaderIdentifier(L"RayGen")));
 		RaytracingShaderTable->RayGenTable.AddRecord(raygenRecord);
-
-		FShaderTableRecord missRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"Miss")));
+		
+		FShaderTableRecord missRecord(FShaderIdentifier(RaytracingPSO->GetShaderIdentifier(L"Miss")));
 		RaytracingShaderTable->MissTable.AddRecord(missRecord);
-
-		FShaderTableRecord hitRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"HitGroup")));
+		
+		FShaderTableRecord hitRecord(FShaderIdentifier(RaytracingPSO->GetShaderIdentifier(L"HitGroup")));
 		RaytracingShaderTable->HitTable.AddRecord(hitRecord);
 
-		RaytracingShaderTable->Create(m_D3D12RHI->Device);
-		RaytracingShaderTable->m_StorageBuffer->SetDebugName("D3D12 SBT Storage");
+		RaytracingShaderTable->Create(m_D3D12RHI->Device, RaytracingPSO);
+		RaytracingShaderTable->GetStorageBuffer()->SetDebugName("D3D12 ShaderBindingTable Storage Resource");
+
+		m_D3D12RHI->Wait();
 
 	}
 
 	void Renderer::DispatchRayTracing(Frame& CurrentFrame)
 	{
-		auto commandList = CurrentFrame.GraphicsCommandList;
+		auto* commandList = CurrentFrame.GraphicsCommandList;
 
 		commandList->SetPipelineState1(RaytracingPSO);
 		commandList->SetComputeRootSignature(RaytracingRS);
@@ -614,43 +614,50 @@ namespace Luden
 			DirectX::XMFLOAT3 CameraPosition;
 			uint32 padding = 0;
 			uint32 RaytracingImage;
-			uint32 RaytracingTopLevel;
 		} consts{
 			.View				= Camera->GetView(),
 			.Projection			= Camera->GetProjection(),
-			.ViewProjection		= DirectX::XMMatrixTranspose(Camera->GetViewProjection()),
+			.ViewProjection		= DirectX::XMMatrixInverse(nullptr, Camera->GetViewProjection()),
 			.CameraPosition		= Camera->Position,
 			.padding			= 0,
 			.RaytracingImage	= RaytracingOutput->ShaderResourceHandle.Index,
-			//.RaytracingImage	= RaytracingOutput->UnorderedAccessHandle.Index,
-			.RaytracingTopLevel = RaytracingBVH->TLAS->AccelerationStructure->ShaderResourceView.Index
 		};
 
-		commandList->PushComputeConstants(0, 54, &consts);
+		commandList->PushComputeConstants(0, 53, &consts);
+		commandList->GetHandle()->SetComputeRootShaderResourceView(1, RaytracingBVH->TLAS->AccelerationStructure->GetGpuAddress());
 
 		D3D12_DISPATCH_RAYS_DESC desc{};
 		desc.Width  = static_cast<uint32>(RaytracingOutput->GetDesc().Width);
 		desc.Height = static_cast<uint32>(RaytracingOutput->GetDesc().Height);
 
-		const auto raygenTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->RayGenTable.StorageBuffer);
-		const auto missTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->MissTable.StorageBuffer);
-		const auto hitTable = m_D3D12RHI->Device->Buffers.at(RaytracingShaderTable->HitTable.StorageBuffer);
+		desc.RayGenerationShaderRecord.StartAddress = RaytracingShaderTable->GetStorageBuffer()->GetGpuAddress();
+		desc.RayGenerationShaderRecord.SizeInBytes = 64;
 
-		desc.RayGenerationShaderRecord.StartAddress = raygenTable->GetGpuAddress();
-		desc.RayGenerationShaderRecord.SizeInBytes  = RaytracingShaderTable->RayGenTable.GetTotalSizeInBytes();
+		desc.MissShaderTable.StartAddress = desc.RayGenerationShaderRecord.StartAddress + RaytracingShaderTable->MissOffset;
+		desc.MissShaderTable.SizeInBytes = 64;
+		desc.MissShaderTable.StrideInBytes = 32;
 
-		desc.MissShaderTable.StartAddress			= missTable->GetGpuAddress();
-		desc.MissShaderTable.SizeInBytes			= RaytracingShaderTable->MissTable.GetTotalSizeInBytes();
-		desc.MissShaderTable.StrideInBytes			= RaytracingShaderTable->MissTable.GetStrideInBytes();
+		desc.HitGroupTable.StartAddress = desc.RayGenerationShaderRecord.StartAddress + RaytracingShaderTable->HitOffset;
+		desc.HitGroupTable.SizeInBytes = 64;
+		desc.HitGroupTable.StrideInBytes = 32;
 
-		desc.HitGroupTable.StartAddress				= hitTable->GetGpuAddress();
-		desc.HitGroupTable.SizeInBytes				= RaytracingShaderTable->HitTable.GetTotalSizeInBytes();
-		desc.HitGroupTable.StrideInBytes			= RaytracingShaderTable->HitTable.GetStrideInBytes();
-		
 		desc.Depth = 1;
 
 		commandList->DispatchRays(desc);
 		
+	}
+
+	//https://cwyman.org/code/dxrTutors/tutors/Tutor3/tutorial03.md.html
+	void Renderer::Raytrace(Frame& CurrentFrame)
+	{
+		auto& depthStencilView = m_D3D12RHI->SceneDepthBuffer->DepthStencilHandle;
+		auto commandList = CurrentFrame.GraphicsCommandList;
+		commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+		commandList->ClearDepthStencilView(depthStencilView);
+		GBuffer->Render(ActiveScene, Camera, CurrentFrame);
+		commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
+		DispatchRayTracing(CurrentFrame);
+
 	}
 
 } // namespace Luden
