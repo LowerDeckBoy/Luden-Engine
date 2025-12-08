@@ -32,7 +32,7 @@ namespace Luden
 
 		D3D_SHADER_MODEL MaxSupportedShaderModel = D3D_SHADER_MODEL_NONE;
 
-		D3D_FEATURE_LEVEL MinRequiredFeatureLevel = D3D_FEATURE_LEVEL_12_1;
+		D3D_FEATURE_LEVEL MinRequiredFeatureLevel = D3D_FEATURE_LEVEL_12_2;
 
 		uint64 QueryAdapterMemory();
 

@@ -63,12 +63,12 @@ float3 CalculatePointLight(PointLight Light, float3 BaseColor, float3 N, float3 
 
 float3 CalculateDirectionalLight(float3 Direction, float3 Ambient, float Intensity, float3 BaseColor, float3 N, float3 V, float NdotV, float Metalness, float Roughness)
 {
-	const float3 L = normalize(Direction);
+	const float3 L = -Direction;
 	const float3 H = normalize(V + L);
 		
 	const float NdotL = max(dot(N, L), Epsilon);
-	const float NdotH = max(dot(N, H), Epsilon);
-	const float HdotV = max(dot(H, V), Epsilon);
+	const float NdotH = max(dot(N, H), 0.0f);
+	const float HdotV = max(dot(H, V), 0.0f);
 
 	const float D = DistributionGGX(N, H, Roughness);
 	const float G = GeometrySmith(NdotV, NdotL, Roughness);

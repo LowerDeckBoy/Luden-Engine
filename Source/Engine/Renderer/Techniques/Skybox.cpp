@@ -90,8 +90,8 @@ namespace Luden
 		//	DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
 		//	DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
 		//SkyConstants.World		= DirectX::XMMatrixTranspose(DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
-		SkyConstants.WorldViewProjection		= (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
-		SkyConstants.InversedViewProjection		= pCamera->GetView();
+		SkyConstants.World		= (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
+		SkyConstants.View		= pCamera->GetView();
 		SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
 
 		SkyParameters.CameraPosition = pCamera->Position;
@@ -120,22 +120,17 @@ namespace Luden
 		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
 
 		m_Transform.Translation = pCamera->Position;
-		//m_Transform.Scale = DirectX::XMFLOAT3(50.0f, 50.0f, 50.0f);
-		SkyConstants.WorldViewProjection = 
-			World * 
-			DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
+		//m_Transform.Rotation = DirectX::XMFLOAT4(90.0f, 0.0f, 0.0f, 1.0f);
+		m_Transform.Scale = DirectX::XMFLOAT3(50.0f, 50.0f, 50.0f);
+		SkyConstants.World = World * DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
 			DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
 			DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
+		SkyConstants.World = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
+		SkyConstants.View = pCamera->GetView();
+		SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
 
-		//SkyConstants.World		= (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
-		//SkyConstants.View		= pCamera->GetView();
-		//SkyConstants.View		= SkyConstants.World * pCamera->GetView() * DirectX::XMMatrixTranspose(pCamera->GetProjection());
-		SkyConstants.WorldViewProjection		= DirectX::XMMatrixTranspose(SkyConstants.WorldViewProjection * pCamera->GetViewProjection());
-		//SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
-		SkyConstants.Projection = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
-
-		SkyParameters.CameraPosition	= pCamera->Position;
-		SkyParameters.SunPosition		= SunPosition;
+		SkyParameters.CameraPosition = pCamera->Position;
+		SkyParameters.SunPosition = SunPosition;
 		SkyParameters.VertexBufferIndex = SkydomeVertexBuffer.ShaderResourceView.Index;
 
 		commandList->PushConstants(0, 16, &SkyParameters);
@@ -151,9 +146,9 @@ namespace Luden
 
 	void Skybox::BuildSkydome()
 	{
-		const uint32 radius = 4;
-		const uint32 latitude = 64;
-		const uint32 longitude = 64;
+		const uint32 radius = 2;
+		const uint32 latitude = 32;
+		const uint32 longitude = 32;
 
 		const float deltaLatitude = Math::PI / latitude;
 		const float deltaLongitude = 2.0f * Math::PI / longitude;
@@ -271,7 +266,6 @@ namespace Luden
 				SkyVertex v{};
 				v.Position.x = float(j) / (HorizontalCount - 1) * 2.0f - 1.0f;
 				v.Position.y = float(i) / (VerticalCount - 1) * 2.0f - 1.0f;
-				v.Position.y *= -1.0f;
 				m_Vertices.push_back(v);
 			}
 		}
@@ -330,8 +324,6 @@ namespace Luden
 		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
 
 		SkyConstants.InversedViewProjection = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
-		SkyConstants.View = pCamera->GetView();
-		SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
 
 		SkyParameters.CameraPosition = pCamera->Position;
 		SkyParameters.SunPosition = this->SunPosition;
@@ -347,11 +339,6 @@ namespace Luden
 
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 
-	}
-
-	void ProceduralSky::Resize(uint32 Width, uint32 Height)
-	{
-		DebugRenderTarget.Resize(Width, Height);
 	}
 
 } // namespace Luden

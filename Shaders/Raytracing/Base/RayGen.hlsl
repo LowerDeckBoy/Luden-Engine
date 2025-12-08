@@ -37,14 +37,14 @@ void RayGen()
 	
 	RWTexture2D<float4> gRaytraceScene = ResourceDescriptorHeap[Scene.RaytracingOutput];
 
-	TraceRay(gSceneBVH,			// Scene Bounding Volume Hierarchy
-		RAY_FLAG_FORCE_OPAQUE,	// Ray flags
-		0xFF,					// InstanceInclusionMask -> 0xFF to test all geometry
-		0,						// RayContributionToHitGroupIndex
-		1,						// MultiplierForGeometryContributionToHitGroupIndex
-		0,						// MissShaderIndex
-		ray,					// RayDesc
-		payload					// User-defined payload
+	TraceRay(gSceneBVH,													// Scene Bounding Volume Hierarchy
+		RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_CULL_BACK_FACING_TRIANGLES,	// Ray flags
+		0xFF,															// InstanceInclusionMask -> 0xFF to test all geometry
+		0,																// RayContributionToHitGroupIndex
+		1,																// MultiplierForGeometryContributionToHitGroupIndex
+		0,																// MissShaderIndex
+		ray,															// RayDesc
+		payload															// User-defined payload
 		);
 	
 	gRaytraceScene[DispatchRaysIndex().xy] = float4(payload.Color.rgb, 1.0f);

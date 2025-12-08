@@ -22,7 +22,6 @@ namespace Luden::Panel
 		DrawSceneCameraConfig();
 		DrawPostProcessConfig();
 		DrawSkyConfig();
-		DrawProceduralSkyConfig();
 
 		ImGui::End();
 	}
@@ -46,14 +45,6 @@ namespace Luden::Panel
 			ImGui::SetNextItemWidth(-1.0f);
 			ImGui::Text("%.3f ms", m_Renderer->UpdateRenderTime);
 
-			if (Config::Get().bRaytracing)
-			{
-				TableNextRowBegin("Raytrace");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Text("%.3f ms", m_Renderer->RaytraceRenderTime);
-			}
-
 			TableNextRowBegin("G-Buffer");
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1.0f);
@@ -66,15 +57,10 @@ namespace Luden::Panel
 
 			if (Config::Get().bEnableSky)
 			{
-				TableNextRowBegin("Skybox");
+				TableNextRowBegin("Sky");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Text("%.3f ms", m_Renderer->SkyboxPass->RenderTime);
-
-				TableNextRowBegin("Procedural Sky");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Text("%.3f ms", m_Renderer->ProceduralSkyPass->RenderTime);
 			}
 
 			if (Config::Get().bEnableBloom)
@@ -147,7 +133,7 @@ namespace Luden::Panel
 				{
 					ImGui::AlignTextToFramePadding();
 					ImGui::Text("Set fixed frame rate:");
-					Gui::OnItemHover("Allows to limit frame rate to value in range [24;240].");
+					gui::OnItemHover("Allows to limit frame rate to value in range [24;240].");
 					ImGui::TableNextColumn();
 					ImGui::Checkbox("##Limit frames", &config.bAllowFixedFrameRate);
 
@@ -163,7 +149,7 @@ namespace Luden::Panel
 				}
 
 				TableNextRowBegin("Draw meshlets");
-				Gui::OnItemHover("Check to draw debug meshlet instances.");
+				gui::OnItemHover("Check to draw debug meshlet instances.");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##Draw Meshlets", &config.bDrawMeshlets);
 
@@ -173,12 +159,12 @@ namespace Luden::Panel
 
 				// Row 3;
 				TableNextRowBegin("Raytracing");
-				Gui::OnItemHover("Check to dispatch ray tracing.");
+				gui::OnItemHover("Check to dispatch ray tracing.");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##raytracing", &config.bRaytracing);
 
 				TableNextRowBegin("Alpha masking");
-				Gui::OnItemHover("Check to enable alpha mask cutoff in pixel shaders.");
+				gui::OnItemHover("Check to enable alpha mask cutoff in pixel shaders.");
 				ImGui::TableNextColumn();
 				ImGui::Checkbox("##bAlphaMask", &config.bAlphaMask);
 
@@ -211,13 +197,13 @@ namespace Luden::Panel
 				TableNextRowBegin("Position");
 				ImGui::TableNextColumn();
 				//ImGui::SetNextItemWidth(-1.0f);
-				if (Gui::Math::DrawFloat3("Position", m_Renderer->Camera->Position))
+				if (gui::Math::DrawFloat3("Position", m_Renderer->Camera->Position))
 				{
 					m_Renderer->Camera->Update();
 				}
 
 				TableNextRowBegin("Speed");
-				Gui::OnItemHover("Speed is controlable when mouse scroll is used when RBM is hold.");
+				gui::OnItemHover("Speed is controlable when mouse scroll is used when RBM is hold.");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Speed", &m_Renderer->Camera->CameraSpeed, 1.0f, 1.0f, 250.0f);
@@ -293,7 +279,7 @@ namespace Luden::Panel
 				TableNextRowBegin("Intensity");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Intensity:", &m_Renderer->BloomPass->Parameters.Intensity, 0.01f, 2.0f, "%.2f");
+				ImGui::SliderFloat("##Intensity:", &m_Renderer->BloomPass->Parameters.Intensity, 0.0f, 10.0f, "%.1f");
 
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -411,7 +397,7 @@ namespace Luden::Panel
 
 	void ConfigPanel::DrawSkyConfig()
 	{
-		if (ImGui::CollapsingHeader("Skybox"))
+		if (ImGui::CollapsingHeader("Sky"))
 		{
 			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
 			{
@@ -426,71 +412,14 @@ namespace Luden::Panel
 				TableNextRowBegin("Sky Color");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::ColorEdit3("##Sky Color", (float*)&m_Renderer->SkyboxPass->SkyParameters.SkyColor);
-				//Gui::Math::EditColor3("##Sky Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SkyColor);
+				ImGui::ColorEdit3("##Sky Color", (float*)&(DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SkyColor);
+				//gui::Math::EditColor3("##Sky Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SkyColor);
 
 				TableNextRowBegin("Sun Color");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::ColorEdit3("##Sun Color", (float*)&m_Renderer->SkyboxPass->SkyParameters.SunColor);
-				//Gui::Math::EditColor3("##Sun Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SunColor);
-
-				TableNextRowBegin("Sun Size");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::DragFloat("##Sun Size", &m_Renderer->SkyboxPass->SkyParameters.SunSize, 0.01f, 0.01f, 1.0f);
-
-				TableNextRowBegin("Sun Bloom");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::DragFloat("##Sun Bloom", &m_Renderer->SkyboxPass->SkyParameters.SunBloom);
-
-
-				ImGui::EndTable();
-			}
-		}
-	}
-	
-	void ConfigPanel::DrawProceduralSkyConfig()
-	{
-		if (ImGui::CollapsingHeader("Procedural Sky"))
-		{
-			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
-			{
-				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
-
-				TableNextRowBegin("Draw");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Checkbox("##Draw", &Config::Get().bEnableSky);
-
-				TableNextRowBegin("Sun Position");
-				ImGui::TableNextColumn();
-				//ImGui::SetNextItemWidth(-1.0f);
-				Gui::Math::DrawFloat3InAngles("##Sun Position", m_Renderer->ProceduralSkyPass->SunPosition);
-
-				TableNextRowBegin("Sky Color");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::ColorEdit3("##Sky Color", (float*)&m_Renderer->ProceduralSkyPass->SkyParameters.SkyColor);
-				//Gui::Math::EditColor3("##Sky Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SkyColor);
-
-				TableNextRowBegin("Sun Color");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::ColorEdit3("##Sun Color", (float*)&m_Renderer->ProceduralSkyPass->SkyParameters.SunColor);
-				//Gui::Math::EditColor3("##Sun Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SunColor);
-
-				TableNextRowBegin("Sun Size");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::DragFloat("##Sun Size", &m_Renderer->ProceduralSkyPass->SkyParameters.SunSize, 0.01f, 0.01f, 1.0f);
-
-				TableNextRowBegin("Sun Bloom");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::DragFloat("##Sun Bloom", &m_Renderer->ProceduralSkyPass->SkyParameters.SunBloom);
+				ImGui::ColorEdit3("##Sun Color", (float*)&(DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SunColor);
+				//gui::Math::EditColor3("##Sun Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SunColor);
 
 				ImGui::EndTable();
 			}
@@ -511,11 +440,6 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Enable", &Config::Get().bEnableSSR);
 
-				if (!Config::Get().bEnableSSR)
-				{
-					ImGui::BeginDisabled();
-				}
-
 				TableNextRowBegin("Ray steps");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
@@ -525,11 +449,6 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, 0.0f, 10.0f, "%.1f");
-
-				if (!Config::Get().bEnableSSR)
-				{
-					ImGui::EndDisabled();
-				}
 
 				ImGui::EndTable();
 			}
@@ -607,7 +526,7 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[9] = { "ACES Simple", "ACES", "AgX", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
+				static const char* types[8] = { "ACES", "AgX", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
 				TableNextRowBegin("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);

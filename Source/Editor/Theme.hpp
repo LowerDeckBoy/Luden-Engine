@@ -2,7 +2,7 @@
 
 #include "Colors.hpp"
 
-namespace Luden::Gui
+namespace Luden::gui
 {
 	inline void DarkTheme(ImGuiStyle& InStyle)
 	{

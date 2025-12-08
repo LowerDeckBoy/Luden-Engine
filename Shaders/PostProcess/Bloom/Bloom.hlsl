@@ -86,9 +86,8 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	float3 emissive = emissiveTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
 	float3 color 	= lightingTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
 
-	//emissive += GetThreshold(color);
-	output[DispatchThreadID.xy] = float4(emissive + color, 1.0f);
-	//output[DispatchThreadID.xy] = float4(emissive, 1.0f);
+	emissive += GetThreshold(color);
+	output[DispatchThreadID.xy] = float4(emissive, 1.0f);
 
 	//float3 a = lightingTexture.Sample(TexSampler, (center + float2(-1.f, -1.f)) * texelSize).rgb; // Top left.
 	//float3 b = lightingTexture.Sample(TexSampler, (center + float2(+1.f, -1.f)) * texelSize).rgb; // Top right.

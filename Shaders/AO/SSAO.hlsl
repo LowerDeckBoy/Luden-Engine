@@ -49,7 +49,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	Texture2D<float4> texNoise		= GetTexture(Constants.NoiseIndex);
 	Texture2D<float4> texDepth		= GetTexture(Constants.DepthIndex);
 
-	const float3 normal			= normalize(texNormal.Sample(LinearWrapSampler, texCoord).rgb * 2.0f - 1.0f);
+	const float3 normal			= (texNormal.Sample(LinearWrapSampler, texCoord).rgb * 2.0f - 1.0f);
 	const float  depth			= texDepth.Sample(LinearWrapSampler, texCoord).x;
 	const float3 viewPosition	= GetViewPosition(texCoord, depth, Constants.InvProjection);
 	
