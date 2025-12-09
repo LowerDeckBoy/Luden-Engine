@@ -7,7 +7,7 @@
 #undef RGB
 #endif //RGB
 
-namespace Luden::Gui::Color
+namespace Luden::gui::Color
 {
 	constexpr ImVec4 RGB(float R, float G, float B)
 	{

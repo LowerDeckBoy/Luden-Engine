@@ -2,8 +2,8 @@
 #define COMMON_HLSLI
 
 static const float PI		= 3.14159265358979323846f;
-static const float TwoPI	= PI * 2.0f;
-static const float HalfPI	= PI * 0.5f;
+static const float TwoPI	= 6.28318530718f;
+static const float HalfPI	= 1.57079632679f;
 static const float InvPI	= 0.31830988618379067154f;
 
 static const float3 Fdielectric = 0.16f; // 0.04f

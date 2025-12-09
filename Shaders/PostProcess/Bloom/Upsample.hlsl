@@ -24,7 +24,7 @@ float3 Upsample(in Texture2D Texture, float2 UV, float2 Texel)
 	result += (b + d + f + h) * 2.0f;
 	result += (a + c + g + i);
 	result *= 1.0f / 16.0f;
-	
+
 	return result;
 }
 
@@ -43,9 +43,9 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 	const float2 texelSize 		= GetTexelSize(textureSize);
 	const float2 texCoord 		= (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
+	//const float2 texCoord 		= (float2(DispatchThreadID.xy) + 0.5f) * textureSize;
 
-	//const float filterRadius = 0.001f;
-	const float filterRadius = 1.5f;
+	const float filterRadius = 0.001f;
 	const float x = filterRadius;
 	const float y = filterRadius;
 
@@ -58,9 +58,11 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
     //	g	-	h	-	i
 	//	-----------------
 
-	float3 base = sourceTexture.Sample(TexSampler, float2(texCoord)).rgb * 0.25f;
-	float3 result = base + Upsample(sourceTexture, texCoord, texelSize);
+	float3 result = Upsample(sourceTexture, texCoord, texelSize);
 
+	//float3 sourceColor = sourceTexture.Sample(TexSampler, texCoord).rgb;
+	//float3 color = output[DispatchThreadID.xy].rgb;
+	//output[DispatchThreadID.xy] = float4(lerp(sourceColor, result, Constants.Gamma), 1.0f);
 	output[DispatchThreadID.xy] = float4(result, 1.0f);
 	
 }

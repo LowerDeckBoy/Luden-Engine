@@ -57,7 +57,7 @@ namespace Luden
 		ImGuiIO& IO = ImGui::GetIO();
 		m_Theme = &ImGui::GetStyle();
 
-		Gui::DarkTheme(*m_Theme);
+		gui::DarkTheme(*m_Theme);
 
 		// Enable Docking
 		IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
@@ -359,11 +359,6 @@ namespace Luden
 					if (ImGui::MenuItem("Sky - Test"))
 					{
 						m_ConfigPanel.DisplayImageAddress = m_Renderer->SkyboxPass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
-					}
-
-					if (ImGui::MenuItem("ProceduralSky - Test"))
-					{
-						m_ConfigPanel.DisplayImageAddress = m_Renderer->ProceduralSkyPass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 					}
 				}
 				

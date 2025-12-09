@@ -7,7 +7,7 @@
 #include <ImGui/ImGuizmo.h>
 #include <ImGui/imgui_stdlib.h>
 
-namespace Luden::Gui
+namespace Luden::gui
 {
 	bool Math::DrawFloat3(std::string_view Label, DirectX::XMFLOAT3& Float3)
 	{
@@ -269,8 +269,7 @@ namespace Luden::Gui
 
 			TableNextRowBegin("Direction");
 			ImGui::TableNextColumn();
-			//Math::DrawFloat3("Direction", Component.Direction);
-			Math::DrawFloat3InAngles("Direction", Component.Direction);
+			Math::DrawFloat3InAngles("Direction", Component.Direction, -90.0f, 90.0f);
 
 			TableNextRowBegin("Ambient");
 			ImGui::TableNextColumn();

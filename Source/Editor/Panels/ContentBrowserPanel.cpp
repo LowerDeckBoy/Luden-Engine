@@ -54,11 +54,11 @@ namespace Luden::Panel
 		{
 			ImGui::TableNextColumn();
 
-			Gui::OnItemHover("Move to parent directory.");
+			gui::OnItemHover("Move to parent directory.");
 			ImGui::Button("...", thumbnailSize);
 			if (ImGui::IsItemHovered())
 			{
-				ImGui::PushStyleColor(ImGuiCol_Border, Gui::Color::Gray);
+				ImGui::PushStyleColor(ImGuiCol_Border, gui::Color::Gray);
 				ImGui::SetTooltip("Move to parent directory.");
 				ImGui::PopStyleColor();
 			}
@@ -102,7 +102,7 @@ namespace Luden::Panel
 					}
 
 					ImGui::Text(filename.c_str());
-					Gui::OnItemHover(filename);
+					gui::OnItemHover(filename);
 				}
 
 				ImGui::TableNextColumn();

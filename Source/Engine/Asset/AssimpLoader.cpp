@@ -138,12 +138,6 @@ namespace Luden
 			mesh.MaterialID = materialHandle;		
 		}
 
-		if (scene->HasAnimations())
-		{
-			//
-			DEBUGBREAK();
-		}
-
 		const uint32 transformHandle = static_cast<uint32>(pScene->Transforms.size());
 		pScene->Transforms.push_back(ecs::ObjectTransforms());
 		OutModel.TransformID = transformHandle;
@@ -301,7 +295,7 @@ namespace Luden
 
 			DirectX::XMStoreFloat3x4(&meshData.RaytracingInstanceDesc.Transform, meshData.Transform.WorldMatrix);
 			meshData.RaytracingInstanceDesc.InstanceID = 0;
-			meshData.RaytracingInstanceDesc.InstanceMask = 0xFF;
+			meshData.RaytracingInstanceDesc.InstanceMask = 1;
 
 			//SceneData.Transforms.push_back(transformComponent);
 			//meshData.TransformID = 

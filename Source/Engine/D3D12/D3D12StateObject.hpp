@@ -19,7 +19,7 @@ namespace Luden
 
 		Ref<ID3D12StateObjectProperties>& GetProperties() { return m_StateObjectProperties; }
 
-		inline void* GetShaderIdentifier(const std::wstring& ExportName)
+		void* GetShaderIdentifier(std::wstring ExportName)
 		{
 			return GetProperties()->GetShaderIdentifier(ExportName.data());
 		}

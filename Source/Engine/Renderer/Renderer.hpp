@@ -72,19 +72,17 @@ namespace Luden
 		Filepath SceneToLoad;
 
 		// Render Passes
-		GeometryPass*	GBuffer = nullptr;
-		LightPass*		LightingPass = nullptr;
-		Bloom*			BloomPass = nullptr;
-		FXAA*			FXAAPass = nullptr;
-		Tonemapping*	TonemappingPass = nullptr;
-		SSR*			SSRPass = nullptr;
-		SSAO*			SSAOPass = nullptr;
-		Skybox*			SkyboxPass = nullptr;
-		ProceduralSky*	ProceduralSkyPass = nullptr;
+		GeometryPass*	GBuffer;
+		LightPass*		LightingPass;
+		Bloom*			BloomPass;
+		FXAA*			FXAAPass;
+		Tonemapping*	TonemappingPass;
+		SSR*			SSRPass;
+		SSAO*			SSAOPass;
+		Skybox*			SkyboxPass;
 
 		double PresentRenderTime = 0.0;
 		double UpdateRenderTime = 0.0;
-		double RaytraceRenderTime = 0.0;
 
 		D3D12Texture* NoiseTexture = nullptr;
 	
@@ -100,16 +98,14 @@ namespace Luden
 		D3D12BVH* RaytracingBVH = nullptr;
 		D3D12StateObject* RaytracingPSO = nullptr;
 		void InitializeRaytracingResources();
-		D3D12Shader* RayGenShader = nullptr;
-		D3D12Shader* MissShader = nullptr;
-		D3D12Shader* ClosestHitShader = nullptr;
-		D3D12ShaderBindingTable* RaytracingShaderTable = nullptr;
+		D3D12Shader* RayGenShader;
+		D3D12Shader* MissShader;
+		D3D12Shader* ClosestHitShader;
+		D3D12ShaderBindingTable* RaytracingShaderTable;
 
-		D3D12RootSignature* RaytracingRS = nullptr;
-		D3D12Texture* RaytracingOutput = nullptr;
+		D3D12RootSignature* RaytracingRS;
+		D3D12Texture* RaytracingOutput;
 		void DispatchRayTracing(Frame& CurrentFrame);
 
-
-		void Raytrace(Frame& CurrentFrame);
 	};
 } // namespace Luden

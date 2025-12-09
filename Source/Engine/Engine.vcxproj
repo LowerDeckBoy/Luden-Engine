@@ -171,7 +171,6 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Renderer\Techniques\LightPass.hpp" />
     <ClInclude Include="Renderer\Techniques\SSAO.hpp" />
     <ClInclude Include="Renderer\Techniques\FXAA.hpp" />
-    <ClInclude Include="Renderer\Techniques\TAA.hpp" />
     <ClInclude Include="RHI\Common.hpp" />
     <ClInclude Include="RHI\Constants.hpp" />
     <ClInclude Include="RHI\Defines.hpp" />
@@ -192,6 +191,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="Asset\AssetImporter.cpp" />
     <ClCompile Include="Asset\AssimpLoader.cpp" />
     <ClCompile Include="Asset\fastgltfLoader.cpp" />
+    <ClCompile Include="Renderer\Techniques\FXAA.cpp" />
     <ClCompile Include="Renderer\Techniques\HBAO.cpp" />
     <ClCompile Include="Renderer\Techniques\Bloom.cpp" />
     <ClCompile Include="D3D12\D3D12CommandSignature.cpp" />
@@ -247,7 +247,6 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="ECS\Entity.cpp" />
     <ClCompile Include="ECS\World.cpp" />
     <ClCompile Include="Graphics\Model.cpp" />
-    <ClCompile Include="Renderer\Techniques\FXAA.cpp" />
     <ClCompile Include="Renderer\Techniques\GeometryPass.cpp" />
     <ClCompile Include="Renderer\Renderer.cpp" />
     <ClCompile Include="Renderer\RenderPass.cpp" />
