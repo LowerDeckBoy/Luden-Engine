@@ -23,13 +23,6 @@ struct SkyParameters
 	float3 CameraPosititon;
 };
 
-float2 DirectionToEquirectUV(float3 v)
-{
-	float2 uv = float2(atan2(v.z, v.x), asin(-v.y));
-	uv /= float2(-TwoPI, PI);
-	uv += float2(0.5, 0.5);
-	return uv;
-}
 
 ConstantBuffer<SkyParameters> Parameters	: register(b0);
 ConstantBuffer<SkyConstants>  Constants		: register(b1);
@@ -78,8 +71,8 @@ VS_OUTPUT VSMain(uint VertexID : SV_VertexID)
 	output.TexCoord = vertex.TexCoord.xy;
 	
 	float4 rayStart = mul(float4(vertex.Position.xy, -1.0f, 1.0f), Constants.InversedViewProjection);
-	float4 rayEnd = mul(float4(vertex.Position.xy, +1.0f, 1.0f), Constants.InversedViewProjection);
-	
+	float4 rayEnd	= mul(float4(vertex.Position.xy, +1.0f, 1.0f), Constants.InversedViewProjection);
+
 	rayStart = rayStart / rayStart.w;
 	rayEnd = rayEnd / rayEnd.w;
 	
@@ -101,6 +94,7 @@ float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 	float sun = exp(-distance / sunBloom / size2) + step(distance, size2);
 	float sun2 = min(sun * sun, 1.0);
 	//float3 color = Parameters.SkyColor.rgb + (sun2 * Parameters.SunColor);
+	
 	float3 horizonColor = float3(256.0f / 256.0f, 165.0f / 256.0f, 112.0f / 256.0f);
 	//float3 color = lerp(horizonColor, Parameters.SkyColor, pin.Height);
 	//float3 color = lerp(horizonColor, Parameters.SkyColor, pin.Height);
@@ -109,6 +103,7 @@ float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 	//color = lerp(horizonColor, color, pin.Height);
 	
 	return float4(color * 0.33f, 1.0f);
+
 }
 
 #endif // SKYDOME_HLSL
