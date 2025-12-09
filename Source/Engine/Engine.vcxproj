@@ -117,6 +117,8 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Asset\AssetImporter.hpp" />
     <ClInclude Include="Asset\ShaderCache.hpp" />
     <ClInclude Include="Renderer\Techniques\HBAO.hpp" />
+    <ClInclude Include="Renderer\Techniques\Atmosphere.hpp" />
+    <ClInclude Include="Renderer\Techniques\ChromaticAberration.hpp" />
     <ClInclude Include="Renderer\Techniques\Bloom.hpp" />
     <ClInclude Include="Config.hpp" />
     <ClInclude Include="D3D12\D3D12CommandSignature.hpp" />
@@ -165,6 +167,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Graphics\Mesh.hpp" />
     <ClInclude Include="Graphics\Model.hpp" />
     <ClInclude Include="Graphics\Primitive.hpp" />
+    <ClInclude Include="Renderer\Techniques\FilmEffects.hpp" />
     <ClInclude Include="Renderer\Techniques\GeometryPass.hpp" />
     <ClInclude Include="Renderer\Renderer.hpp" />
     <ClInclude Include="Renderer\RenderPass.hpp" />
@@ -177,6 +180,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="RHI\PipelineState.hpp" />
     <ClInclude Include="RHI\State.hpp" />
     <ClInclude Include="RHI\Types.hpp" />
+    <ClInclude Include="Renderer\Techniques\Scattering.hpp" />
     <ClInclude Include="Scene\Actor.hpp" />
     <ClInclude Include="Scene\SceneSerializer.hpp" />
     <ClInclude Include="Scene\SceneCamera.hpp" />
@@ -186,6 +190,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClInclude Include="Renderer\Techniques\SSR.hpp" />
     <ClInclude Include="Renderer\Techniques\Transparency.hpp" />
     <ClInclude Include="Renderer\Techniques\Skybox.hpp" />
+    <ClInclude Include="Renderer\Techniques\Skydome.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Asset\AssetImporter.cpp" />
@@ -193,6 +198,8 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="Asset\fastgltfLoader.cpp" />
     <ClCompile Include="Renderer\Techniques\FXAA.cpp" />
     <ClCompile Include="Renderer\Techniques\HBAO.cpp" />
+    <ClCompile Include="Renderer\Techniques\Atmosphere.cpp" />
+    <ClCompile Include="Renderer\Techniques\ChromaticAberration.cpp" />
     <ClCompile Include="Renderer\Techniques\Bloom.cpp" />
     <ClCompile Include="D3D12\D3D12CommandSignature.cpp" />
     <ClCompile Include="D3D12\D3D12ShaderTable.cpp" />
@@ -247,12 +254,14 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="ECS\Entity.cpp" />
     <ClCompile Include="ECS\World.cpp" />
     <ClCompile Include="Graphics\Model.cpp" />
+    <ClCompile Include="Renderer\Techniques\FXAA.cpp" />
     <ClCompile Include="Renderer\Techniques\GeometryPass.cpp" />
     <ClCompile Include="Renderer\Renderer.cpp" />
     <ClCompile Include="Renderer\RenderPass.cpp" />
     <ClCompile Include="Renderer\Techniques\LightPass.cpp" />
     <ClCompile Include="Renderer\Techniques\SSAO.cpp" />
     <ClCompile Include="RHI\Types.cpp" />
+    <ClCompile Include="Renderer\Techniques\Scattering.cpp" />
     <ClCompile Include="Scene\SceneSerializer.cpp" />
     <ClCompile Include="Scene\SceneCamera.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
@@ -261,6 +270,7 @@ IF EXIST "$(SolutionDir)Assets\"\ (xcopy /Q /E /Y /I "$(SolutionDir)Assets\" "$(
     <ClCompile Include="Renderer\Techniques\SSR.cpp" />
     <ClCompile Include="Renderer\Techniques\Transparency.cpp" />
     <ClCompile Include="Renderer\Techniques\Skybox.cpp" />
+    <ClCompile Include="Renderer\Techniques\Skydome.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
