@@ -12,7 +12,7 @@ struct SkyConstants
 struct SkyParameters
 {
 	float3	SkyColor;
-	float	Rayleigh;
+	float	RayleighCoefficient;
 	float3	SunColor;
 	float	MieCoefficient;
 	float3	SunPosition;
@@ -24,19 +24,6 @@ struct SkyParameters
 
 ConstantBuffer<SkyParameters> Parameters : register(b0);
 ConstantBuffer<SkyConstants> Constants : register(b1);
-
-/*
-struct VS_INPUT
-{
-	float2 Position : POSITION;
-};
-
-struct VS_OUTPUT
-{
-	float4 Position : SV_POSITION;
-	float3 ViewDirection : VIEW_DIR;
-};
-*/
 
 struct VS_OUTPUT
 {
@@ -73,23 +60,23 @@ static const float EE = 1000.0;
 
 //static const float3 cameraPos = float3(0.0, 0.0, 0.0);
 
-    // constants for atmospheric scattering
+	// constants for atmospheric scattering
 static const float pi = 3.141592653589793238462643383279502884197169;
 
 static const float n = 1.0003; // refractive index of air
 static const float N = 2.545E25; // number of molecules per unit volume for air at
-                                // 288.15K and 1013mb (sea level -45 celsius)
+								// 288.15K and 1013mb (sea level -45 celsius)
 
-    // optical length at zenith for molecules
+	// optical length at zenith for molecules
 static const float rayleighZenithLength = 8.4E3;
 static const float mieZenithLength = 1.25E3;
 static const float3 up = float3(0.0f, 1.0f, 0.0f);
-    // 66 arc seconds -> degrees, and the cosine of that
+	// 66 arc seconds -> degrees, and the cosine of that
 static const float sunAngularDiameterCos = 0.999956676946448443553574619906976478926848692873900859324;
 
-    // 3.0 / ( 16.0 * pi )
+	// 3.0 / ( 16.0 * pi )
 static const float THREE_OVER_SIXTEENPI = 0.05968310365946075;
-    // 1.0 / ( 4.0 * pi )
+	// 1.0 / ( 4.0 * pi )
 static const float ONE_OVER_FOURPI = 0.07957747154594767;
 
 float sunIntensity(float zenithAngleCos)
@@ -116,6 +103,21 @@ float hgPhase(float cosTheta, float g)
 	return ONE_OVER_FOURPI * ((1.0 - g2) * inverse);
 }
 
+float3 GetSkyWorldPosition(float4 clipPosition)
+{
+	float4 world = mul(clipPosition, Constants.InversedViewProjection);
+	world /= world.w;
+	return world.xyz;
+}
+
+float3 GetSkyViewDirection(float2 Position)
+{
+	float3 near = GetSkyWorldPosition(float4(Position, -1.0, 1.0));
+	float3 far  = GetSkyWorldPosition(float4(Position, +1.0, 1.0));
+	
+	return normalize(far - near);
+}
+
 [RootSignature(PROCEDURAL_SKY_RS)]
 VS_OUTPUT VSMain(uint VertexID : SV_VertexID)
 {
@@ -124,32 +126,32 @@ VS_OUTPUT VSMain(uint VertexID : SV_VertexID)
 	output.Position = FullScreenVertsPos[VertexID];
 	output.TexCoord = FullScreenVertsUVs[VertexID];
 	
+	output.ViewDirection = GetSkyViewDirection(FullScreenVertsPos[VertexID].xy);
+	
 	return output;
 }
 
-struct VERTEX
-{
-	float2 TexCoord : TEXCOORD;
-};
-
 // https://github.com/TomCrypto/final-project/blob/master/doc/Papers/A%20Practical%20Analytic%20Model%20for%20Daylight.pdf
+// https://cpp-rendering.io/sky-and-atmosphere-rendering/
 // https://github.com/GPUOpen-LibrariesAndSDKs/Cauldron/blob/master/src/DX12/shaders/SkyDomeProc.hlsl
 float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 {
 	float x = pin.TexCoord.x * 2.0f - 1.0f;
-	float y = (1.0f - pin.TexCoord.y) * 2.0f - 1.0f;
+	//float y = (1.0f - pin.TexCoord.y) * 2.0f - 1.0f;
+	float y = (pin.TexCoord.y) * 2.0f - 1.0f;
 	float z = 1.0f;
 	float4 clip = float4(x, y, z, 1);
-	float3 worldPosition = mul(clip, Constants.InversedViewProjection).xyz;
+	//float4 worldPos = mul(clip, Constants.InversedViewProjection);
+	//worldPos /= worldPos.w;
+	//float3 worldPosition = worldPos.xyz;
 
-	//return float4(vWorldPosition, 1.0f);
+	float3 worldPosition = GetSkyWorldPosition(clip);
 
-	float rayleigh = Parameters.Rayleigh;
+	float rayleigh = Parameters.RayleighCoefficient;
 	float mieCoefficient = Parameters.MieCoefficient;
 	float turbidity = Parameters.Turbidity;
 	float luminance = Parameters.Luminance;
 	float mieDirectionalG = Parameters.MieDirectionalG;
-	//float3 cameraPos = normalize(Parameters.CameraPosititon);
 	float3 cameraPos = float3(0.0f, 0.0f, 0.0f);
 
 	float3 sunDirection = normalize(Parameters.SunPosition);
@@ -160,24 +162,24 @@ float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 
 	float rayleighCoefficient = rayleigh - (1.0 * (1.0 - vSunfade));
 
-    // extinction (absorbtion + out scattering)
-    // rayleigh coefficients
+	// extinction (absorbtion + out scattering)
+	// rayleigh coefficients
 	float3 vBetaR = totalRayleigh * rayleighCoefficient;
 
-    // mie coefficients
+	// mie coefficients
 	float3 vBetaM = totalMie(turbidity) * mieCoefficient;
 
-    // optical length
-    // cutoff angle at 90 to avoid singularity in next formula.
+	// optical length
+	// cutoff angle at 90 to avoid singularity in next formula.
 	float zenithAngle = acos(max(0.0, dot(up, normalize(worldPosition - cameraPos))));
 	float inverse = 1.0 / (cos(zenithAngle) + 0.15 * pow(abs(93.885 - ((zenithAngle * 180.0) / pi)), -1.253));
 	float sR = rayleighZenithLength * inverse;
 	float sM = mieZenithLength * inverse;
 
-    // combined extinction factor
+	// combined extinction factor
 	float3 Fex = exp(-(vBetaR * sR + vBetaM * sM));
 
-    // in scattering
+	// in scattering
 	float cosTheta = dot(normalize(worldPosition - cameraPos), sunDirection);
 
 	float rPhase = rayleighPhase(cosTheta * 0.5 + 0.5);
@@ -189,14 +191,14 @@ float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 	float3 Lin = pow(abs(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) * (1.0 - Fex)), float3(1.5, 1.5, 1.5));
 	Lin *= lerp(float3(1.0, 1.0, 1.0), pow(vSunE * ((betaRTheta + betaMTheta) / (vBetaR + vBetaM)) * Fex, float3(1.0 / 2.0, 1.0 / 2.0, 1.0 / 2.0)), clamp(pow(1.0 - dot(up, sunDirection), 5.0), 0.0, 1.0));
 
-    // nightsky
+	// nightsky
 	float3 direction = normalize(worldPosition - cameraPos);
 	float theta = acos(direction.y); // elevation --> y-axis, [-pi/2, pi/2]',
 	float phi = atan2(direction.z, direction.x); // azimuth --> x-axis [-pi/2, pi/2]',
 	float2 uv = float2(phi, theta) / float2(2.0 * pi, pi) + float2(0.5, 0.0);
 	float3 L0 = float3(0.1, 0.1, 0.1) * Fex;
 
-    // composition + solar disc
+	// composition + solar disc
 	float sundisk = smoothstep(sunAngularDiameterCos, sunAngularDiameterCos + 0.00002, cosTheta);
 	L0 += (vSunE * 19000.0 * Fex) * sundisk;
 
@@ -211,6 +213,17 @@ float4 PSMain(VS_OUTPUT pin) : SV_TARGET
 }
 
 /*
+struct VS_INPUT
+{
+	float2 Position : POSITION;
+};
+
+struct VS_OUTPUT
+{
+	float4 Position : SV_POSITION;
+	float3 ViewDirection : VIEW_DIR;
+};
+
 [RootSignature(SKY_RS)]
 VS_OUTPUT VSMain(uint VertexID : SV_VertexID)
 {
