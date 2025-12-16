@@ -19,8 +19,9 @@ namespace Luden
 		builder.SetPixelShader(&m_PSO.Pixel);
 		builder.SetCullMode(D3D12_CULL_MODE_NONE);
 		//builder.SetFillMode(D3D12_FILL_MODE_WIREFRAME);
-		builder.EnableDepth(false);
-		//builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
+		builder.EnableDepth(true);
+		builder.SetDepthFunc(D3D12_COMPARISON_FUNC_EQUAL);
+		builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
 		builder.SetRenderTargetFormats({ DXGI_FORMAT_R32G32B32A32_FLOAT });
 		VERIFY_D3D12_RESULT(builder.Build(m_PSO.PipelineState));
 
@@ -121,12 +122,14 @@ namespace Luden
 
 		m_Transform.Translation = pCamera->Position;
 		//m_Transform.Rotation = DirectX::XMFLOAT4(90.0f, 0.0f, 0.0f, 1.0f);
-		m_Transform.Scale = DirectX::XMFLOAT3(50.0f, 50.0f, 50.0f);
+		//m_Transform.Scale = DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f);
 		SkyConstants.World = World * DirectX::XMMatrixScalingFromVector(DirectX::XMLoadFloat3(&m_Transform.Scale)) *
 			DirectX::XMMatrixRotationRollPitchYawFromVector(DirectX::XMLoadFloat4(&m_Transform.Rotation)) *
 			DirectX::XMMatrixTranslationFromVector(DirectX::XMLoadFloat3(&m_Transform.Translation));
-		SkyConstants.World = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
-		SkyConstants.View = pCamera->GetView();
+		//SkyConstants.World = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
+		SkyConstants.World = DirectX::XMMatrixTranspose(SkyConstants.World * (pCamera->GetViewProjection()));
+		SkyConstants.View = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
+		//SkyConstants.View = pCamera->GetView();
 		SkyConstants.Projection = DirectX::XMMatrixTranspose(pCamera->GetProjection());
 
 		SkyParameters.CameraPosition = pCamera->Position;
@@ -146,9 +149,9 @@ namespace Luden
 
 	void Skybox::BuildSkydome()
 	{
-		const uint32 radius = 2;
-		const uint32 latitude = 32;
-		const uint32 longitude = 32;
+		const uint32 radius = 4;
+		const uint32 latitude = 64;
+		const uint32 longitude = 64;
 
 		const float deltaLatitude = Math::PI / latitude;
 		const float deltaLongitude = 2.0f * Math::PI / longitude;
@@ -239,14 +242,16 @@ namespace Luden
 		builder.SetVertexShader(&m_PSO.Vertex);
 		builder.SetPixelShader(&m_PSO.Pixel);
 		builder.SetCullMode(D3D12_CULL_MODE_NONE);
-		//builder.SetFillMode(D3D12_FILL_MODE_WIREFRAME);
 		builder.EnableDepth(false);
-		//builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
+		builder.SetDepthFunc(D3D12_COMPARISON_FUNC_LESS);
+		builder.SetDepthFormat(DXGI_FORMAT_D32_FLOAT);
 		builder.SetRenderTargetFormats({ DXGI_FORMAT_R32G32B32A32_FLOAT });
-		VERIFY_D3D12_RESULT(builder.Build(m_PSO.PipelineState));
+		//builder.SetRenderTargetFormats({ DXGI_FORMAT_R8G8B8A8_UNORM_SRGB });
 
 		VERIFY_D3D12_RESULT(m_PSO.RootSignature.BuildFromShader(pD3D12RHI->Device, &m_PSO.Vertex, PipelineType::Graphics));
+		VERIFY_D3D12_RESULT(builder.Build(pD3D12RHI->Device, m_PSO));
 
+		//DebugRenderTarget.Create(pD3D12RHI->Device, 1920, 1080, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor);
 		DebugRenderTarget.Create(pD3D12RHI->Device, 1920, 1080, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor);
 
 		Initialize();
@@ -310,7 +315,7 @@ namespace Luden
 
 	}
 
-	void ProceduralSky::Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 /* SunPosition */)
+	void ProceduralSky::Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 /* SunPosition */, D3D12RenderTexture* pRenderTarget)
 	{
 		const auto renderBeginTime = Time::GetTimestamp();
 
@@ -319,26 +324,44 @@ namespace Luden
 		commandList->SetPipelineState(&m_PSO.PipelineState);
 		commandList->SetRootSignature(&m_PSO.RootSignature);
 
-		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		commandList->SetRenderTargets(DebugRenderTarget.RenderTargetHandle);
-		commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
+		if (pRenderTarget)
+		{
+			commandList->ResourceTransition(pRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			commandList->SetRenderTargets(pRenderTarget->RenderTargetHandle, m_D3D12RHI->SceneDepthBuffer->DepthStencilHandle);
+			//commandList->ClearRenderTarget(RenderTarget.RenderTargetHandle, DefaultClearColor);
+		}
+		else
+		{
+			commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			commandList->SetRenderTargets(DebugRenderTarget.RenderTargetHandle);
+			commandList->ClearRenderTarget(DebugRenderTarget.RenderTargetHandle, DefaultClearColor);
+		}	
 
-		SkyConstants.InversedViewProjection = (DirectX::XMMatrixMultiply(pCamera->GetInversedView(), DirectX::XMMatrixTranspose(pCamera->GetInversedProjection())));
+		SkyConstants.InversedViewProjection = DirectX::XMMatrixTranspose(pCamera->GetInversedView()) * DirectX::XMMatrixTranspose(pCamera->GetInversedProjection());
 
 		SkyParameters.CameraPosition = pCamera->Position;
-		SkyParameters.SunPosition = this->SunPosition;
 		SkyParameters.VertexBufferIndex = m_VertexBuffer.ShaderResourceView.Index;
 
-		commandList->PushConstants(0, 16, &SkyParameters);
-		commandList->PushConstants(1, 48, &SkyConstants);
-
+		commandList->PushConstants(0, 18, &SkyParameters);
+		commandList->PushConstants(1, 16, &SkyConstants);
+		
 		commandList->SetVertexBuffer(&m_VertexBuffer);
 		commandList->SetIndexBuffer(&m_IndexBuffer);
-		commandList->DrawIndexed(static_cast<uint32>(m_Indices.size()), 0, 0);
-		commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+		commandList->DrawIndexed(m_IndexBuffer.GetBufferDesc().NumElements, 0, 0);
+		//commandList->Draw(3);
+
+
+		commandList->ResourceTransition((pRenderTarget ? pRenderTarget : &DebugRenderTarget), D3D12_RESOURCE_STATE_GENERIC_READ);
+		//commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+		//commandList->ResourceTransition(&DebugRenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
+		
+	}
 
+	void ProceduralSky::Resize(uint32 Width, uint32 Height)
+	{
+		DebugRenderTarget.Resize(Width, Height);
 	}
 
 } // namespace Luden
