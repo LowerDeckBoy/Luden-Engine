@@ -62,7 +62,7 @@ float3 GetThreshold(float3 Color)
 	return float3(Color * contribution);
 }
 
-static const float Weights[5] = { 0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f };
+//static const float Weights[5] = { 0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f };
 
 [RootSignature(BLOOM_RS)]
 [numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]
@@ -76,24 +76,21 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 		return;
 	}
 
-	Texture2D<float4> emissiveTexture 	= GetTexture(Constants.EmissiveImageIndex);
-	Texture2D<float4> lightingTexture 	= GetTexture(Constants.LightImageIndex);
+	Texture2D<float4> emissiveTexture = GetTexture(Constants.EmissiveImageIndex);
+	Texture2D<float4> hdrTexture = GetTexture(Constants.LightImageIndex);
 		
-	const float2 texelSize = GetTexelSize(textureSize);
-	const float2 texCoord = (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
-	const float2 center = DispatchThreadID.xy;
-	
 	float3 emissive = emissiveTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
-	float3 color 	= lightingTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
+	float3 color = hdrTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
 
-	emissive += GetThreshold(color);
-	output[DispatchThreadID.xy] = float4(emissive, 1.0f);
 
-	//float3 a = lightingTexture.Sample(TexSampler, (center + float2(-1.f, -1.f)) * texelSize).rgb; // Top left.
-	//float3 b = lightingTexture.Sample(TexSampler, (center + float2(+1.f, -1.f)) * texelSize).rgb; // Top right.
-	//float3 c = lightingTexture.Sample(TexSampler, (center + float2(-1.f, +1.f)) * texelSize).rgb; // Bottom left.
-	//float3 d = lightingTexture.Sample(TexSampler, (center + float2(+1.f, +1.f)) * texelSize).rgb; // Bottom right.
-	//output[DispatchThreadID.xy] = float4(GetThreshold_TEST2(KarisAverage(a, b, c, d)), 1.0f);
+	float falloffRange = 0.5;
+	float falloffStart = Constants.Threshold - falloffRange;
+	float falloffEnd = Constants.Threshold + falloffRange;
+	float factor = smoothstep(falloffStart, falloffEnd, GetLuminance(color));
+	color += emissive;
+	color *= factor;
+	
+	output[DispatchThreadID.xy] = float4(color, 1.0f);
 }
 
 #endif // BLOOM_HLSL

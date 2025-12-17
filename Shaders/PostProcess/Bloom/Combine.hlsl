@@ -19,11 +19,10 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID )
 	const float2 texelSize = GetTexelSize(textureSize);
 	const float2 texCoord = (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
 
-	float3 scene = sceneTexture[DispatchThreadID.xy].rgb;
-	float3 bloom = bloomImage.Sample(TexSampler, texCoord).rgb;
+	float4 scene = sceneTexture[DispatchThreadID.xy];
+	float4 bloom = bloomImage.Sample(TexSampler, texCoord);
 	
-	sceneTexture[DispatchThreadID.xy] = float4(lerp(scene.rgb, scene.rgb + bloom, Constants.Intensity), 1.0f);
-	//sceneTexture[DispatchThreadID.xy] = float4(lerp(scene.rgb, scene.rgb + bloom, Constants.Gamma), 1.0f);
+	sceneTexture[DispatchThreadID.xy] = lerp(scene, scene + bloom, Constants.Intensity);
 }
 
 #endif // BLOOM_COMBINE_HLSL
