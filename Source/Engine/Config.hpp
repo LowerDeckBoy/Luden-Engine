@@ -68,10 +68,10 @@ namespace Luden
 		
 		bool bEnableSSAO = true;
 
-		bool bEnableSky = false;
+		bool bEnableSky = true;
 		bool bEnableAtmosphere = false;
 
-		bool bEnableSSR = true;
+		bool bEnableSSR = false;
 
 		/* =============== Post - Processing =============== */
 		// Whether to enable PostProcessing or not.
@@ -79,13 +79,7 @@ namespace Luden
 		bool bEnableBloom		= true;
 		bool bEnableTonemapping = true;
 		bool bEnableFXAA		= true;
-		bool bEnableScattering	= true;
 
-		//
-		bool bEnableFilmEffects			= false;
-		bool bEnableChromaticAberration = false;
-		bool bEnableLensDistortion		= false;
-		bool bEnableFilmGrain			= false;
 
 	};
 } // namespace Luden
