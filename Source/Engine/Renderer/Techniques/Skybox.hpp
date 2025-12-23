@@ -76,31 +76,34 @@ namespace Luden
 		 
 		void Initialize(uint32 VerticalCount = 32, uint32 HorizontalCount = 32);
 
-		void Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition);	
+		void Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition, D3D12RenderTexture* pRenderTarget = nullptr);
+
+		void Resize(uint32 Width, uint32 Height);
 
 		struct
 		{
 			DirectX::XMMATRIX InversedViewProjection;
-			DirectX::XMMATRIX View;
-			DirectX::XMMATRIX Projection;
 		} SkyConstants{};
 
 		struct
 		{
 			DirectX::XMFLOAT3 SkyColor = DirectX::XMFLOAT3(0.0f, 0.2f, 1.0f);
-			float SunSize = 0.03f;
+			float Rayleigh = 2.0f;
 			DirectX::XMFLOAT3 SunColor = DirectX::XMFLOAT3(1.0f, 0.757f, 0.616f);
-			float SunBloom = 2.f;
-			DirectX::XMFLOAT3 SunPosition;
-			uint32 VertexBufferIndex = 0;
+			//DirectX::XMFLOAT3 HorizonColor = DirectX::XMFLOAT3(1.0f, 0.757f, 0.616f);
+			float MieCoefficient = 0.03f;
+			DirectX::XMFLOAT3 SunPosition = DirectX::XMFLOAT3(0.0f, 1.0f, 6.28f);
+			float Turbidity = 0.01f;
 			DirectX::XMFLOAT3 CameraPosition;
+			float Luminance = 1.2f;
+			float MieDirectionalG = 0.99f;
+			//float SunIntensity = 1.0f;
+			uint32 VertexBufferIndex;
 		} SkyParameters{};
 
 		D3D12RenderTexture DebugRenderTarget;
 
 		double RenderTime = 0;
-
-		DirectX::XMFLOAT3 SunPosition = DirectX::XMFLOAT3(0.0f, 1.0f, 6.28f);
 
 	private:
 		D3D12RHI* m_D3D12RHI = nullptr;
