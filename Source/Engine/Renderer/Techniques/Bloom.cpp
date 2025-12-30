@@ -33,26 +33,26 @@ namespace Luden
 
 
 		// Filter
-		//{
-		//	commandList->SetPipelineState(&BloomPSO.PipelineState);
-		//	auto& texture = RenderTarget;
-		//	commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		//
-		//	Parameters.MipIndex			= texture.ShaderResourceHandle.Index;
-		//	Parameters.LightImage		= LightPassImageIndex;
-		//	Parameters.EmissiveImage	= EmissiveImageIndex;
-		//
-		//	commandList->GetHandle()->SetComputeRoot32BitConstants(0, 8, &Parameters, 0);
-		//
-		//	const uint32 dispatchX = Math::RoundUp<uint32>((uint32)texture.GetDesc().Width / DispatchGroup);
-		//	const uint32 dispatchY = Math::RoundUp<uint32>(texture.GetDesc().Height / DispatchGroup);
-		//	commandList->Dispatch(dispatchX, dispatchY, 1);
-		//	commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_GENERIC_READ);
-		//}
+		{
+			commandList->SetPipelineState(&BloomPSO.PipelineState);
+			auto& texture = RenderTarget;
+			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		
+			Parameters.MipIndex			= texture.ShaderResourceHandle.Index;
+			Parameters.LightImage		= LightPassImageIndex;
+			Parameters.EmissiveImage	= EmissiveImageIndex;
+		
+			commandList->GetHandle()->SetComputeRoot32BitConstants(0, 8, &Parameters, 0);
+		
+			const uint32 dispatchX = Math::RoundUp<uint32>((uint32)texture.GetDesc().Width / DispatchGroup);
+			const uint32 dispatchY = Math::RoundUp<uint32>(texture.GetDesc().Height / DispatchGroup);
+			commandList->Dispatch(dispatchX, dispatchY, 1);
+			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_GENERIC_READ);
+		}
 
 		// Downsample
 		{
-			commandList->SetPipelineState(&DownsamplePSO.PipelineState);\
+			commandList->SetPipelineState(&DownsamplePSO.PipelineState);
 
 			// First downsample is made for Scene image.
 			// Others are looped based on previous downsample.
@@ -60,8 +60,8 @@ namespace Luden
 			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			Parameters.MipIndex = texture.ShaderResourceHandle.Index;
 			//Parameters.LightImage = Parameters.MipIndex;
-			Parameters.LightImage = LightPassImageIndex;
-			//Parameters.LightImage = RenderTarget.ShaderResourceHandle.Index;
+			//Parameters.LightImage = LightPassImageIndex;
+			Parameters.LightImage = RenderTarget.ShaderResourceHandle.Index;
 			commandList->GetHandle()->SetComputeRoot32BitConstants(0, 8, &Parameters, 0);
 			commandList->Dispatch(Math::RoundUp<uint32>((uint32)texture.GetDesc().Width / DispatchGroup), Math::RoundUp<uint32>(texture.GetDesc().Height / DispatchGroup), 1);
 			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_GENERIC_READ);
