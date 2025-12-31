@@ -66,7 +66,7 @@ namespace Luden
 
 		bool bHideEditor = false;
 		
-		bool bEnableSSAO = true;
+		bool bEnableSSAO = false;
 
 		bool bEnableSky = true;
 		bool bEnableAtmosphere = false;
