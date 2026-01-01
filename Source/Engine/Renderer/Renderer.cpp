@@ -39,6 +39,7 @@ namespace Luden
 		SSAOPass		= new SSAO(pD3D12RHI, m_ShaderCompiler, width, height);
 		SSRPass			= new SSR(pD3D12RHI, m_ShaderCompiler, width, height);
 		SkyboxPass		= new Skybox(pD3D12RHI, m_ShaderCompiler);
+		ProceduralSkyPass = new ProceduralSky(pD3D12RHI, m_ShaderCompiler);
 
 	}
 
@@ -60,6 +61,7 @@ namespace Luden
 
 		delete NoiseTexture;
 
+		delete ProceduralSkyPass;
 		delete SkyboxPass;
 		delete SSRPass;
 		delete FXAAPass;
@@ -145,20 +147,22 @@ namespace Luden
 
 		if (!Config::Get().bRaytracing)
 		{
+			auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
+
 			// G-Buffer
-			if (!Config::Get().bDrawIndirect)
+			commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			commandList->ClearDepthStencilView(depthStencilView);
+			GBuffer->Render(ActiveScene, Camera, *frame);
+			GBuffer->RenderTransparent(ActiveScene, Camera, *frame);
+
+			if (Config::Get().bEnableSky)
 			{
-				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-				commandList->ClearDepthStencilView(depthStencilView);
-				GBuffer->Render(ActiveScene, Camera, *frame);
-				GBuffer->RenderTransparent(ActiveScene, Camera, *frame);
-				commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
+				//SkyboxPass->Render(*frame, Camera, directional.Direction);
+				//SkyboxPass->RenderSkydome(*frame, Camera, directional.Direction);
+				ProceduralSkyPass->Render(*frame, Camera, directional.Direction, nullptr);
 			}
-			else
-			{
-				GBuffer->RenderIndirect(ActiveScene, Camera, *frame);
-			}
-			// Not used for now.
+
+			commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
 
 			// Open ComputeCommandList before dispatching Post-Processes and set DescriptorHeap once.
 			if (!frame->ComputeCommandList->IsOpen())
@@ -175,13 +179,6 @@ namespace Luden
 
 			// Light Pass
 			LightingPass->Render(ActiveScene, *frame, Camera, SSAOPass->RenderTarget.ShaderResourceHandle.Index);
-			
-			if (Config::Get().bEnableSky)
-			{
-				auto& directional = ActiveScene->SkyLight.GetComponent<ecs::DirectionalLightComponent>();
-				//SkyboxPass->Render(*frame, Camera, directional.Direction);
-				SkyboxPass->RenderSkydome(*frame, Camera, directional.Direction);
-			}
 
 			// Post-Processes
 			if (Config::Get().bEnablePostProcess)
@@ -293,8 +290,9 @@ namespace Luden
 		LightingPass->Resize(width, height);
 		BloomPass->Resize(width, height);
 		FXAAPass->Resize(width, height);
-		SSRPass->Resize(width, height);
 		SSAOPass->Resize(width, height);
+		SSRPass->Resize(width, height);
+		ProceduralSkyPass->Resize(width, height);
 
 		if (RaytracingBVH != nullptr)
 		{
@@ -477,7 +475,7 @@ namespace Luden
 		//GBuffer->IndirectSignature->CreateCommandsBuffer(desc);
 		*/
 
-		InitializeRaytracingResources();
+		//InitializeRaytracingResources();
 
 		m_D3D12RHI->Wait();
 		//m_D3D12RHI->Flush();
@@ -533,13 +531,13 @@ namespace Luden
 			m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList->Open();
 		}
 		RaytracingBVH = new D3D12BVH(m_D3D12RHI);
+		RaytracingBVH->Build(m_D3D12RHI, ActiveScene);
+		//for (auto& model : ActiveScene->Models)
+		//{
+		//	RaytracingBVH->AddBLAS(model.get(), m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList);
+		//}
 
-		for (auto& model : ActiveScene->Models)
-		{
-			RaytracingBVH->AddBLAS(model.get(), m_D3D12RHI->Frames.at(BackBufferIndex).GraphicsCommandList);
-		}
-
-		RaytracingBVH->CreateTLAS();
+		//RaytracingBVH->CreateTLAS();
 
 		TextureDesc textureDesc{};
 		textureDesc.Width	= m_ParentWindow->HostImageWidth;
@@ -579,7 +577,8 @@ namespace Luden
 
 		builder.AddHitGroup(hitGroup);
 
-		builder.SetGlobalRootSignature(RaytracingRS, { L"RayGen", L"Miss", L"HitGroup" });
+		//builder.SetGlobalRootSignature(RaytracingRS, { L"RayGen", L"Miss", L"HitGroup" });
+		builder.SetGlobalRootSignature(RaytracingRS);
 		RaytracingPSO = new D3D12StateObject();
 		builder.Build(m_D3D12RHI->Device, *RaytracingPSO);
 		
@@ -594,8 +593,8 @@ namespace Luden
 		FShaderTableRecord hitRecord(FShaderIdentifier(RaytracingPSO->GetProperties()->GetShaderIdentifier(L"HitGroup")));
 		RaytracingShaderTable->HitTable.AddRecord(hitRecord);
 
-		RaytracingShaderTable->Create(m_D3D12RHI->Device);
-		RaytracingShaderTable->m_StorageBuffer->SetDebugName("D3D12 SBT Storage");
+		RaytracingShaderTable->Create(m_D3D12RHI->Device, RaytracingPSO);
+		RaytracingShaderTable->GetStorageBuffer()->SetDebugName("D3D12 SBT Storage");
 
 	}
 

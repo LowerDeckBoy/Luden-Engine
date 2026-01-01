@@ -80,6 +80,7 @@ namespace Luden
 		SSR*			SSRPass;
 		SSAO*			SSAOPass;
 		Skybox*			SkyboxPass;
+		ProceduralSky*	ProceduralSkyPass;
 
 		double PresentRenderTime = 0.0;
 		double UpdateRenderTime = 0.0;
