@@ -82,15 +82,13 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	float3 emissive = emissiveTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
 	float3 color = hdrTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
 
-
 	float falloffRange = 0.5;
 	float falloffStart = Constants.Threshold - falloffRange;
 	float falloffEnd = Constants.Threshold + falloffRange;
 	float factor = smoothstep(falloffStart, falloffEnd, GetLuminance(color));
-	color += emissive;
 	color *= factor;
 	
-	output[DispatchThreadID.xy] = float4(color, 1.0f);
+	output[DispatchThreadID.xy] = float4(emissive + color, 1.0f);
 }
 
 #endif // BLOOM_HLSL
