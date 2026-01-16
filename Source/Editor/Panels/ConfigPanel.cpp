@@ -22,6 +22,7 @@ namespace Luden::Panel
 		DrawSceneCameraConfig();
 		DrawPostProcessConfig();
 		DrawSkyConfig();
+		DrawProceduralSkyConfig();
 
 		ImGui::End();
 	}
@@ -57,10 +58,10 @@ namespace Luden::Panel
 
 			if (Config::Get().bEnableSky)
 			{
-				TableNextRowBegin("Sky");
+				TableNextRowBegin("Procedural Sky");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Text("%.3f ms", m_Renderer->SkyboxPass->RenderTime);
+				ImGui::Text("%.3f ms", m_Renderer->ProceduralSkyPass->RenderTime);
 			}
 
 			if (Config::Get().bEnableBloom)
@@ -318,7 +319,7 @@ namespace Luden::Panel
 				TableNextRowBegin("Radius");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Radius", &m_Renderer->SSAOPass->Parameters.Radius, 0.1f, 10.0f, "%.1f");
+				ImGui::SliderFloat("##Radius", &m_Renderer->SSAOPass->Parameters.Radius, 0.1f, 1.0f, "%.1f");
 
 				TableNextRowBegin("Power");
 				ImGui::TableNextColumn();
@@ -335,58 +336,16 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Blur", &m_Renderer->SSAOPass->bBlurSSAO);
 
-				TableNextRowBegin("Blur Sharpness");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 0.5f, "%.2f");
+				//TableNextRowBegin("Blur Sharpness");
+				//ImGui::TableNextColumn();
+				//ImGui::SetNextItemWidth(-1.0f);
+				//ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 0.5f, "%.2f");
 				//ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 128.0f, "%.0f");
 
 				if (!Config::Get().bEnableSSAO)
 				{
 					ImGui::EndDisabled();
 				}
-
-				ImGui::EndTable();
-			}
-
-			ImGui::TreePop();
-		}
-	}
-
-	void ConfigPanel::DrawScatteringConfig()
-	{
-		if (ImGui::TreeNodeEx("Volumetric Scattering", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
-		{
-			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
-			{
-				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
-
-				TableNextRowBegin("Enable");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Checkbox("##Enable", &Config::Get().bEnableScattering);
-
-				ImGui::EndTable();
-			}
-
-			ImGui::TreePop();
-		}
-	}
-
-	void ConfigPanel::DrawAtmosphereConfig()
-	{
-		if (ImGui::TreeNodeEx("Atmosphere Scattering", ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
-		{
-			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
-			{
-				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
-				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
-
-				TableNextRowBegin("Enable");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::Checkbox("##Enable", &Config::Get().bEnableAtmosphere);
 
 				ImGui::EndTable();
 			}
@@ -421,6 +380,69 @@ namespace Luden::Panel
 				ImGui::ColorEdit3("##Sun Color", (float*)&(DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SunColor);
 				//gui::Math::EditColor3("##Sun Color", (DirectX::XMFLOAT3&)m_Renderer->SkyboxPass->SkyParameters.SunColor);
 
+				TableNextRowBegin("Sun Size");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Sun Size", &m_Renderer->SkyboxPass->SkyParameters.SunSize, 0.01f, 5.0f, "%.2f");
+
+				TableNextRowBegin("Sun Bloom");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Sun Bloom", &m_Renderer->SkyboxPass->SkyParameters.SunBloom, 0.01f, 5.0f, "%.1f");
+
+				ImGui::EndTable();
+			}
+		}
+	}
+
+	void ConfigPanel::DrawProceduralSkyConfig()
+	{
+		if (ImGui::CollapsingHeader("Procedural Sky"))
+		{
+			if (ImGui::BeginTable("##paramaters", 2, ImGuiTableFlags_SizingFixedSame))
+			{
+				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
+
+				TableNextRowBegin("Sky Color");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::ColorEdit3("##Sky Color", (float*)&(DirectX::XMFLOAT3&)m_Renderer->ProceduralSkyPass->SkyParameters.SkyColor);
+
+				TableNextRowBegin("Sun Color");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::ColorEdit3("##Sun Color", (float*)&(DirectX::XMFLOAT3&)m_Renderer->ProceduralSkyPass->SkyParameters.SunColor);
+
+				TableNextRowBegin("Sun Position");
+				ImGui::TableNextColumn();
+				gui::Math::DrawFloat3InAngles("##Sun Position", m_Renderer->ProceduralSkyPass->SkyParameters.SunPosition);
+
+				TableNextRowBegin("Rayleigh");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Rayleigh", &m_Renderer->ProceduralSkyPass->SkyParameters.Rayleigh, 0.0f, 5.0f, "%.2f");
+
+				TableNextRowBegin("Mie Coefficient");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Mie Coefficient", &m_Renderer->ProceduralSkyPass->SkyParameters.MieCoefficient, 0.0f, 3.0f, "%.2f");
+
+				TableNextRowBegin("Turbidity");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Turbidity", &m_Renderer->ProceduralSkyPass->SkyParameters.Turbidity, 0.0f, 0.99f, "%0.2f");
+
+				TableNextRowBegin("Luminance");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Luminance", &m_Renderer->ProceduralSkyPass->SkyParameters.Luminance, 0.0f, 10.0f);
+
+				TableNextRowBegin("G");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##MieDirectionalG", &m_Renderer->ProceduralSkyPass->SkyParameters.MieDirectionalG, 0.0f, 0.99f, "%.2f");
+
 				ImGui::EndTable();
 			}
 		}
@@ -448,7 +470,7 @@ namespace Luden::Panel
 				TableNextRowBegin("Ray threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, 0.0f, 10.0f, "%.1f");
+				ImGui::SliderFloat("##threshold", &m_Renderer->SSRPass->Parameters.RayThreshold, -10.0f, 10.0f, "%.1f");
 
 				ImGui::EndTable();
 			}
@@ -526,7 +548,7 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[8] = { "ACES", "AgX", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
+				static const char* types[9] = { "ACES", "ACES Simple", "AgX", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
 				TableNextRowBegin("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
