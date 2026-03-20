@@ -21,7 +21,8 @@ namespace Luden
 
 		void Release() override;
 
-		D3D12RenderTexture RenderTarget;
+		D3D12RenderTexture SSAORenderTarget;
+		D3D12RenderTexture BlurRenderTarget;
 
 		constexpr static uint32 KernelSize = 64;
 
@@ -37,7 +38,7 @@ namespace Luden
 
 			float Radius	= 0.1f;
 			float Power		= 10.0f;
-			float Bias		= 0.1f;
+			float Bias		= 0.05f;
 			uint32 padding	= 0;
 
 			DirectX::XMFLOAT4 Samples[KernelSize];
@@ -45,7 +46,7 @@ namespace Luden
 
 		D3D12ConstantBuffer* ConstantBuffer;
 		
-		float BlurSharpness = 40.0f;
+		float BlurSharpness = 0.5f;
 		bool bBlurSSAO = true;
 
 	private:

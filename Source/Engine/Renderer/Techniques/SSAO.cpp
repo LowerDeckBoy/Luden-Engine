@@ -36,7 +36,8 @@ namespace Luden
 			VERIFY_D3D12_RESULT(builder.Build(m_RHI->Device, m_BlurPSO));
 		}
 
-		RenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM);
+		SSAORenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM);
+		BlurRenderTarget.Create(m_RHI->Device, Width, Height, DXGI_FORMAT_R8G8B8A8_UNORM);
 
 		std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 		std::default_random_engine generator;
@@ -83,12 +84,13 @@ namespace Luden
 		commandList->SetPipelineState(&Pipeline.PipelineState);
 		commandList->SetRootSignature(&Pipeline.RootSignature);
 
-		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		commandList->ResourceTransition(&SSAORenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		commandList->ResourceTransition(&BlurRenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 		Parameters.Projection			= DirectX::XMMatrixTranspose(pCamera->GetProjection());
 		Parameters.InvProjection		= DirectX::XMMatrixTranspose(pCamera->GetInversedProjection());
 
-		Parameters.OutputImageIndex		= RenderTarget.ShaderResourceHandle.Index;
+		Parameters.OutputImageIndex		= SSAORenderTarget.ShaderResourceHandle.Index;
 		Parameters.NoiseIndex			= NoiseImageIndex;
 		Parameters.NormalIndex			= pGBuffer->NormalVS.ShaderResourceHandle.Index;
 		Parameters.DepthIndex			= m_RHI->SceneDepthBuffer->ShaderResourceHandle.Index;
@@ -96,8 +98,8 @@ namespace Luden
 		ConstantBuffer->Update(&Parameters);
 		commandList->GetHandle()->SetComputeRootConstantBufferView(0, ConstantBuffer->GetBuffer()->GetGPUVirtualAddress());
 
-		const uint32 dispatchX = Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Width  / 8u);
-		const uint32 dispatchY = Math::RoundUp<uint32>((uint32)RenderTarget.GetDesc().Height / 8u);
+		const uint32 dispatchX = Math::RoundUp<uint32>((uint32)SSAORenderTarget.GetDesc().Width  / 8u);
+		const uint32 dispatchY = Math::RoundUp<uint32>((uint32)SSAORenderTarget.GetDesc().Height / 8u);
 		commandList->Dispatch(dispatchX, dispatchY, 1);
 		
 
@@ -112,19 +114,29 @@ namespace Luden
 				uint32 DepthIndex;
 				uint32 NormalIndex;
 				float  Sharpness;
+				uint32 Direction;
 			} constants
 			{
-				.TargetImageIndex = RenderTarget.ShaderResourceHandle.Index,
+				.TargetImageIndex = BlurRenderTarget.ShaderResourceHandle.Index,
 				.DepthIndex = m_RHI->SceneDepthBuffer->ShaderResourceHandle.Index,
-				.NormalIndex = pGBuffer->NormalVS.ShaderResourceHandle.Index,
-				.Sharpness = BlurSharpness
+				.NormalIndex = SSAORenderTarget.ShaderResourceHandle.Index,
+				//.NormalIndex = pGBuffer->NormalVS.ShaderResourceHandle.Index,
+				.Sharpness = BlurSharpness,
+				.Direction = 0
 			};
 
-			commandList->PushComputeConstants(0, 4, &constants);
+			commandList->PushComputeConstants(0, 5, &constants);
 			commandList->Dispatch(dispatchX, dispatchY, 1);
+
+			constants.Direction = 1;
+			constants.NormalIndex = BlurRenderTarget.ShaderResourceHandle.Index;
+
+			//commandList->PushComputeConstants(0, 5, &constants);
+			//commandList->Dispatch(dispatchX, dispatchY, 1);
 		}
 		
-		commandList->ResourceTransition(&RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+		commandList->ResourceTransition(&SSAORenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
+		commandList->ResourceTransition(&BlurRenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
 
@@ -132,12 +144,14 @@ namespace Luden
 
 	void SSAO::Resize(uint32 Width, uint32 Height)
 	{
-		RenderTarget.Resize(Width, Height);
+		SSAORenderTarget.Resize(Width, Height);
+		BlurRenderTarget.Resize(Width, Height);
 	}
 
 	void SSAO::Release()
 	{
-		RenderTarget.Release();
+		SSAORenderTarget.Release();
+		BlurRenderTarget.Release();
 		ConstantBuffer->Release();
 	}
 
