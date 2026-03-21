@@ -37,16 +37,16 @@ namespace Luden
 			uint32 DepthIndex;
 
 			float Radius	= 0.1f;
-			float Power		= 10.0f;
 			float Bias		= 0.05f;
-			uint32 padding	= 0;
+			float padding0	= 0.0f;
+			float padding1	= 0.0f;
 
 			DirectX::XMFLOAT4 Samples[KernelSize];
 		} Parameters{};
 
 		D3D12ConstantBuffer* ConstantBuffer;
 		
-		float BlurSharpness = 0.5f;
+		float BlurSharpness = 0.9f;
 		bool bBlurSSAO = true;
 
 	private:

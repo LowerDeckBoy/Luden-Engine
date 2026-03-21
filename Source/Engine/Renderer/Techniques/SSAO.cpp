@@ -111,28 +111,27 @@ namespace Luden
 			struct
 			{
 				uint32 TargetImageIndex;
-				uint32 DepthIndex;
-				uint32 NormalIndex;
+				uint32 SourceIndex;
 				float  Sharpness;
+				// 0 - horizontal
+				// 1 - vertical
 				uint32 Direction;
 			} constants
 			{
-				.TargetImageIndex = BlurRenderTarget.ShaderResourceHandle.Index,
-				.DepthIndex = m_RHI->SceneDepthBuffer->ShaderResourceHandle.Index,
-				.NormalIndex = SSAORenderTarget.ShaderResourceHandle.Index,
-				//.NormalIndex = pGBuffer->NormalVS.ShaderResourceHandle.Index,
-				.Sharpness = BlurSharpness,
-				.Direction = 0
+				.TargetImageIndex	= BlurRenderTarget.ShaderResourceHandle.Index,
+				.SourceIndex		= SSAORenderTarget.ShaderResourceHandle.Index,
+				.Sharpness			= BlurSharpness,
+				.Direction			= 0
 			};
 
-			commandList->PushComputeConstants(0, 5, &constants);
+			commandList->PushComputeConstants(0, 4, &constants);
 			commandList->Dispatch(dispatchX, dispatchY, 1);
 
-			constants.Direction = 1;
-			constants.NormalIndex = BlurRenderTarget.ShaderResourceHandle.Index;
-
-			//commandList->PushComputeConstants(0, 5, &constants);
-			//commandList->Dispatch(dispatchX, dispatchY, 1);
+			constants.Direction   = 1;
+			constants.SourceIndex = BlurRenderTarget.ShaderResourceHandle.Index;
+			
+			commandList->PushComputeConstants(0, 4, &constants);
+			commandList->Dispatch(dispatchX, dispatchY, 1);
 		}
 		
 		commandList->ResourceTransition(&SSAORenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ);

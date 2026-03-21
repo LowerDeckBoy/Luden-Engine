@@ -11,10 +11,10 @@
 
 struct Parameters
 {
-	uint TargetImageIndex;
-	uint DepthIndex;
-	uint NormalIndex;
-	float Sharpness;
+	uint	TargetImageIndex;
+	uint	SourceIndex;
+	float	Sharpness;
+	uint	Direction;
 };
 
 static const float Weights[5] = { 0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f };
@@ -26,9 +26,8 @@ SamplerState TexSampler : register(s0);
 [numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]
 void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
-	Texture2D<float4> sampleTexture = GetTexture(Constants.TargetImageIndex);
-	//Texture2D depthTexture = GetTexture(Constants.DepthIndex);
-	RWTexture2D<float4> targetTexture = GetRWTexture<float4>(Constants.TargetImageIndex);
+	Texture2D<float4>	sourceTexture	= GetTexture(Constants.SourceIndex);
+	RWTexture2D<float4> targetTexture	= GetRWTexture<float4>(Constants.TargetImageIndex);
 	
 	const float2 textureSize	= GetTextureSize(targetTexture);
 	const float2 texelSize		= GetTexelSize(textureSize);
@@ -39,32 +38,52 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 		return;
 	}
 	
-	float3 source = sampleTexture.Sample(TexSampler, texCoord).xyz;
-	//float depth = depthTexture.Sample(TexSampler, texCoord).r;
-
-	float3 color = source;
-	float blurRadius = 0.20f;
+	float3 result = 0.0f.xxx;
+	float blurRadius = Constants.Sharpness;
 	float weightSum = 0.0f;
-	for (int i = -KERNEL_RADIUS; i <= KERNEL_RADIUS; ++i)
+	
+	// Blur horizontally
+	if (Constants.Direction == 0)
 	{
-		float2 offset = float2(i * texelSize.x * blurRadius, 0.0f);
-		float weight = Weights[abs(i)];
-        
-		color += sampleTexture.Sample(TexSampler, texCoord + offset).rgb * weight;
-		weightSum += weight;
+		for (int i = -KERNEL_RADIUS; i <= KERNEL_RADIUS; ++i)
+		{
+			float2 offset = float2(i * texelSize.x * blurRadius, 0.0f);
+			float weight = Weights[abs(i)];
+		
+			result += sourceTexture.Sample(TexSampler, texCoord + offset).rgb * weight;
+			weightSum += weight;
+		}
+	}
+	// Blur vertically
+	else
+	{
+		for (int j = -KERNEL_RADIUS; j <= KERNEL_RADIUS; ++j)
+		{
+			float2 offset = float2(0.0f, j * texelSize.y * blurRadius);
+			float weight = Weights[abs(j)];
+		
+			result += sourceTexture.Sample(TexSampler, texCoord + offset).rgb * weight;
+			weightSum += weight;
+		}
 	}
 	
-	for (int j = -KERNEL_RADIUS; j <= KERNEL_RADIUS; ++j)
-	{
-		float2 offset = float2(j * texelSize.y * blurRadius, 0.0f);
-		float weight = Weights[abs(j)];
-        
-		color += sampleTexture.Sample(TexSampler, texCoord + offset).rgb * weight;
-		weightSum += weight;
-	}
+	// Single pass blur
+	// Likely to remove later.
+	//float3 result = 0.0f.xxx;
+	//const int blurRange = 2;
+	//int n = 0;
+	//for (int x = -blurRange; x <= blurRange; x++)
+	//{
+	//	for (int y = -blurRange; y <= blurRange; y++)
+	//	{
+	//		float2 offset = float2(float(x), float(y)) * texelSize;
+	//		result += sourceTexture.Sample(TexSampler, texCoord + offset).rgb;
+	//		n++;
+	//	}
+	//}
+	//samp = result / n; // / 4.0f;
 	
-	targetTexture[DispatchThreadID.xy] = float4(color / weightSum, 1.0f);
-
+	targetTexture[DispatchThreadID.xy] = float4(result / weightSum, 1.0f);
 }
 
 #endif // BLUR_HLSL

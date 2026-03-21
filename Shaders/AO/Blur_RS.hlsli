@@ -11,6 +11,6 @@
 	"StaticSampler(s0, "\
 		"addressU = TEXTURE_ADDRESS_CLAMP, "\
 		"addressV = TEXTURE_ADDRESS_CLAMP, "\
-		"filter = FILTER_MAXIMUM_MIN_MAG_MIP_POINT)"
+		"filter = FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR)"
 
 #endif // BLUR_RS_HLSLI

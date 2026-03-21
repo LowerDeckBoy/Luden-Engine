@@ -20,9 +20,9 @@ struct SSAOParameters
 	uint DepthIndex;
 	
 	float Radius;
-	float Power;
 	float Bias;
-	uint  padding;
+	float padding0;
+	float padding1;
 	
 	float4 Samples[KernelSize];
 };
@@ -49,13 +49,13 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	Texture2D<float4> texNoise		= GetTexture(Constants.NoiseIndex);
 	Texture2D<float4> texDepth		= GetTexture(Constants.DepthIndex);
 
-	const float3 normal			= (texNormal.Sample(LinearWrapSampler, texCoord).rgb * 2.0f - 1.0f);
+	const float3 normal			= normalize(texNormal.Sample(LinearWrapSampler, texCoord).rgb * 2.0f - 1.0f);
 	const float  depth			= texDepth.Sample(LinearWrapSampler, texCoord).x;
 	const float3 viewPosition	= GetViewPosition(texCoord, depth, Constants.InvProjection);
 	
 	const float2 noiseDimensions = GetTextureSize(texNoise);
 	const float2 noiseScale		 = textureSize / noiseDimensions;
-	const float3 randomVector	 = normalize(float3(texNoise.Sample(LinearWrapSampler, texCoord * noiseScale).xy * 2.0f - 1.0f, 0.0f));
+	const float3 randomVector	 = float3(texNoise.Sample(LinearWrapSampler, texCoord * noiseScale).xy * 2.0f - 1.0f, 0.0f);
 	
 	const float3 tangent	= normalize(randomVector - normal * dot(randomVector, normal));
 	const float3 bitangent	= cross(normal, tangent);
@@ -81,7 +81,6 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	}
 	
 	occlusion = 1.0f - (occlusion / (float)KernelSize);
-	occlusion = pow(abs(occlusion), Constants.Power);
 	output[DispatchThreadID.xy] = float4(occlusion, occlusion, occlusion, 1.0f);
 
 }
