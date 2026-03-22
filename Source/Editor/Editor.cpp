@@ -1,6 +1,6 @@
 #include <Engine/Renderer/Renderer.hpp>
 #include "Editor.hpp"
-#include "Theme.hpp"
+#include "Misc/Theme.hpp"
 #include <FontAwsome6/IconsFontAwesome6.h>
 #include <Platform/FileDialog.hpp>
 #include <Platform/Utility.hpp>
@@ -90,7 +90,7 @@ namespace Luden
 
 		m_MainViewport = ImGui::GetMainViewport();
 		m_MainViewport->Flags |= ImGuiViewportFlags_TopMost;
-		m_MainViewport->Flags |= ImGuiViewportFlags_OwnedByApp;
+		//m_MainViewport->Flags |= ImGuiViewportFlags_OwnedByApp;
 
 
 		if (!ImGui_ImplDX12_CreateDeviceObjects())
@@ -206,7 +206,7 @@ namespace Luden
 		DrawMainMenuBar();
 
 		ImGui::Begin("Hierarchy");
-
+		
 		m_ConfigPanel.DrawPanel();
 		m_HierarchyPanel.DrawPanel();
 		m_ContentBrowserPanel.DrawPanel();
@@ -341,10 +341,14 @@ namespace Luden
 				{
 					if (ImGui::MenuItem("Screen Space Ambient Occlusion"))
 					{
-						m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->SSAORenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					}
+
+					if (ImGui::MenuItem("Screen Space Ambient Occlusion Blur"))
+					{
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->SSAOPass->BlurRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 					}
 				}
-				
 
 				if (Config::Get().bEnableSSR)
 				{
@@ -356,9 +360,14 @@ namespace Luden
 				
 				if (Config::Get().bEnableSky)
 				{
-					if (ImGui::MenuItem("Sky - Test"))
+					if (ImGui::MenuItem("Sky"))
 					{
 						m_ConfigPanel.DisplayImageAddress = m_Renderer->SkyboxPass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
+					}
+
+					if (ImGui::MenuItem("Procedural Sky"))
+					{
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->ProceduralSkyPass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 					}
 				}
 				
@@ -394,9 +403,9 @@ namespace Luden
 	void Editor::DrawSceneImage() const
 	{
 		ImGui::Begin(ICON_FA_DESKTOP" Scene", nullptr, ImGuiWindowFlags_NoScrollbar);
+		
 		const auto& viewportSize = ImGui::GetContentRegionAvail();
 		ImGui::Image(m_ConfigPanel.DisplayImageAddress, viewportSize);
-
 		if (ImGui::IsWindowHovered())
 		{
 			m_Renderer->Camera->IsInViewport = true;
@@ -417,6 +426,107 @@ namespace Luden
 
 			ImGui::EndDragDropTarget();
 		}
+
+		ImGui::End();
+
+		// Test
+		// Image over image
+		ImGui::Begin(ICON_FA_DESKTOP" Debug View");
+		if (ImGui::IsWindowHovered())
+		{
+			m_Renderer->Camera->IsInViewport = true;
+		}
+		else
+		{
+			m_Renderer->Camera->IsInViewport = false;
+		}
+
+		
+
+		//ImGui::SetNextItemAllowOverlap();
+		const ImVec2 windowSize = ImGui::GetWindowSize();
+		const ImVec2 subimageSize = { windowSize.x / 4.0f, windowSize.y / 4.0f };
+		const uint32 tableColumns = 4;
+		const auto tableFlags = ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_SizingStretchSame;
+
+		
+
+		if (ImGui::BeginTable("##debugViewUpper", tableColumns, tableFlags))
+		{
+			auto getPositionWithOffset = [&](uint32 Offset, float Height) {
+				const float width = ImGui::GetColumnWidth();
+				const float height = Height - (Height - 35);
+				//const float height = (Height - 15);
+				return ImVec2{ (15 + (width * Offset)), height };
+				};
+
+			ImGui::TableNextColumn();
+			ImGui::Image(m_Renderer->GBuffer->BaseColor.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			ImGui::SetCursorPos(getPositionWithOffset(0, subimageSize.y));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Text("BaseColor");
+			//if (ImGui::IsItemHovered()) {}
+
+			ImGui::TableNextColumn();
+			ImGui::Image(m_Renderer->GBuffer->NormalVS.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			ImGui::SetCursorPos(getPositionWithOffset(1, subimageSize.y));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Text("Normal View Space");
+
+			
+			ImGui::TableNextColumn();
+			ImGui::Image(m_Renderer->GBuffer->Normal.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			ImGui::SetCursorPos(getPositionWithOffset(2, subimageSize.y));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Text("Normal TBN");
+
+			ImGui::TableNextColumn();
+			ImGui::Image(m_Renderer->GBuffer->MetallicRoughness.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			ImGui::SetCursorPos(getPositionWithOffset(3, subimageSize.y));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Text("Metallic-Roughness");
+
+			ImGui::EndTable();
+		}
+		ImGui::Image(m_ConfigPanel.DisplayImageAddress, viewportSize);
+		if (ImGui::BeginTable("##debugViewLower", 4, tableFlags))
+		{
+			const auto winPos = ImGui::GetWindowPos().y;
+
+			auto getPositionWithOffset = [&](uint32 Offset, float Height) {
+				const float width = ImGui::GetColumnWidth();
+				const float height = (Height - 15);
+				return ImVec2{ (15 + (width * Offset)), height };
+				};
+
+			ImGui::TableNextColumn();
+			ImGui::Image(m_Renderer->GBuffer->Emissive.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			//ImGui::SetCursorPos(getPositionWithOffset(0, winPos));
+			float currentY = ImGui::GetCursorPosY();
+			ImGui::SetCursorPos(getPositionWithOffset(0, currentY - subimageSize.y));
+			ImGui::SetCursorPos(getPositionWithOffset(0, currentY));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Text("Emissive");
+
+			ImGui::TableNextColumn();
+			ImGui::Image(m_Renderer->SSAOPass->SSAORenderTarget.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			ImGui::SetCursorPos(getPositionWithOffset(1, subimageSize.y));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Text("Ambient Occlusion");
+
+			ImGui::TableNextColumn();
+			ImGui::Image(m_Renderer->BloomPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			ImGui::SetCursorPos(getPositionWithOffset(2, subimageSize.y));
+			ImGui::SetCursorPos(getPositionWithOffset(2, 15));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Text("Bloom");
+
+			ImGui::EndTable();
+		}
+
+		
+
+		
 
 		ImGui::End();
 	}
