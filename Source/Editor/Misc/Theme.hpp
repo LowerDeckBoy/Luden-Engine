@@ -70,7 +70,8 @@ namespace Luden::gui
 		InStyle.Colors[ImGuiCol_CheckMark]			= Color::White;
 		InStyle.Colors[ImGuiCol_NavHighlight]		= Color::CoralActive;
 
-		InStyle.Colors[ImGuiCol_TableRowBg]			= Color::Gray;
+		InStyle.Colors[ImGuiCol_TableRowBg]			= Color::BackgroundDark;
+		InStyle.Colors[ImGuiCol_TableRowBgAlt]		= Color::RGBA(55, 55, 55);
 
 		InStyle.SeparatorTextBorderSize = 0.25f;
 		InStyle.SeparatorTextAlign = ImVec2(0.5f, 0.5f);
