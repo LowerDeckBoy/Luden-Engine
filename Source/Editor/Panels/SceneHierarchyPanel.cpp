@@ -29,7 +29,6 @@ namespace Luden::Panel
 
 	void SceneHierarchyPanel::DrawPanel()
 	{
-		
 		if (ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth))
 		{
 			if (m_ActiveScene->Models.empty())
@@ -42,7 +41,7 @@ namespace Luden::Panel
 				return;
 			}
 
-			if (ImGui::BeginTable("hierachy", 2, ImGuiTableFlags_SizingFixedFit))
+			if (ImGui::BeginTable("hierachy", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
 			{
 				ImGui::TableSetupColumn("##A", ImGuiTableColumnFlags_WidthFixed);
 				ImGui::TableSetupColumn("##B", ImGuiTableColumnFlags_WidthStretch);
@@ -58,7 +57,8 @@ namespace Luden::Panel
 					const char* icon = name.bVisibleInScene ? ICON_FA_EYE : ICON_FA_EYE_SLASH;
 
 					ImGui::PushID(name.Name.data());
-					ImGui::PushStyleColor(ImGuiCol_Button, gui::Color::BackgroundDark);
+					// Temporal; disabled alpha.
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(gui::Color::BackgroundDark.x, gui::Color::BackgroundDark.y, gui::Color::BackgroundDark.z, 0.0f));
 					if (ImGui::Button(icon))
 					{
 						name.bVisibleInScene = !name.bVisibleInScene;
@@ -70,7 +70,7 @@ namespace Luden::Panel
 
 					Entity entity(m_ActiveScene->GetWorld(), handle);
 
-					ImGuiTreeNodeFlags flags =
+					const ImGuiTreeNodeFlags flags =
 						((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_FramePadding |
 						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanFullWidth;
 

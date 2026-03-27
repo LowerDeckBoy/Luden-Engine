@@ -1,6 +1,6 @@
-#include "../Colors.hpp"
-#include "../Components/Tooltip.hpp"
-#include "../Editor.hpp"
+#include "Misc/Colors.hpp"
+#include "Components/Tooltip.hpp"
+#include "Editor.hpp"
 #include "ContentBrowserPanel.hpp"
 
 

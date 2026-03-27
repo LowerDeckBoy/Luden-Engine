@@ -1,4 +1,4 @@
-#include "../Colors.hpp"
+#include "Misc/Colors.hpp"
 #include "Components.hpp"
 #include "Helpers.hpp"
 #include "Tooltip.hpp"
@@ -214,10 +214,18 @@ namespace Luden::gui
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 			ImGui::AlignTextToFramePadding();
+			ImGui::Text("Intensity");
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			ImGui::DragFloat("##Intensity", &Component.Intensity, 1.0f, 1.0f, 0.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
 			ImGui::Text("Radius");
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			ImGui::DragFloat("##radius", &Component.Radius, 1.0f, 1.0f, 0.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::DragFloat("##Radius", &Component.Radius, 1.0f, 1.0f, 0.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
 
 			ImGui::EndTable();
 		}
@@ -269,7 +277,7 @@ namespace Luden::gui
 
 			TableNextRowBegin("Direction");
 			ImGui::TableNextColumn();
-			Math::DrawFloat3InAngles("Direction", Component.Direction, -90.0f, 90.0f);
+			Math::DrawFloat3InAngles("Direction", Component.Direction);
 
 			TableNextRowBegin("Ambient");
 			ImGui::TableNextColumn();

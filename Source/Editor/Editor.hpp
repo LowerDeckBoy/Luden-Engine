@@ -47,6 +47,7 @@ namespace Luden
 		void DrawMainMenuBar();
 
 		void DrawSceneImage() const;
+		void DrawSceneDebugView() const;
 
 		// TODO:
 		void DrawPropertyPanel();

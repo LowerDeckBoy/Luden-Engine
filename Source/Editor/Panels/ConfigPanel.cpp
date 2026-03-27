@@ -320,12 +320,7 @@ namespace Luden::Panel
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::SliderFloat("##Radius", &m_Renderer->SSAOPass->Parameters.Radius, 0.1f, 1.0f, "%.1f");
-
-				TableNextRowBegin("Power");
-				ImGui::TableNextColumn();
-				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Power", &m_Renderer->SSAOPass->Parameters.Power, 0.1f, 10.0f, "%.1f");
-
+			
 				TableNextRowBegin("Bias");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
@@ -336,11 +331,10 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::Checkbox("##Blur", &m_Renderer->SSAOPass->bBlurSSAO);
 
-				//TableNextRowBegin("Blur Sharpness");
-				//ImGui::TableNextColumn();
-				//ImGui::SetNextItemWidth(-1.0f);
-				//ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 0.5f, "%.2f");
-				//ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 128.0f, "%.0f");
+				TableNextRowBegin("Blur Sharpness");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 5.0f, "%.3f");
 
 				if (!Config::Get().bEnableSSAO)
 				{
