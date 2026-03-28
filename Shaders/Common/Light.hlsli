@@ -37,13 +37,12 @@ float3 CalculatePointLight(PointLight Light, float3 BaseColor, float3 N, float3 
 	const float3 L = normalize(Light.Position - WorldPosition);
 	const float3 H = normalize(V + L);
 		
-	const float NdotL = max(dot(N, L), Epsilon);
-	const float NdotH = max(dot(N, H), Epsilon);
-	const float HdotV = max(dot(H, V), Epsilon);
+	const float NdotL = max(0.0f, dot(N, L));
+	const float HdotV = max(0.0f, dot(H, V));
 		
 	const float distance = length(Light.Position - WorldPosition);
 	const float attenuation = (1.0f / (distance * distance + 1.0f)) * (saturate(1.0f - distance / Light.Radius));
-	const float3 radiance = attenuation * Light.Ambient * Light.Radius;
+	const float3 radiance = Light.Ambient * attenuation;// * Light.Radius;
 		
 	const float D = DistributionGGX(N, H, Roughness);
 	const float G = GeometrySmith(NdotV, NdotL, Roughness);
@@ -58,17 +57,16 @@ float3 CalculatePointLight(PointLight Light, float3 BaseColor, float3 N, float3 
 	const float3 diffuse = kD * BaseColor.rgb * InvPI;
 	const float3 specular = numerator / denominator;
 
-	return (diffuse + specular) * radiance * NdotL;
+	return (diffuse + specular) * (radiance * Light.Intensity) * NdotL;
 }
 
 float3 CalculateDirectionalLight(float3 Direction, float3 Ambient, float Intensity, float3 BaseColor, float3 N, float3 V, float NdotV, float Metalness, float Roughness)
 {
-	const float3 L = -Direction;
+	const float3 L = normalize(-Direction);
 	const float3 H = normalize(V + L);
 		
-	const float NdotL = max(dot(N, L), Epsilon);
-	const float NdotH = max(dot(N, H), 0.0f);
-	const float HdotV = max(dot(H, V), 0.0f);
+	const float NdotL = max(0.0f, dot(N, L));
+	const float HdotV = max(0.0f, dot(H, V));
 
 	const float D = DistributionGGX(N, H, Roughness);
 	const float G = GeometrySmith(NdotV, NdotL, Roughness);
@@ -103,9 +101,8 @@ float3 CalculateSpotLight(SpotLight Light, float3 BaseColor, float3 N, float3 V,
 	float cosAngle = cos(outerAngle);
 	float falloff = saturate((theta - cosAngle) / (1.0f - cosAngle));
 
-	const float NdotL = max(dot(N, L), Epsilon);
-	const float NdotH = max(dot(N, H), Epsilon);
-	const float HdotV = max(dot(H, V), Epsilon);
+	const float NdotL = max(0.0f, dot(N, L));
+	const float HdotV = max(0.0f, dot(H, V));
 
 	const float attenuation = smoothstep(innerAngle, outerAngle, theta);
 	const float3 radiance	= attenuation * Light.Ambient * Light.Intensity;
