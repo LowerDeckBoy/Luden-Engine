@@ -1,7 +1,7 @@
 #pragma once
 
 #include "D3D12/D3D12RHI.hpp"
-#include "../RenderPass.hpp"
+#include "RenderPass.hpp"
 
 namespace Luden
 {
@@ -34,7 +34,7 @@ namespace Luden
 			uint32	SceneImage;
 			float	Threshold		= 1.0f;
 			float	ThresholdKnee	= 0.5f;
-			float	Intensity		= 0.1f;
+			float	Intensity		= 1.0f;
 			float	Gamma			= 1.0f;
 			// For Down and Up sampling textures.
 			uint32	MipIndex;
@@ -47,10 +47,7 @@ namespace Luden
 		static constexpr uint32 NumUpsamples	= NumDownsamples + 1;
 
 	private:
-		//D3D12RHI* m_D3D12RHI;
-
 		void CreatePipelines(ShaderCompiler* pShaderCompiler);
-
 		void CreateTextures(uint32 Width, uint32 Height);
 
 	};

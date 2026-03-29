@@ -8,22 +8,22 @@ float3 Downsample(in Texture2D Texture, float2 UV, float2 TexelSize)
 	const float x = TexelSize.x;
 	const float y = TexelSize.y;
 
-	const float3 a = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x,	UV.y + 2.0f * y)).rgb;
-	const float3 b = Texture.Sample(TexSampler, float2(UV.x,				UV.y + 2.0f * y)).rgb;
-	const float3 c = Texture.Sample(TexSampler, float2(UV.x + 2.0f * x,	UV.y + 2.0f * y)).rgb;
+	const float3 a = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x,		UV.y + 2.0f * y	)).rgb;
+	const float3 b = Texture.Sample(TexSampler, float2(UV.x,				UV.y + 2.0f * y	)).rgb;
+	const float3 c = Texture.Sample(TexSampler, float2(UV.x + 2.0f * x,		UV.y + 2.0f * y	)).rgb;
 	
-	const float3 d = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x, 	UV.y)).rgb;
-	const float3 e = Texture.Sample(TexSampler, float2(UV.x,				UV.y)).rgb;
-	const float3 f = Texture.Sample(TexSampler, float2(UV.x + 2.0f * x, 	UV.y)).rgb;
+	const float3 d = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x, 	UV.y			)).rgb;
+	const float3 e = Texture.Sample(TexSampler, float2(UV.x,				UV.y			)).rgb;
+	const float3 f = Texture.Sample(TexSampler, float2(UV.x + 2.0f * x, 	UV.y			)).rgb;
 	
-	const float3 g = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x, 	UV.y - 2.0f * y)).rgb;
-	const float3 h = Texture.Sample(TexSampler, float2(UV.x,				UV.y - 2.0f * y)).rgb;
-	const float3 i = Texture.Sample(TexSampler, float2(UV.x + 2.0f * x, 	UV.y - 2.0f * y)).rgb;
+	const float3 g = Texture.Sample(TexSampler, float2(UV.x - 2.0f * x, 	UV.y - 2.0f * y	)).rgb;
+	const float3 h = Texture.Sample(TexSampler, float2(UV.x,				UV.y - 2.0f * y	)).rgb;
+	const float3 i = Texture.Sample(TexSampler, float2(UV.x + 2.0f * x, 	UV.y - 2.0f * y	)).rgb;
 	
-	const float3 j = Texture.Sample(TexSampler, float2(UV.x - x,			UV.y + y)).rgb;
-	const float3 k = Texture.Sample(TexSampler, float2(UV.x + x,			UV.y + y)).rgb;
-	const float3 l = Texture.Sample(TexSampler, float2(UV.x - x,			UV.y - y)).rgb;
-	const float3 m = Texture.Sample(TexSampler, float2(UV.x + x,			UV.y - y)).rgb;
+	const float3 j = Texture.Sample(TexSampler, float2(UV.x - x,			UV.y + y		)).rgb;
+	const float3 k = Texture.Sample(TexSampler, float2(UV.x + x,			UV.y + y		)).rgb;
+	const float3 l = Texture.Sample(TexSampler, float2(UV.x - x,			UV.y - y		)).rgb;
+	const float3 m = Texture.Sample(TexSampler, float2(UV.x + x,			UV.y - y		)).rgb;
 
 	float3 result = e * 0.125f;
 	result += (a + c + g + i) * 0.03125f;

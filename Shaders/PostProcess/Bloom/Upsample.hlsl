@@ -5,16 +5,18 @@
 
 float3 Upsample(in Texture2D Texture, float2 UV, float2 Texel)
 {
-	const float x = Texel.x;
-	const float y = Texel.y;
+	const float x = 0.05f;
+	const float y = 0.05f;
+	//const float x = Texel.x;
+	//const float y = Texel.y;
 
 	const float3 a = Texture.Sample(TexSampler, float2(UV.x - x,	UV.y + y)).rgb;
 	const float3 b = Texture.Sample(TexSampler, float2(UV.x,		UV.y + y)).rgb;
 	const float3 c = Texture.Sample(TexSampler, float2(UV.x + x,	UV.y + y)).rgb;
 	
-	const float3 d = Texture.Sample(TexSampler, float2(UV.x - x,	UV.y)).rgb;
-	const float3 e = Texture.Sample(TexSampler, float2(UV.x,		UV.y)).rgb;
-	const float3 f = Texture.Sample(TexSampler, float2(UV.x + x,	UV.y)).rgb;
+	const float3 d = Texture.Sample(TexSampler, float2(UV.x - x,	UV.y	)).rgb;
+	const float3 e = Texture.Sample(TexSampler, float2(UV.x,		UV.y	)).rgb;
+	const float3 f = Texture.Sample(TexSampler, float2(UV.x + x,	UV.y	)).rgb;
 	
 	const float3 g = Texture.Sample(TexSampler, float2(UV.x - x,	UV.y - y)).rgb;
 	const float3 h = Texture.Sample(TexSampler, float2(UV.x,		UV.y - y)).rgb;
@@ -43,7 +45,6 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 	const float2 texelSize 		= GetTexelSize(textureSize);
 	const float2 texCoord 		= (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
-	//const float2 texCoord 		= (float2(DispatchThreadID.xy) + 0.5f) * textureSize;
 
 	const float filterRadius = 0.05f;
 	const float x = filterRadius;
@@ -59,10 +60,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 	//	-----------------
 
 	float3 result = Upsample(sourceTexture, texCoord, texelSize);
-	//result *= Constants.Intensity;
-	//float3 sourceColor = sourceTexture.Sample(TexSampler, texCoord).rgb;
-	//float3 color = output[DispatchThreadID.xy].rgb;
-	//output[DispatchThreadID.xy] = float4(lerp(sourceColor, result, Constants.Gamma), 1.0f);
+
 	output[DispatchThreadID.xy] = float4(result, 1.0f);
 	
 }

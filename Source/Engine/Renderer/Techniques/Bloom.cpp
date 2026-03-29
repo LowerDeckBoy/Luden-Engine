@@ -59,8 +59,6 @@ namespace Luden
 			auto& texture = DownsampleTextures.at(0);
 			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			Parameters.MipIndex = texture.ShaderResourceHandle.Index;
-			//Parameters.LightImage = Parameters.MipIndex;
-			//Parameters.LightImage = LightPassImageIndex;
 			Parameters.LightImage = RenderTarget.ShaderResourceHandle.Index;
 			commandList->GetHandle()->SetComputeRoot32BitConstants(0, 8, &Parameters, 0);
 			commandList->Dispatch(Math::RoundUp<uint32>((uint32)texture.GetDesc().Width / DispatchGroup), Math::RoundUp<uint32>(texture.GetDesc().Height / DispatchGroup), 1);
@@ -120,12 +118,12 @@ namespace Luden
 		// For debug usage.
 		commandList->ResourceTransition({
 			{ &RenderTarget, D3D12_RESOURCE_STATE_COPY_DEST },
-			{ &UpsampleTextures.at(5), D3D12_RESOURCE_STATE_COPY_SOURCE},
+			{ &UpsampleTextures.at(NumDownsamples), D3D12_RESOURCE_STATE_COPY_SOURCE},
 			});
-		commandList->CopyResource(&UpsampleTextures.at(5), &RenderTarget);
+		commandList->CopyResource(&UpsampleTextures.at(NumDownsamples), &RenderTarget);
 		commandList->ResourceTransition({
 			{ &RenderTarget, D3D12_RESOURCE_STATE_GENERIC_READ },
-			{ &UpsampleTextures.at(5), D3D12_RESOURCE_STATE_GENERIC_READ },
+			{ &UpsampleTextures.at(NumDownsamples), D3D12_RESOURCE_STATE_GENERIC_READ },
 			});
 
 		RenderTime = Time::GetDurationInMiliseconds(renderBeginTime);
