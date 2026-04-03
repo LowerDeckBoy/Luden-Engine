@@ -5,11 +5,6 @@
 #include <Core/RefPtr.hpp>
 #include <D3D12AgilitySDK/d3dx12/d3dx12.h>
 
-/*
-	For now there are two pipelines available: vertex and mesh.
-	Vertex pipeline will likely be removed at some later stage.
-*/
-
 namespace Luden
 {
 	class D3D12Device;	
@@ -86,6 +81,7 @@ namespace Luden
 		void SetPrimitiveTypeTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology);
 
 		void SetDepthFormat(DXGI_FORMAT Format);
+		void SetDepthFunc(D3D12_COMPARISON_FUNC DepthFunc);
 
 		void SetRenderTargetFormats(const std::vector<DXGI_FORMAT>& Formats);
 

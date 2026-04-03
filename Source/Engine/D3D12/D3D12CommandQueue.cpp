@@ -58,7 +58,7 @@ namespace Luden
 	D3D12CommandQueue::D3D12CommandQueue(D3D12Device* pDevice, D3D12_COMMAND_LIST_TYPE QueueType)
 	{
 		D3D12_COMMAND_QUEUE_DESC desc{};
-		desc.NodeMask	= pDevice->NodeMask;
+		desc.NodeMask	= pDevice->GetNodeMask();
 		desc.Type		= QueueType;
 		desc.Priority	= D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 		desc.Flags		= D3D12_COMMAND_QUEUE_FLAG_NONE;

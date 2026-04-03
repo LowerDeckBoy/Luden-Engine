@@ -7,18 +7,39 @@ struct IUnknown;
 
 namespace Luden
 {
+	#ifndef VERIFY_D3D12_RESULT
 	// Verify whether given HRESULT has succeded.
 	// If not, output debug message what and where operation failed.
 	#define VERIFY_D3D12_RESULT(Result, ...) \
-		{ HRESULT hr = Result;\
-			if (FAILED(hr)) { \
-			Luden::Util::VerifyD3D12Result(hr, #Result, std::source_location::current(), __VA_ARGS__); __debugbreak(); }}
-
+		{ \
+			HRESULT hr = Result; \
+			if (FAILED(hr)) \
+			{ \
+			Luden::Util::VerifyD3D12Result(hr, #Result, std::source_location::current(), __VA_ARGS__); \
+			__debugbreak(); \
+			} \
+		}
+	#endif
+		
+	#ifndef SAFE_RELEASE
 	// Release custom core::Ref<T> pointers of ID3D12 or IDXGI obejcts.
-	#define SAFE_RELEASE(Ptr) if (Ptr) { Ptr.Reset(); Ptr = nullptr; }
+	#define SAFE_RELEASE(Ptr) \
+		if (Ptr) \
+		{ \
+			Ptr.Reset(); \
+			Ptr = nullptr; \
+		}
+	#endif
 
+	#ifndef SAFE_DELETE
 	// Release raw ID3D12 or IDXGI object pointer.
-	#define SAFE_DELETE(RawPtr) if (RawPtr != nullptr) { RawPtr->Release(); RawPtr = nullptr; }
+	#define SAFE_DELETE(RawPtr) \
+		if (RawPtr != nullptr) \
+		{ \
+			RawPtr->Release(); \
+			RawPtr = nullptr; \
+		}
+	#endif
 
 	#define NAME_D3D12_OBJECT(D3D12Object, Name) \
 		Luden::Util::NameD3D12Object(D3D12Object, Name)

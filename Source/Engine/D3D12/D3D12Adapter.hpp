@@ -43,9 +43,12 @@ namespace Luden
 
 		Ref<ID3D12Debug6>& GetDebugDevice() { return m_DebugDevice; }
 
+		uint32 NodeMask = 0;
+
 	private:
 		Ref<ID3D12Debug6> m_DebugDevice;
 		
+
 	};
 
 } // namespace Luden

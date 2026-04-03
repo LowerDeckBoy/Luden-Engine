@@ -78,8 +78,6 @@ namespace Luden
 		uint32 GetIndexFromOffset(D3D12Descriptor& Descriptor, uint32 Offset);
 
 		D3D12_CPU_DESCRIPTOR_HANDLE GetCpuStartHandle() const;
-		
-
 		D3D12_GPU_DESCRIPTOR_HANDLE GetGpuStartHandle() const;
 
 		uint64 GetCpuStartHandlePtr() const;

@@ -33,7 +33,11 @@ namespace Luden
 		
 		m_PipelineType = Type;
 
-		return pDevice->LogicalDevice->CreateRootSignature(pDevice->NodeMask, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
+		return pDevice->LogicalDevice->CreateRootSignature(
+			pDevice->GetNodeMask(), 
+			signature->GetBufferPointer(), 
+			signature->GetBufferSize(), 
+			IID_PPV_ARGS(&m_RootSignature));
 	}
 
 	HRESULT D3D12RootSignature::BuildFromShader(D3D12Device* pDevice, D3D12Shader* pShader, PipelineType Type)
@@ -44,7 +48,11 @@ namespace Luden
 
 		m_PipelineType = Type;
 
-		return pDevice->LogicalDevice->CreateRootSignature(pDevice->NodeMask, bytecode.pShaderBytecode, bytecode.BytecodeLength, IID_PPV_ARGS(&m_RootSignature));;
+		return pDevice->LogicalDevice->CreateRootSignature(
+			pDevice->GetNodeMask(), 
+			bytecode.pShaderBytecode, 
+			bytecode.BytecodeLength, 
+			IID_PPV_ARGS(&m_RootSignature));;
 	}
 
 	void D3D12RootSignature::AddConstants(uint32 Count, uint32 RegisterSlot, uint32 RegisterSpace, D3D12_SHADER_VISIBILITY Visibility)

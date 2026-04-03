@@ -21,7 +21,7 @@ namespace Luden
 		//ByteStride += sizeof(FDispatchMeshCommand);
 
 		D3D12_COMMAND_SIGNATURE_DESC desc{};
-		desc.NodeMask			= pDevice->NodeMask;
+		desc.NodeMask			= pDevice->GetNodeMask();
 		desc.pArgumentDescs		= ArgumentDescs.data();
 		desc.NumArgumentDescs	= static_cast<uint32>(ArgumentDescs.size());
 		desc.ByteStride			= ByteStride;

@@ -15,7 +15,7 @@ namespace Luden
 {
 	D3D12CommandList::D3D12CommandList(D3D12Device* pDevice, D3D12_COMMAND_LIST_TYPE CommandListType)
 	{
-		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandList1(pDevice->NodeMask, CommandListType, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&m_GraphicsCommandList)));
+		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandList1(pDevice->GetNodeMask(), CommandListType, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&m_GraphicsCommandList)));
 		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommandAllocator(CommandListType, IID_PPV_ARGS(&m_CommandAllocator)));
 		
 		m_CommandListType = CommandListType;

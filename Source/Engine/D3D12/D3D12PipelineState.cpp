@@ -26,7 +26,7 @@ namespace Luden
 		m_RasterizerDesc	= CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 		m_DepthDesc			= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		m_BlendDesc			= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-
+		
 		m_CullMode			= D3D12_CULL_MODE_NONE;
 		m_FillMode			= D3D12_FILL_MODE_SOLID;
 
@@ -37,7 +37,7 @@ namespace Luden
 
 	HRESULT D3D12PipelineStateBuilder::Build(D3D12PipelineState& Pipeline)
 	{
-		m_Desc.NodeMask = m_Device->NodeMask;
+		m_Desc.NodeMask = m_Device->GetNodeMask();
 
 		m_Desc.RasterizerState = m_RasterizerDesc;
 		m_Desc.RasterizerState.CullMode = m_CullMode;
@@ -55,7 +55,7 @@ namespace Luden
 
 	HRESULT D3D12PipelineStateBuilder::Build(D3D12Device* pDevice, D3D12Pipeline& Pipeline)
 	{
-		m_Desc.NodeMask = m_Device->NodeMask;
+		m_Desc.NodeMask = m_Device->GetNodeMask();
 
 		m_Desc.RasterizerState = m_RasterizerDesc;
 		m_Desc.RasterizerState.CullMode = m_CullMode;
@@ -110,6 +110,12 @@ namespace Luden
 	void D3D12PipelineStateBuilder::SetDepthFormat(DXGI_FORMAT Format)
 	{
 		m_Desc.DSVFormat = Format;
+		m_DepthFormat = Format;
+	}
+
+	void D3D12PipelineStateBuilder::SetDepthFunc(D3D12_COMPARISON_FUNC DepthFunc)
+	{
+		m_DepthDesc.DepthFunc = DepthFunc;
 	}
 
 	void D3D12PipelineStateBuilder::SetRenderTargetFormats(const std::vector<DXGI_FORMAT>& Formats)
@@ -142,7 +148,7 @@ namespace Luden
 
 	HRESULT D3D12MeshPipelineStateBuilder::Build(D3D12PipelineState& Pipeline)
 	{
-		m_Desc.NodeMask				= m_Device->NodeMask;
+		m_Desc.NodeMask				= m_Device->GetNodeMask();
 		m_Desc.RasterizerState		= m_RasterizerDesc;
 		m_Desc.DepthStencilState	= m_DepthDesc;
 		m_Desc.BlendState			= m_BlendDesc;
@@ -328,7 +334,7 @@ namespace Luden
 
 	HRESULT D3D12ComputePipelineStateBuilder::Build(D3D12Device* pDevice, D3D12Pipeline& OutPipeline)
 	{
-		m_Desc.NodeMask = pDevice->NodeMask;
+		m_Desc.NodeMask = pDevice->GetNodeMask();
 		
 		return pDevice->LogicalDevice->CreateComputePipelineState(&m_Desc, IID_PPV_ARGS(&OutPipeline.PipelineState.GetHandle()));
 	}

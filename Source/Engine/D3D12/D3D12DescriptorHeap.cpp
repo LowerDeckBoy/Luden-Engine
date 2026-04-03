@@ -8,7 +8,7 @@ namespace Luden
 	D3D12DescriptorHeap::D3D12DescriptorHeap(D3D12Device* pDevice, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorType, uint32 MaxCapacity)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC desc{};
-		desc.NodeMask		= pDevice->NodeMask;
+		desc.NodeMask		= pDevice->GetNodeMask();
 		desc.Type			= DescriptorType;
 		desc.NumDescriptors = MaxCapacity;
 		
@@ -55,7 +55,7 @@ namespace Luden
 	void D3D12DescriptorHeap::Create(D3D12Device* pDevice, D3D12_DESCRIPTOR_HEAP_TYPE DescriptorType, uint32 MaxCapacity, bool /* bShaderVisible */)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC desc{};
-		desc.NodeMask		= pDevice->NodeMask;
+		desc.NodeMask		= pDevice->GetNodeMask();
 		desc.Type			= DescriptorType;
 		desc.NumDescriptors = MaxCapacity;
 

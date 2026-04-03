@@ -33,7 +33,7 @@ namespace Luden
 			if (SUCCEEDED(D3D12CreateDevice(Adapter.Get(), MinRequiredFeatureLevel, __uuidof(ID3D12Device14), nullptr)))
 			{
 				Adapter->GetDesc3(&Desc);
-
+				NodeMask = i;
 				break;
 			}
 		}

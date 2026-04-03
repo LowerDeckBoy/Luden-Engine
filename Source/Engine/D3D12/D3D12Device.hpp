@@ -20,7 +20,7 @@ namespace Luden
 		Ref<ID3D12Device14>		LogicalDevice;
 		Ref<D3D12MA::Allocator> D3D12MemoryAllocator;
 
-		uint32 NodeMask = 0;
+		uint32 GetNodeMask() const { return ParentAdapter->NodeMask; }
 
 		void QueryDeviceFeatures();
 		

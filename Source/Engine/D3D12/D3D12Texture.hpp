@@ -20,7 +20,7 @@ namespace Luden
 	struct TextureDesc
 	{
 		TextureUsageFlag	Usage;
-		void*				Data = nullptr;
+		void*				Data;
 		uint32				Width;
 		uint32				Height;
 		DXGI_FORMAT			Format;
@@ -74,10 +74,16 @@ namespace Luden
 	{
 	public:
 		D3D12RenderTexture() = default;
-		D3D12RenderTexture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::array<float, 4> ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f }, std::string_view Name = "");
+		D3D12RenderTexture(D3D12Device* pDevice, 
+			uint32 Width, uint32 Height, DXGI_FORMAT Format, 
+			std::array<float, 4> ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f }, 
+			std::string_view Name = "");
 		~D3D12RenderTexture();
 
-		void Create(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::array<float, 4> ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f }, std::string_view Name = "");
+		void Create(D3D12Device* pDevice, 
+			uint32 Width, uint32 Height, DXGI_FORMAT Format,
+			std::array<float, 4> ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f }, 
+			std::string_view Name = "");
 
 		void Resize(uint32 Width, uint32 Height);
 
