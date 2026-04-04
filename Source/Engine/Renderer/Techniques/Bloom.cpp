@@ -64,7 +64,6 @@ namespace Luden
 			commandList->Dispatch(Math::RoundUp<uint32>((uint32)texture.GetDesc().Width / DispatchGroup), Math::RoundUp<uint32>(texture.GetDesc().Height / DispatchGroup), 1);
 			commandList->ResourceTransition(&texture, D3D12_RESOURCE_STATE_GENERIC_READ);
 
-
 			for (uint32 mip = 1; mip < NumDownsamples; ++mip)
 			{
 				auto& downsample = DownsampleTextures.at(mip);

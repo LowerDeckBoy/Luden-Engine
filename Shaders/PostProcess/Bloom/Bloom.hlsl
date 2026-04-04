@@ -21,7 +21,7 @@ float3 GetThreshold(float3 Color)
 	float luminance = GetLuminance(Color);
 	
 	float brightness = luminance;
-	float knee = Constants.Threshold * Constants.ThresholdKnee;
+	float knee = Constants.Threshold * Constants.ThresholdSoft;
     
 	float soft = brightness - Constants.Threshold + knee;
     
@@ -52,14 +52,19 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 		
 	float3 emissive = emissiveTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
 	float3 color = hdrTexture.Load(uint3(DispatchThreadID.xy, 0)).rgb;
-
-	float falloffRange = Constants.ThresholdKnee;
-	float falloffStart = Constants.Threshold - falloffRange;
-	float falloffEnd = Constants.Threshold + falloffRange;
-	float factor = smoothstep(falloffStart, falloffEnd, GetLuminance(color + emissive));
-	color *= factor;
+	color += emissive;
+	if (Constants.bFilterThreshold)
+	{
+		float falloffRange = Constants.ThresholdSoft;
+		float falloffStart = Constants.Threshold - falloffRange;
+		float falloffEnd = Constants.Threshold + falloffRange;
+		float factor = smoothstep(falloffStart, falloffEnd, GetLuminance(color));
+		color *= factor;
+	}
 	
-	output[DispatchThreadID.xy] = float4(color + emissive, 1.0f);
+	//output[DispatchThreadID.xy] = float4(color, 1.0f);
+	output[DispatchThreadID.xy] = float4(emissive, 1.0f);
+	//output[DispatchThreadID.xy] = float4(color + emissive, 1.0f);
 }
 
 #endif // BLOOM_HLSL

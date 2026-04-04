@@ -12,10 +12,10 @@ struct BloomParameters
 	uint	LightImageIndex;
 	uint	SceneImageIndex;
 	float	Threshold;
-	float	ThresholdKnee;
+	float	ThresholdSoft;
 	float	Intensity;
-	float	Gamma;
 	uint	MipIndex;
+	uint	bFilterThreshold;
 };
 
 ConstantBuffer<BloomParameters> Constants : register(b0);
