@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Misc/Colors.hpp"
-//#include <ImGui/imgui_internal.h>
 #include <string>
 
 namespace Luden::gui

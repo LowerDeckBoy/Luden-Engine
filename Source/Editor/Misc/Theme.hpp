@@ -4,8 +4,9 @@
 
 namespace Luden::gui
 {
-	inline void DarkTheme(ImGuiStyle& InStyle)
+	inline void SetDarkTheme(ImGuiStyle& InStyle)
 	{
+		// Default styling to ImGui's dark mode.
 		ImGui::StyleColorsDark(&InStyle);
 
 		InStyle.WindowRounding		= 1.0f;
@@ -17,10 +18,9 @@ namespace Luden::gui
 		InStyle.GrabRounding		= 1.0f;
 		InStyle.ScrollbarRounding	= 1.0f;
 
-		InStyle.AntiAliasedFill = true;
-		InStyle.AntiAliasedLines = true;
+		InStyle.AntiAliasedFill		= true;
+		InStyle.AntiAliasedLines	= true;
 
-		// Tooltip
 		InStyle.PopupBorderSize		= 1.0f;
 		InStyle.PopupRounding		= 1.0f;
 
