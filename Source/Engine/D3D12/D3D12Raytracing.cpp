@@ -381,13 +381,15 @@ namespace Luden
 			uavBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 			commandList->GetHandle()->ResourceBarrier(1, &uavBarrier);
 
-			for (auto& mesh : pModel->Meshes)
-			{
-				mesh.RaytracingInstanceDesc.AccelerationStructure = blas->AccelerationStructure->GetGpuAddress();
-				DirectX::XMMATRIX matrix = DirectX::XMMatrixIdentity();
-				DirectX::XMStoreFloat3x4(&mesh.RaytracingInstanceDesc.Transform, matrix);
-				Instances.push_back(mesh.RaytracingInstanceDesc);
-			}
+			//for (auto& mesh : pModel->Meshes)
+			//{
+			//	
+			//}
+
+			mesh.RaytracingInstanceDesc.AccelerationStructure = blas->AccelerationStructure->GetGpuAddress();
+			DirectX::XMMATRIX matrix = DirectX::XMMatrixIdentity();
+			DirectX::XMStoreFloat3x4(&mesh.RaytracingInstanceDesc.Transform, matrix);
+			Instances.push_back(mesh.RaytracingInstanceDesc);
 
 			blas->BuildDesc = buildDesc;
 

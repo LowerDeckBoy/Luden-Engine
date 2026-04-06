@@ -2,8 +2,8 @@
 
 #include "D3D12RootSignature.hpp"
 #include "D3D12Shader.hpp"
-#include <Core/RefPtr.hpp>
-#include <D3D12AgilitySDK/d3dx12/d3dx12.h>
+//#include <Core/RefPtr.hpp>
+//#include <D3D12AgilitySDK/d3dx12/d3dx12.h>
 
 namespace Luden
 {

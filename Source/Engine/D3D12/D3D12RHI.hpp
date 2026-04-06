@@ -3,11 +3,9 @@
 #include "Config.hpp"
 
 #include "D3D12Device.hpp"
-#include "D3D12CommandQueue.hpp"
 #include "D3D12SwapChain.hpp"
 #include "D3D12CommandList.hpp"
 #include "D3D12CommandSignature.hpp"
-#include "D3D12Texture.hpp"
 #include "D3D12Shader.hpp"
 #include "D3D12PipelineState.hpp"
 

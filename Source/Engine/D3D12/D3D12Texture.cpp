@@ -13,37 +13,6 @@ namespace Luden
 		Create(pDevice, Desc);
 	}
 
-	D3D12Texture::D3D12Texture(D3D12Device* pDevice, TextureDesc Desc, Filepath /* Path */)
-		: m_TextureDesc(Desc)
-	{
-		D3D12_RESOURCE_DESC1 desc{};
-		desc.Dimension			= D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		desc.Format				= Desc.Format;
-		desc.Width				= static_cast<uint64>(Desc.Width);
-		desc.Height				= Desc.Height;
-		desc.DepthOrArraySize	= Desc.DepthOrArray;
-		desc.MipLevels			= Desc.NumMips;
-		desc.Layout				= D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		desc.Alignment			= D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		desc.SampleDesc			= { 1, 0 };
-
-		const auto& heapProperties = D3D::HeapPropertiesDefault();
-		VERIFY_D3D12_RESULT(pDevice->LogicalDevice->CreateCommittedResource2(
-			&heapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&desc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			nullptr,
-			IID_PPV_ARGS(&m_Resource)
-		)); 
-		
-		SetResourceState(D3D12_RESOURCE_STATE_GENERIC_READ);
-
-		pDevice->CreateShaderResourceView(this, ShaderResourceHandle, desc.MipLevels, 1);
-
-	}
-
 	D3D12Texture::~D3D12Texture()
 	{
 		Release();

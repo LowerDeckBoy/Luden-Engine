@@ -1,3 +1,4 @@
+#include "D3D12Device.hpp"
 #include "D3D12Resource.hpp"
 #include "D3D12Utility.hpp"
 
@@ -6,7 +7,6 @@ namespace Luden
     D3D12Resource::~D3D12Resource()
     {
         Release();
-        m_Desc = {};
     }
 
     uint64 D3D12Resource::GetGpuAddress()
@@ -16,6 +16,7 @@ namespace Luden
 
     void D3D12Resource::Release()
     {
+        m_Desc = {};
         SAFE_RELEASE(m_Resource);
         SAFE_RELEASE(m_ResourceAllocation);
     }

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <Core/RefPtr.hpp>
-#include <Core/String.hpp>
-#include <D3D12AgilitySDK/d3d12.h>
 #include <D3D12MemoryAllocator/D3D12MemAlloc.h>
 
 namespace Luden
@@ -60,7 +57,7 @@ namespace Luden
 
 		D3D12_RESOURCE_DESC1& GetDesc() 
 		{ 
-			return m_Desc; 
+			return m_Desc;
 		}
 
 		ResourceUsageFlag GetResourceUsageFlag() const

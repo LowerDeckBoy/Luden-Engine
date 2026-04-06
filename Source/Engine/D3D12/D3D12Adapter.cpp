@@ -3,7 +3,7 @@
 #include "D3D12Memory.hpp"
 #include "D3D12Utility.hpp"
 #include <Core/Logging/Logger.hpp>
-#include <iostream>
+
 
 namespace Luden
 {

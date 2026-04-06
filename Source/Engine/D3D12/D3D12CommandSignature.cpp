@@ -96,7 +96,7 @@ namespace Luden
 		ArgumentDescs.push_back(argument);
 	}
 
-	void D3D12CommandSignature::AddDispatchMeshArgument(uint32 DispatchCountX, uint32 DispatchCountY, uint32 DispatchCountZ)
+	void D3D12CommandSignature::AddDispatchMeshArgument(uint32 /* DispatchCountX */, uint32 /* DispatchCountY */, uint32 /* DispatchCountZ */)
 	{
 		D3D12_DISPATCH_MESH_ARGUMENTS argumnet{};
 

@@ -32,16 +32,10 @@ namespace Luden
 	{
 	public:
 		D3D12Texture() = default;
-		// Create texture Resource from desc.
 		D3D12Texture(D3D12Device* pDevice, TextureDesc Desc);
-		//D3D12Texture(D3D12Device* pDevice, uint32 Width, uint32 Height, DXGI_FORMAT Format, std::string_view Name = "");
-		// Create texture Resource from file.
-		D3D12Texture(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
 		~D3D12Texture();
 
 		void Create(D3D12Device* pDevice, TextureDesc Desc);
-		//void CreateFromMemory(D3D12Device* pDevice, TextureDesc Desc);
-		//void CreateFromFile(D3D12Device* pDevice, TextureDesc Desc, Filepath Path);
 
 		D3D12Descriptor ShaderResourceHandle;
 		D3D12Descriptor UnorderedAccessHandle;
@@ -66,7 +60,7 @@ namespace Luden
 		
 	private:
 		TextureDesc m_TextureDesc{};
-		Filepath m_Filepath;
+		Filepath	m_Filepath;
 
 	}; // class D3D12Texture
 

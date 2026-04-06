@@ -1,10 +1,6 @@
 #pragma once
 
-
-//#include <D3D12AgilitySDK/d3d12.h>
-#include <Core/RefPtr.hpp>
-#include <vector>
-
+//#include <vector>
 #include "D3D12Buffer.hpp"
 
 namespace Luden
@@ -43,7 +39,6 @@ namespace Luden
 		
 		void CreateCommandsBuffer(BufferDesc Desc);
 
-		//ID3D12CommandSignature*	GetHandleRaw() { return m_CommandSignature; }
 		ID3D12CommandSignature*	GetHandleRaw() { return m_CommandSignature.Get(); }
 
 		void AddDrawIndexedCommand();
@@ -62,8 +57,6 @@ namespace Luden
 		uint32 ByteStride = 0;	
 
 		D3D12Buffer* GetCommandsBuffer() { return m_CommandsBuffer; }
-
-		//D3D12
 
 	private:
 		Ref<ID3D12CommandSignature> m_CommandSignature;

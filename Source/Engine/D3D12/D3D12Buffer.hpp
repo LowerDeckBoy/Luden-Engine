@@ -2,12 +2,11 @@
 
 #include "D3D12DescriptorHeap.hpp"
 #include "D3D12Resource.hpp"
-#include <Core/Types.hpp>
-#include <vector>
 
 namespace Luden
 {
 	class D3D12Device;
+	class D3D12Descriptor;
 	class D3D12Viewport;
 
 	enum class BufferUsageFlag
@@ -27,16 +26,13 @@ namespace Luden
 	struct BufferDesc
 	{
 		BufferUsageFlag BufferUsage;
-		void*	Data;
-		uint32	NumElements;
-		uint32	Stride;
-
+		void* Data;
+		uint32 NumElements;
+		uint32 Stride;
 		// If Size is not specified, then Size = NumElements * Stride.
-		uint64	Size = 0;
-		
+		uint64 Size = 0;
 		// By default all buffers are considered for bindless usage.
-		bool	bBindless = true;
-
+		bool bBindless = true;
 		// Optional
 		std::string Name = "";
 	};
@@ -74,7 +70,6 @@ namespace Luden
 
 		void Create(D3D12Device* pDevice, void* pData, usize Size);
 
-		// TODO: needs improvement
 		void Update(void* pUpdate);
 
 		Ref<ID3D12Resource>& GetBuffer();
@@ -89,7 +84,6 @@ namespace Luden
 		usize m_Size = 0;
 	
 		D3D12Device* m_Device;
-
 
 	};
 

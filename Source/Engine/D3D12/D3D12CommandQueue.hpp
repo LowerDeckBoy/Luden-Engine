@@ -1,9 +1,5 @@
 #pragma once
 
-#include <Core/RefPtr.hpp>
-#include <Core/Types.hpp>
-#include <Core/String.hpp>
-#include <D3D12AgilitySDK/d3d12.h>
 #include <vector>
 
 namespace Luden
