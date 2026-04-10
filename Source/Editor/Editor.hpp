@@ -32,8 +32,6 @@ namespace Luden
 
 		void Begin();
 		void End();
-		// Test
-		void Render();
 
 	public:
 		void SetActiveScene(Scene* pScene);
@@ -105,11 +103,6 @@ namespace Luden
 		static D3D12Texture* EditorJPGTexture;
 		static D3D12Texture* EditorJPEGTexture;
 		static D3D12Texture* EditorBINTexture;
-
-		// TEST
-		D3D12CommandList* m_EditorCommandList;
-		D3D12CommandQueue* m_EditorCommandQueue;
-		//D3D12DescriptorHeap* m_EditorCommandQueue;
 
 	};
 } // namespace Luden

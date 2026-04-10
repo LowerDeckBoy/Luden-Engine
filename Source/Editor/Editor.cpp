@@ -56,7 +56,7 @@ namespace Luden
 		ImGuiIO& IO = ImGui::GetIO();
 		m_Theme = &ImGui::GetStyle();
 
-		gui::DarkTheme(*m_Theme);
+		gui::SetDarkTheme(*m_Theme);
 
 		IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 		IO.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
@@ -93,16 +93,12 @@ namespace Luden
 			LOG_WARNING("Failed to call ImGui_ImplDX12_CreateDeviceObjects()");
 		}
 		
-		//SetSceneImage(m_Renderer->GBuffer->BaseColor.ShaderResourceHandle);
 		SetSceneImage(m_Renderer->SceneTextures.Scene.ShaderResourceHandle);
 		
 		m_ConfigPanel.Initialize(m_Renderer, m_Timer);
 
 		Importer.Device = pRenderer->GetRHI()->Device;
 		CreateEditorResources();
-
-		//m_EditorCommandList = new D3D12CommandList(pRenderer->GetRHI()->Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-		//m_EditorCommandQueue = new D3D12CommandQueue(pRenderer->GetRHI()->Device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
 	}
 
@@ -128,8 +124,8 @@ namespace Luden
 
 		ImGui::PopFont();
 
-		ImGui::Render();
 		ImGui::EndFrame();
+		ImGui::Render();
 
 		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
@@ -138,43 +134,6 @@ namespace Luden
 		}
 
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_Renderer->GetRHI()->Frames.at(BackBufferIndex).GraphicsCommandList->GetHandleRaw());
-	}
-
-	void Editor::Render()
-	{
-		//if (!m_EditorCommandList->IsOpen())
-		//{
-		//	m_EditorCommandList->Open();
-		//}
-		m_EditorCommandList->Open();
-		m_EditorCommandList->SetDescriptorHeap(m_Renderer->GetRHI()->Device->ShaderResourceHeap);
-
-		ImGui_ImplWin32_NewFrame();
-		ImGui_ImplDX12_NewFrame();
-
-		ImGui::NewFrame();
-
-		ImGui::PushFont(m_MainFont);
-
-		m_MainViewport = ImGui::GetMainViewport();
-		ImGui::DockSpaceOverViewport(m_MainViewport->ID, m_MainViewport);
-
-		DrawEditorLayer();
-
-		ImGui::PopFont();
-
-		ImGui::EndFrame();
-		ImGui::Render();
-
-		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
-		}
-
-		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_EditorCommandList->GetHandleRaw());
-		m_EditorCommandQueue->Execute({ m_EditorCommandList });
-
 	}
 
 	void Editor::SetActiveScene(Scene* pScene)
@@ -365,12 +324,15 @@ namespace Luden
 					{
 						m_ConfigPanel.DisplayImageAddress = m_Renderer->ProceduralSkyPass->DebugRenderTarget.ShaderResourceHandle.GpuHandle.ptr;
 					}
+
+					if (ImGui::MenuItem("Test Sky - Transmittance"))
+					{
+						m_ConfigPanel.DisplayImageAddress = m_Renderer->SkyTestPass->TransmittanceTexture->ShaderResourceHandle.GpuHandle.ptr;
+					}
 				}
 				
 				ImGui::EndMenu();
 			}
-
-			// Scene lights
 
 			if (ImGui::MenuItem(ICON_FA_LIGHTBULB" Add Directional Light"))
 			{
@@ -398,7 +360,7 @@ namespace Luden
 
 	void Editor::DrawSceneImage() const
 	{
-		ImGui::Begin(ICON_FA_DESKTOP" Scene", nullptr, ImGuiWindowFlags_NoScrollbar);
+		ImGui::Begin(ICON_FA_DESKTOP" Scene");
 
 		if (ImGui::IsWindowFocused())
 		{
@@ -432,7 +394,7 @@ namespace Luden
 
 	void Editor::DrawSceneDebugView() const
 	{
-		ImGui::Begin(ICON_FA_DESKTOP" Debug View");
+		ImGui::Begin(ICON_FA_DESKTOP" Debug View", nullptr);
 
 		if (ImGui::IsWindowFocused())
 		{
@@ -493,8 +455,6 @@ namespace Luden
 
 		if (ImGui::BeginTable("##debugViewLower", tableColumns, tableFlags))
 		{
-			const auto winPos = ImGui::GetWindowSize().y;
-
 			auto getPositionWithOffset = [&](uint32 Offset, float Height) {
 				const float width = ImGui::GetColumnWidth();
 				const float height = (Height - 15);
@@ -509,16 +469,23 @@ namespace Luden
 			ImGui::Text("Emissive");
 
 			ImGui::TableNextColumn();
-			ImGui::Image(m_Renderer->SSAOPass->SSAORenderTarget.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			ImGui::Image(m_Renderer->LightingPass->RenderTexture.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
 			currentY = ImGui::GetCursorPosY();
 			ImGui::SetCursorPos(getPositionWithOffset(1, currentY - subimageSize.y + 15));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Text("Light Pass");
+
+			ImGui::TableNextColumn();
+			ImGui::Image(m_Renderer->SSAOPass->SSAORenderTarget.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
+			currentY = ImGui::GetCursorPosY();
+			ImGui::SetCursorPos(getPositionWithOffset(2, currentY - subimageSize.y + 15));
 			ImGui::SetNextItemAllowOverlap();
 			ImGui::Text("Ambient Occlusion");
 
 			ImGui::TableNextColumn();
 			ImGui::Image(m_Renderer->BloomPass->RenderTarget.ShaderResourceHandle.GpuHandle.ptr, subimageSize);
 			currentY = ImGui::GetCursorPosY();
-			ImGui::SetCursorPos(getPositionWithOffset(2, currentY - subimageSize.y + 15));
+			ImGui::SetCursorPos(getPositionWithOffset(3, currentY - subimageSize.y + 15));
 			ImGui::SetNextItemAllowOverlap();
 			ImGui::Text("Bloom");
 
