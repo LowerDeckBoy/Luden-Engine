@@ -11,18 +11,23 @@ namespace Luden::Panel
 	class SceneHierarchyPanel
 	{
 	public:
-		SceneHierarchyPanel();
-		~SceneHierarchyPanel();
+		SceneHierarchyPanel() = default;
+		~SceneHierarchyPanel() = default;
 
 		void SetActiveScene(Scene* pScene, Renderer* pRenderer);
 
 		void DrawPanel();
 
-		Entity& GetSelectedEntity() { return m_SelectedEntity; }
+		Entity& GetSelectedEntity() 
+		{ 
+			return m_SelectedEntity;
+		}
 		
-		void ResetSelection() { m_SelectedEntity = {}; }
+		inline void ResetSelection() 
+		{ 
+			m_SelectedEntity = {}; 
+		}
 
-		//inline static int32 DisplayImageIndex = 0;
 		inline static uint64 DisplayImageAddress = 0;
 
 	private:

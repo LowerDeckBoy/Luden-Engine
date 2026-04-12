@@ -267,6 +267,11 @@ namespace Luden::Panel
 					ImGui::BeginDisabled();
 				}
 
+				TableNextRowBegin("Enable filter");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1.0f);
+				ImGui::Checkbox("##Enable filter:", &m_Renderer->BloomPass->Parameters.bFilterThreshold);
+
 				TableNextRowBegin("Threshold");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
@@ -275,7 +280,7 @@ namespace Luden::Panel
 				TableNextRowBegin("Threshold Knee");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Threshold Knee:", &m_Renderer->BloomPass->Parameters.ThresholdKnee, 0.0f, 3.0f, "%.1f");
+				ImGui::SliderFloat("##Threshold Knee:", &m_Renderer->BloomPass->Parameters.ThresholdSoft, 0.0f, 3.0f, "%.1f");
 
 				TableNextRowBegin("Intensity");
 				ImGui::TableNextColumn();
@@ -334,7 +339,7 @@ namespace Luden::Panel
 				TableNextRowBegin("Blur Sharpness");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);
-				ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 5.0f, "%.3f");
+				ImGui::SliderFloat("##Blur Sharpness", &m_Renderer->SSAOPass->BlurSharpness, 0.0f, 5.0f, "%.1f");
 
 				if (!Config::Get().bEnableSSAO)
 				{
@@ -542,7 +547,7 @@ namespace Luden::Panel
 				ImGui::SetNextItemWidth(-1.0f);
 				ImGui::DragFloat("##Exposure", &m_Renderer->TonemappingPass->Exposure);
 
-				static const char* types[9] = { "ACES", "ACES Simple", "AgX", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
+				static const char* types[9] = { "ACES Simple", "ACES", "AMD", "AgX Punchy", "AgX Golden", "Reinhard", "Gamma Correction", "Uncharted2", "Hable"};
 				TableNextRowBegin("Mode");
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1.0f);

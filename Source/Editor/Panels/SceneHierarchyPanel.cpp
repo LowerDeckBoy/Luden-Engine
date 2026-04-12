@@ -10,15 +10,6 @@
 
 namespace Luden::Panel
 {
-	SceneHierarchyPanel::SceneHierarchyPanel()
-	{
-
-	}
-
-	SceneHierarchyPanel::~SceneHierarchyPanel()
-	{
-	}
-
 	void SceneHierarchyPanel::SetActiveScene(Scene* pScene, Renderer* pRenderer)
 	{
 		m_ActiveScene	= pScene;
@@ -33,9 +24,6 @@ namespace Luden::Panel
 		{
 			if (m_ActiveScene->Models.empty())
 			{
-				ImGui::AlignTextToFramePadding();
-				ImGui::Text(ICON_FA_GHOST ICON_FA_GHOST ICON_FA_GHOST" Empty here... " ICON_FA_GHOST ICON_FA_GHOST ICON_FA_GHOST);
-
 				ImGui::TreePop();
 
 				return;

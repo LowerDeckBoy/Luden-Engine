@@ -30,7 +30,6 @@ namespace Luden::Panel
 		Core::Timer* m_Timer;
 
 	private:
-
 		void DrawSceneConfig();
 		void DrawSceneCameraConfig();
 		void DrawPostProcessConfig();
@@ -42,7 +41,6 @@ namespace Luden::Panel
 		void DrawProceduralSkyConfig();
 
 		void DrawSpaceScreenReflectionsConfig();
-
 
 	};
 } // namespace Luden::Panel
