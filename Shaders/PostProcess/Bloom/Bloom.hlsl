@@ -61,10 +61,8 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 		float factor = smoothstep(falloffStart, falloffEnd, GetLuminance(color));
 		color *= factor;
 	}
-	
-	//output[DispatchThreadID.xy] = float4(color, 1.0f);
-	output[DispatchThreadID.xy] = float4(emissive, 1.0f);
-	//output[DispatchThreadID.xy] = float4(color + emissive, 1.0f);
+
+	output[DispatchThreadID.xy] = float4(color + emissive, 1.0f);
 }
 
 #endif // BLOOM_HLSL

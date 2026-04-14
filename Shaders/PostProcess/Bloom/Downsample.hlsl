@@ -30,7 +30,7 @@ float3 Downsample(in Texture2D Texture, float2 UV, float2 TexelSize)
 	result += (b + d + f + h) * 0.0625f;
 	result += (j + k + l + m) * 0.125f;
 
-	return result;
+	return max(result, Epsilon.xxx);
 }
 
 [numthreads(DISPATCH_BLOCK, DISPATCH_BLOCK, 1)]

@@ -7,9 +7,6 @@ float3 Upsample(in Texture2D Texture, float2 UV, float2 Texel)
 {
 	const float x = 0.05f;
 	const float y = 0.05f;
-	//const float x = Texel.x;
-	//const float y = Texel.y;
-
 	const float3 a = Texture.Sample(TexSampler, float2(UV.x - x,	UV.y + y)).rgb;
 	const float3 b = Texture.Sample(TexSampler, float2(UV.x,		UV.y + y)).rgb;
 	const float3 c = Texture.Sample(TexSampler, float2(UV.x + x,	UV.y + y)).rgb;
@@ -45,10 +42,6 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 	const float2 texelSize 		= GetTexelSize(textureSize);
 	const float2 texCoord 		= (float2(DispatchThreadID.xy) + 0.5f) * texelSize;
-
-	const float filterRadius = 0.05f;
-	const float x = filterRadius;
-	const float y = filterRadius;
 
 	//		  Texel
 	//	-----------------
