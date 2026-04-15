@@ -41,6 +41,8 @@ namespace Luden
 		SkyboxPass		= new Skybox(pD3D12RHI, m_ShaderCompiler);
 		ProceduralSkyPass = new ProceduralSky(pD3D12RHI, m_ShaderCompiler);
 
+		SkyTestPass		= new SkyTest(pD3D12RHI, m_ShaderCompiler, width, height);
+
 	}
 
 	Renderer::~Renderer()
@@ -159,7 +161,9 @@ namespace Luden
 			{
 				//SkyboxPass->Render(*frame, Camera, directional.Direction);
 				//SkyboxPass->RenderSkydome(*frame, Camera, directional.Direction);
-				ProceduralSkyPass->Render(*frame, Camera, directional.Direction, nullptr);
+				//ProceduralSkyPass->Render(*frame, Camera, directional.Direction, nullptr);
+
+				SkyTestPass->Render(*frame, Camera, directional.Direction);
 			}
 
 			commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
@@ -178,7 +182,8 @@ namespace Luden
 			}
 
 			// Light Pass
-			LightingPass->Render(ActiveScene, *frame, Camera, SSAOPass->RenderTarget.ShaderResourceHandle.Index);
+			uint32 ssaoImageIndex = SSAOPass->bBlurSSAO ? SSAOPass->BlurRenderTarget.ShaderResourceHandle.Index : SSAOPass->SSAORenderTarget.ShaderResourceHandle.Index;
+			LightingPass->Render(ActiveScene, *frame, Camera, ssaoImageIndex);
 
 			// Post-Processes
 			if (Config::Get().bEnablePostProcess)
@@ -193,6 +198,16 @@ namespace Luden
 					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_UNORDERED_ACCESS }
 					});
 
+				if (Config::Get().bEnableFXAA)
+				{
+					FXAAPass->Render(*frame, LightingPass->RenderTexture.ShaderResourceHandle.Index, SceneTextures.Scene.ShaderResourceHandle.Index);
+				}
+
+				if (Config::Get().bEnableTonemapping)
+				{
+					TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
+				}
+
 				if (Config::Get().bEnableSSR)
 				{
 					SSRPass->Render(frame, 
@@ -202,21 +217,16 @@ namespace Luden
 						Camera);
 				}
 
-				if (Config::Get().bEnableFXAA)
-				{
-					FXAAPass->Render(*frame, LightingPass->RenderTexture.ShaderResourceHandle.Index, SceneTextures.Scene.ShaderResourceHandle.Index);
-				}
-
 				if (Config::Get().bEnableBloom)
 				{
 					BloomPass->Render(*frame, GBuffer->Emissive.ShaderResourceHandle.Index, LightingPass->RenderTexture.ShaderResourceHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
 					BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->Emissive.ShaderResourceHandle.Index);
 				}
 
-				if (Config::Get().bEnableTonemapping)
-				{
-					TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
-				}
+				//if (Config::Get().bEnableTonemapping)
+				//{
+				//	TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
+				//}
 
 				frame->ComputeCommandList->ResourceTransition(&SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ);
 			}
@@ -293,6 +303,7 @@ namespace Luden
 		SSAOPass->Resize(width, height);
 		SSRPass->Resize(width, height);
 		ProceduralSkyPass->Resize(width, height);
+		SkyTestPass->Resize(width, height);
 
 		if (RaytracingBVH != nullptr)
 		{
