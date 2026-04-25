@@ -43,6 +43,23 @@ namespace Luden
 
 		SkyTestPass		= new SkyTest(pD3D12RHI, m_ShaderCompiler, width, height);
 
+		if (Config::Get().bEnableSky)
+		{
+			auto& frame = m_D3D12RHI->Frames.at(0);
+			if (!frame.GraphicsCommandList->IsOpen())
+			{
+				frame.GraphicsCommandList->Open();
+			}
+
+			frame.GraphicsCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
+
+			SkyTestPass->PrecomputeTransmittance(frame);
+
+			m_D3D12RHI->GraphicsQueue->Execute(frame.GraphicsCommandList);
+
+			m_D3D12RHI->Wait();
+		}
+
 	}
 
 	Renderer::~Renderer()
@@ -135,9 +152,9 @@ namespace Luden
 
 	void Renderer::Render(Scene* /* pScene */)
 	{
-		auto* frame = &m_D3D12RHI->Frames.at(BackBufferIndex);
+		auto& frame = m_D3D12RHI->Frames.at(BackBufferIndex);
 		auto& backbuffer = m_D3D12RHI->SwapChain->BackBuffers.at(BackBufferIndex);
-		auto* commandList = frame->GraphicsCommandList;
+		auto* commandList = frame.GraphicsCommandList;
 
 		auto& depthStencilView = m_D3D12RHI->SceneDepthBuffer->DepthStencilHandle;
 
@@ -154,63 +171,59 @@ namespace Luden
 			// G-Buffer
 			commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			commandList->ClearDepthStencilView(depthStencilView);
-			GBuffer->Render(ActiveScene, Camera, *frame);
-			GBuffer->RenderTransparent(ActiveScene, Camera, *frame);
+			GBuffer->Render(ActiveScene, Camera, frame);
+			GBuffer->RenderTransparent(ActiveScene, Camera, frame);
 
 			if (Config::Get().bEnableSky)
 			{
-				//SkyboxPass->Render(*frame, Camera, directional.Direction);
-				//SkyboxPass->RenderSkydome(*frame, Camera, directional.Direction);
-				//ProceduralSkyPass->Render(*frame, Camera, directional.Direction, nullptr);
-
-				SkyTestPass->Render(*frame, Camera, directional.Direction);
+				// TODO:
 			}
 
 			commandList->ResourceTransition(m_D3D12RHI->SceneDepthBuffer, D3D12_RESOURCE_STATE_DEPTH_READ);
 
 			// Open ComputeCommandList before dispatching Post-Processes and set DescriptorHeap once.
-			if (!frame->ComputeCommandList->IsOpen())
+			if (!frame.ComputeCommandList->IsOpen())
 			{
-				frame->ComputeCommandList->Open();
+				frame.ComputeCommandList->Open();
 			}
 
-			frame->ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
+			frame.ComputeCommandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
 
 			if (Config::Get().bEnableSSAO)
 			{
-				SSAOPass->Render(*frame, GBuffer, NoiseTexture->ShaderResourceHandle.Index, Camera);
+				SSAOPass->Render(frame, GBuffer, NoiseTexture->ShaderResourceHandle.Index, Camera);
 			}
 
 			// Light Pass
 			uint32 ssaoImageIndex = SSAOPass->bBlurSSAO ? SSAOPass->BlurRenderTarget.ShaderResourceHandle.Index : SSAOPass->SSAORenderTarget.ShaderResourceHandle.Index;
-			LightingPass->Render(ActiveScene, *frame, Camera, ssaoImageIndex);
+			LightingPass->Render(ActiveScene, frame, Camera, ssaoImageIndex);
 
 			// Post-Processes
 			if (Config::Get().bEnablePostProcess)
 			{
-				frame->ComputeCommandList->ResourceTransition({
+				frame.ComputeCommandList->ResourceTransition({
 					{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_COPY_SOURCE },
 					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_COPY_DEST }
 					});
-				frame->ComputeCommandList->CopyResource(&LightingPass->RenderTexture, &SceneTextures.Scene);
-				frame->ComputeCommandList->ResourceTransition({
+				frame.ComputeCommandList->CopyResource(&LightingPass->RenderTexture, &SceneTextures.Scene);
+				frame.ComputeCommandList->ResourceTransition({
 					{ &LightingPass->RenderTexture,	D3D12_RESOURCE_STATE_GENERIC_READ },
 					{ &SceneTextures.Scene,			D3D12_RESOURCE_STATE_UNORDERED_ACCESS }
 					});
 
 				if (Config::Get().bEnableFXAA)
 				{
-					FXAAPass->Render(*frame, LightingPass->RenderTexture.ShaderResourceHandle.Index, SceneTextures.Scene.ShaderResourceHandle.Index);
+					FXAAPass->Render(frame, LightingPass->RenderTexture.ShaderResourceHandle.Index, SceneTextures.Scene.ShaderResourceHandle.Index);
 				}
 
 				if (Config::Get().bEnableTonemapping)
 				{
-					TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
+					TonemappingPass->Render(frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
 				}
 
 				if (Config::Get().bEnableSSR)
 				{
-					SSRPass->Render(frame, 
+					SSRPass->Render(&frame, 
 						SceneTextures.Scene.ShaderResourceHandle.Index, 
 						GBuffer->NormalVS.ShaderResourceHandle.Index, 
 						GBuffer->MetallicRoughness.ShaderResourceHandle.Index,
@@ -219,8 +232,8 @@ namespace Luden
 
 				if (Config::Get().bEnableBloom)
 				{
-					BloomPass->Render(*frame, GBuffer->Emissive.ShaderResourceHandle.Index, LightingPass->RenderTexture.ShaderResourceHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
-					BloomPass->Combine(*frame, &SceneTextures.Scene, GBuffer->Emissive.ShaderResourceHandle.Index);
+					BloomPass->Render(frame, GBuffer->Emissive.ShaderResourceHandle.Index, LightingPass->RenderTexture.ShaderResourceHandle.Index, BloomPass->RenderTarget.ShaderResourceHandle.Index);
+					BloomPass->Combine(frame, &SceneTextures.Scene, GBuffer->Emissive.ShaderResourceHandle.Index);
 				}
 
 				//if (Config::Get().bEnableTonemapping)
@@ -228,7 +241,7 @@ namespace Luden
 				//	TonemappingPass->Render(*frame, SceneTextures.Scene.ShaderResourceHandle.Index, m_ParentWindow->Width, m_ParentWindow->Height);
 				//}
 
-				frame->ComputeCommandList->ResourceTransition(&SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ);
+				frame.ComputeCommandList->ResourceTransition(&SceneTextures.Scene, D3D12_RESOURCE_STATE_GENERIC_READ);
 			}
 		}
 		else
@@ -240,7 +253,7 @@ namespace Luden
 
 			commandList->SetDescriptorHeap(m_D3D12RHI->Device->ShaderResourceHeap);
 
-			DispatchRayTracing(*frame);
+			DispatchRayTracing(frame);
 
 			commandList->ResourceTransition({
 				{ &SceneTextures.Scene, D3D12_RESOURCE_STATE_COPY_DEST },

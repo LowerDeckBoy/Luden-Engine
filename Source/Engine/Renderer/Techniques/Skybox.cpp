@@ -364,4 +364,60 @@ namespace Luden
 		DebugRenderTarget.Resize(Width, Height);
 	}
 
+	SkyTest::SkyTest(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height)
+	{
+		m_D3D12RHI = pD3D12RHI;
+
+
+		// Transmittance
+		{
+			//TransmittanceTexture = new D3D12RenderTexture(m_D3D12RHI->Device, 256, 64, DXGI_FORMAT_R32G32B32A32_FLOAT, DefaultClearColor, "Sky Transmittance Texture");
+			TransmittanceTexture = new D3D12RenderTexture(m_D3D12RHI->Device, 256, 64, DXGI_FORMAT_R16G16B16A16_FLOAT, DefaultClearColor, "Sky Transmittance Texture");
+
+			m_TransmittancePSO.Compute = pShaderCompiler->CompileCS("../../Shaders/SkyTest/Transmittance.hlsl", true);
+			m_TransmittancePSO.RootSignature.BuildFromShader(m_D3D12RHI->Device, &m_TransmittancePSO.Compute, PipelineType::Compute);
+			D3D12ComputePipelineStateBuilder builder;
+			builder.SetComputeShader(&m_TransmittancePSO.Compute);
+			builder.SetRootSignature(&m_TransmittancePSO.RootSignature);
+			VERIFY_D3D12_RESULT(builder.Build(m_D3D12RHI->Device, m_TransmittancePSO));
+		}
+
+		// Multi-scattering
+		{
+
+		}
+	}
+
+	SkyTest::~SkyTest()
+	{
+	}
+
+	void SkyTest::Render(Frame& CurrentFrame, SceneCamera* /* pCamera */, DirectX::XMFLOAT3 /* SunPosition */)
+	{
+
+	}
+
+	void SkyTest::Resize(uint32 Width, uint32 Height)
+	{
+		//TransmittanceTexture->Resize(Width, Height);
+	}
+
+	void SkyTest::PrecomputeTransmittance(Frame& CurrentFrame)
+	{
+		auto commandList = CurrentFrame.GraphicsCommandList;
+
+		commandList->ResourceTransition(TransmittanceTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		commandList->SetPipelineState(&m_TransmittancePSO.PipelineState);
+		commandList->SetRootSignature(&m_TransmittancePSO.RootSignature);
+
+		PushConstants.TransmittanceIndex = TransmittanceTexture->ShaderResourceHandle.Index;
+		commandList->PushComputeConstants(0, 1, &PushConstants);
+
+		const uint32 dispatchX = 256 / 8;
+		const uint32 dispatchY = 64  / 4;
+		commandList->Dispatch(dispatchX, dispatchY, 1);
+
+		commandList->ResourceTransition(TransmittanceTexture, D3D12_RESOURCE_STATE_GENERIC_READ);
+	}
+
 } // namespace Luden

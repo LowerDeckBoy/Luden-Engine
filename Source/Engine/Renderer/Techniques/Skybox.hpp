@@ -93,10 +93,10 @@ namespace Luden
 			//DirectX::XMFLOAT3 HorizonColor = DirectX::XMFLOAT3(1.0f, 0.757f, 0.616f);
 			float MieCoefficient = 0.03f;
 			DirectX::XMFLOAT3 SunPosition = DirectX::XMFLOAT3(0.0f, 1.0f, 6.28f);
-			float Turbidity = 0.01f;
+			float Turbidity = 0.8f;
 			DirectX::XMFLOAT3 CameraPosition;
 			float Luminance = 1.2f;
-			float MieDirectionalG = 0.99f;
+			float MieDirectionalG = 0.90f;
 			//float SunIntensity = 1.0f;
 			uint32 VertexBufferIndex;
 		} SkyParameters{};
@@ -121,4 +121,33 @@ namespace Luden
 		D3D12Buffer m_IndexBuffer;
 
 	};
+
+	// https://sebh.github.io/publications/egsr2020.pdf
+	class SkyTest
+	{
+	public:
+		SkyTest(D3D12RHI* pD3D12RHI, ShaderCompiler* pShaderCompiler, uint32 Width, uint32 Height);
+		~SkyTest();
+	
+		void Render(Frame& CurrentFrame, SceneCamera* pCamera, DirectX::XMFLOAT3 SunPosition);
+		void Resize(uint32 Width, uint32 Height);
+
+		void PrecomputeTransmittance(Frame& CurrentFrame);
+		void PrecomputeMultiscatter(Frame& CurrentFrame);
+
+		D3D12RenderTexture* TransmittanceTexture;
+
+		struct
+		{
+			uint32 TransmittanceIndex;
+		} PushConstants{};
+
+	private:
+		D3D12RHI* m_D3D12RHI = nullptr;
+
+		D3D12Pipeline m_TransmittancePSO;
+
+
+	};
+
 } // namespace Luden
